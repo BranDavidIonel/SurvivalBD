@@ -16,8 +16,21 @@ public class TimeManager : MonoBehaviour
         Winter
     }
     public Season currentSeason = Season.Spring;
-    private int daysPerSeason = 30;
+    //private int daysPerSeason = 30;
+    private int daysPerSeason = 2;//test
     private int daysInCurrentSeason = 1;
+
+    public enum DayOfWeek
+    {
+        Monday,//0 is index
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday//6
+    }
+    public DayOfWeek currentDayOfWeek = DayOfWeek.Monday;
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -42,6 +55,7 @@ public class TimeManager : MonoBehaviour
     {
         dayInGame += 1;
         daysInCurrentSeason += 1;
+        currentDayOfWeek = (DayOfWeek)((int)(currentDayOfWeek + 1) % 7);
         if(daysInCurrentSeason > daysPerSeason)
         {
             //swich to nest season
@@ -63,7 +77,7 @@ public class TimeManager : MonoBehaviour
     }
     private void updateUI()
     {
-        dayUI.text = $"Day: {daysInCurrentSeason}, Season:{currentSeason}, Year:{yearInGame}";
+        dayUI.text = $"{currentDayOfWeek} day: {daysInCurrentSeason}, Season:{currentSeason}, Year:{yearInGame}";
     }
 
 

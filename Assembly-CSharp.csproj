@@ -107,6 +107,7 @@
     <Compile Include="Assets\PlayerData.cs" />
     <Compile Include="Assets\Scripts\ChoppableTree.cs" />
     <Compile Include="Assets\Scripts\Weapon.cs" />
+    <Compile Include="Assets\FollowPlayer.cs" />
     <Compile Include="Assets\Scripts\TrashSlot.cs" />
     <Compile Include="Assets\Scripts\ItemSlot.cs" />
     <Compile Include="Assets\Scripts\CraftingSystem.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="Assets\Scripts\InventoryItem.cs" />
     <Compile Include="Assets\Scripts\DragDrop.cs" />
     <Compile Include="Assets\JMO Assets\WarFX\Demo\Assets\CFX_Demo_Translate.cs" />
+    <Compile Include="Assets\Scripts\WeatherSystem.cs" />
     <Compile Include="Assets\Scripts\InGameMenu.cs" />
     <Compile Include="Assets\Scripts\PlacebleItem.cs" />
     <Compile Include="Assets\Scripts\BuildSystem\Constructable.cs" />

@@ -8,7 +8,7 @@ public class DayNightSystem : MonoBehaviour
 {
     public Light directionlLight;
 
-    public float dayDurationInSeconds = 24.0f; //adjust the duration of a full dau in seconds 
+    public float dayDurationInSeconds = 24.0f; //adjust the duration of a full dau in seconds
     public int curretHour;
     float currentTimeOfDay = 0.35f; // 35 equals to 8 in the morning
 
@@ -19,6 +19,8 @@ public class DayNightSystem : MonoBehaviour
     public List<SkyboxTimeMapping> timeMapping;
 
     public TextMeshProUGUI timeUI;
+
+    public WeatherSystem weatherSystem;
     
     private void Update()
     {
@@ -33,7 +35,20 @@ public class DayNightSystem : MonoBehaviour
         directionlLight.transform.rotation = Quaternion.Euler(new Vector3((currentTimeOfDay * 360) - 90, 170, 0));
 
         //update the skybox material based on the time of day
-        UpdateSkybox();
+        if (weatherSystem.isSpecialWeather == false)
+        {
+            UpdateSkybox();
+        }
+        if (curretHour == 0 && lockNextDayTrigger == false)
+        {
+            TimeManager.Instance.TriggerNextDay();
+            lockNextDayTrigger = true;
+        }
+
+        if (curretHour != 0)
+        {
+            lockNextDayTrigger = false;
+        }
 
     }
 
@@ -64,16 +79,7 @@ public class DayNightSystem : MonoBehaviour
             }
         }
 
-        if(curretHour == 0 && lockNextDayTrigger == false)
-        {
-            TimeManager.Instance.TriggerNextDay();
-            lockNextDayTrigger = true;
-        }
 
-        if(curretHour != 0)
-        {
-            lockNextDayTrigger = false;
-        }
 
         if(currentSkybox != null)
         {
