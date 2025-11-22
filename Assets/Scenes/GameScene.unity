@@ -22487,6 +22487,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 60546621}
     m_Modifications:
+    - target: {fileID: 1589992637, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1589992637, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.y
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1589992637, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.z
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 1515310681861473141, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -22534,6 +22546,18 @@ PrefabInstance:
     - target: {fileID: 1518360927099326553, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
       propertyPath: m_Name
       value: WhiteRabbitBig
+      objectReference: {fileID: 0}
+    - target: {fileID: 3578528391579977920, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.x
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3578528391579977920, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.y
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3578528391579977920, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}
+      propertyPath: m_Size.z
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 77e8ed6b8a2d2b64e857a7ce063bf251, type: 3}

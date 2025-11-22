@@ -56,8 +56,8 @@ public class WeatherSystem : MonoBehaviour
             currentWeatherCondition = WeatherCondition.Rainy;
             isSpecialWeather = true;
             
-            Invoke("StartRain", 1f);
-            //StartRain();
+            //If you want rain effect (now I don t like)
+            //Invoke("StartRain", 1f);
         }
         else
         {
