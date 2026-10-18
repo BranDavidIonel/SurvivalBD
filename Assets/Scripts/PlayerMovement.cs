@@ -90,8 +90,9 @@ public class PlayerMovement : MonoBehaviour
             velocity.y = -2f;
         }
 
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+        //keyboard on PC, left joystick on the phone
+        float x = GameInput.MoveX;
+        float z = GameInput.MoveZ;
         //float x= joystick.Horizontal;
         //float z = joystick.Vertical;
 
@@ -133,7 +134,7 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             //check if the player is on the ground so he can jump
-            if (Input.GetButtonDown("Jump") && isGrounded)
+            if (GameInput.JumpDown && isGrounded)
             {
                 //the equation for jumping
                 velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);

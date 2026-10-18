@@ -161,6 +161,8 @@ public class ConstructionManager : MonoBehaviour
 
         if (itemToBeConstructed != null && inConstructionMode)
         {
+            // upright and standing on the terrain (not floating at the player's height)
+            GroundSnap.KeepOnGround(itemToBeConstructed.transform, constructionHoldingSpot.transform);
 
             if (itemToBeConstructed.name == "FoundationModel") {
                 if (CheckValidConstructionPosition())
@@ -176,7 +178,7 @@ public class ConstructionManager : MonoBehaviour
             }
 
 
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Ray ray = GameInput.AimRay();
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit))
             {
@@ -204,7 +206,7 @@ public class ConstructionManager : MonoBehaviour
         }
 
         // Left Mouse Click to Place item
-        if (Input.GetMouseButtonDown(0) && inConstructionMode)
+        if (GameInput.PrimaryDown && inConstructionMode)
         {
             if (isValidPlacement && selectedGhost == false && itemToBeConstructed.name == "FoundationModel") // We don't want the freestyle to be triggered when we select a ghost.
             {
@@ -219,7 +221,7 @@ public class ConstructionManager : MonoBehaviour
             }
         }
         // Right  X to Cancel                     
-        if (Input.GetKeyDown(KeyCode.X) && inConstructionMode)
+        if (GameInput.CancelDown && inConstructionMode)
         {     // Left Mouse Button
             itemToBeDestroyed.SetActive(true);
             itemToBeDestroyed = null;

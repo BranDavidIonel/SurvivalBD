@@ -43,6 +43,7 @@ public class SettingsManager : MonoBehaviour
     private void LoadAndSetVolume()
     {
         VolumeSettings volumeSettings = SaveManager.Instance.GetVolumeSettings();
+        if (volumeSettings == null) return; // nothing saved yet (first start, e.g. new install on the phone): keep the default sliders
         masterSlider.value = volumeSettings.master;
         musicSlider.value = volumeSettings.music;
         effectsSlider.value = volumeSettings.effects;

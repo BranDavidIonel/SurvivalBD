@@ -91,8 +91,8 @@ public class PlayerWater : MonoBehaviour
     {
         var toSurface = FloatingCentre() - Centre();
         float speed;
-        if (Input.GetKey(KeyCode.LeftControl)) speed = -swimVerticalSpeed;
-        else if (Input.GetKey(KeyCode.Space)) speed = swimVerticalSpeed;
+        if (GameInput.SwimDownHeld) speed = -swimVerticalSpeed;
+        else if (GameInput.SwimUpHeld) speed = swimVerticalSpeed;
         else speed = toSurface * 2f;
         speed = Mathf.Clamp(speed, -swimVerticalSpeed, swimVerticalSpeed);
 

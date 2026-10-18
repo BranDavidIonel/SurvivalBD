@@ -224,7 +224,8 @@ public class CraftingSystem : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.C) && !isOpen && !ConstructionManager.Instance.inConstructionMode)
+        bool toggle = GameInput.CraftingToggleDown; // C on PC, "Crafting" button on the phone
+        if (toggle && !isOpen && !ConstructionManager.Instance.inConstructionMode)
         {
             craftingScreenUI.SetActive(true);
             Cursor.lockState = CursorLockMode.None;
@@ -236,7 +237,7 @@ public class CraftingSystem : MonoBehaviour
             isOpen = true;
 
         }
-        else if (Input.GetKeyDown(KeyCode.C) && isOpen)
+        else if (toggle && isOpen)
         {
             craftingScreenUI.SetActive(false);
             toolsScreenUI.SetActive(false);

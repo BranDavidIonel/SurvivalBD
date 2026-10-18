@@ -33,7 +33,9 @@ public class Constructable : MonoBehaviour
     }
     void Update()
     {
-        if (isGrounded && isOverlappingItems == false)
+        // while it is being built it is kept on the terrain (GroundSnap), so also check that directly
+        bool onGround = isGrounded || (gameObject.CompareTag("activeConstructable") && GroundSnap.IsOnGround(transform));
+        if (onGround && isOverlappingItems == false)
         {
             isValidToBeBuilt = true;
         }

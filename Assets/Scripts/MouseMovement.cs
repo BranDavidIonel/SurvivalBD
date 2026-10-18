@@ -18,8 +18,18 @@ public class MouseMovement : MonoBehaviour
     void Update()
     {
         if (InventorySystem.Instance.isOpen==false && CraftingSystem.Instance.isOpen==false && !MenuManager.Instance.isMenuOpen && !StorageManager.Instance.storageUIOpen && !CampfireUIManager.Instance.isUiOpen) {
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+            float mouseX, mouseY;
+            if (GameInput.TouchControls)
+            {
+                //right joystick / swiping on the phone
+                mouseX = GameInput.touchLookDegrees.x;
+                mouseY = GameInput.touchLookDegrees.y;
+            }
+            else
+            {
+                mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+                mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+            }
 
             //control rotation around x axis (Look up and down)
             xRotation -= mouseY;

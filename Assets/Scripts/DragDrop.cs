@@ -43,8 +43,8 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
     public void OnDrag(PointerEventData eventData)
     {
         //So the item will move with our mouse (at same speed)  and so it will be consistant if the canvas has a different scale (other then 1);
-        //rectTransform.anchoredPosition += eventData.delta/canvas.scaleFactor;
-        rectTransform.anchoredPosition += eventData.delta;
+        //on a Screen Space Overlay canvas the world position is in screen pixels, like eventData.delta
+        rectTransform.position += (Vector3)eventData.delta;
 
     }
 

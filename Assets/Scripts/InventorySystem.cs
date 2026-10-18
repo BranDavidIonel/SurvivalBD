@@ -64,11 +64,12 @@ public class InventorySystem : MonoBehaviour
     void Update()
     {
 
-        if (Input.GetKeyDown(KeyCode.I) && !isOpen && !ConstructionManager.Instance.inConstructionMode && !CampfireUIManager.Instance.isUiOpen)
+        bool toggle = GameInput.InventoryToggleDown; // I on PC, "Inventar" button on the phone
+        if (toggle && !isOpen && !ConstructionManager.Instance.inConstructionMode && !CampfireUIManager.Instance.isUiOpen)
         {
             OpenUI();
         }
-        else if (Input.GetKeyDown(KeyCode.I) && isOpen)
+        else if (toggle && isOpen)
         {
 
             CloseUI();

@@ -27,18 +27,9 @@ public class PlacebleItem : MonoBehaviour
             isValidToBeBuilt = false;
         }
 
-        // Raycast from the box's position towards its center
-
-        var boxHeight = transform.lossyScale.y;
-        RaycastHit groundHit;
-        if (Physics.Raycast(transform.position, Vector3.down, out groundHit, boxHeight * 0.5f, LayerMask.GetMask("Ground")))
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
+        // Is the bottom of the item on the terrain? (checked from the bottom of its mesh,
+        // the pivot of some models, like the campfire, is far above it)
+        isGrounded = GroundSnap.IsOnGround(transform);
 
     }
 

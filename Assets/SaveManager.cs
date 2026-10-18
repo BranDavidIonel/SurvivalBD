@@ -37,7 +37,8 @@ public class SaveManager : MonoBehaviour
     public bool isLoading;
     private void Start()
     {
-        jsonPathProject = Application.dataPath + Path.AltDirectorySeparatorChar;
+        // In the editor saves stay in Assets/. In a build (phone) the game folder is read-only, so use the app's save folder.
+        jsonPathProject = (Application.isEditor ? Application.dataPath : Application.persistentDataPath) + Path.AltDirectorySeparatorChar;
         jsonPathPersistant = Application.persistentDataPath + Path.AltDirectorySeparatorChar;
         binaryPath = Application.persistentDataPath + Path.AltDirectorySeparatorChar;
     }

@@ -15,6 +15,7 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField] bool isValidPlacement;
 
     [SerializeField] GameObject itemToBePlaced;
+    public bool IsHoldingItem => itemToBePlaced != null; // false during the short delay after placing
     public GameObject inventoryItemToDestory;
 
     private void Awake()
@@ -62,6 +63,9 @@ public class PlacementSystem : MonoBehaviour
 
         if (itemToBePlaced != null && inPlacementMode)
         {
+            // upright and standing on the terrain (not floating at the player's height)
+            GroundSnap.KeepOnGround(itemToBePlaced.transform, placementHoldingSpot.transform);
+
             if (IsCheckValidPlacement())
             {
                 isValidPlacement = true;
@@ -75,14 +79,15 @@ public class PlacementSystem : MonoBehaviour
         }
 
         // Left Mouse Click to Place item
-        if (Input.GetMouseButtonDown(0) && inPlacementMode && isValidPlacement)
+        // (itemToBePlaced is already null during the short delay after placing)
+        if (GameInput.PrimaryDown && inPlacementMode && isValidPlacement && itemToBePlaced != null)
         {
             PlaceItemFreeStyle();
             DestroyItem(inventoryItemToDestory);
         }
 
         // Cancel Placement                     //TODO - don't destroy the ui item until you actually placed it.
-        if (Input.GetKeyDown(KeyCode.X))
+        if (GameInput.CancelDown && inPlacementMode && itemToBePlaced != null)
         {
             inventoryItemToDestory.SetActive(true);
             inventoryItemToDestory = null;

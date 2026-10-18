@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     // --- Is this item trashable --- //
     public bool isTrashable;
@@ -78,28 +78,69 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         //Right Mouse Button Click on
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            if (isConsumable)
-            {
-                // Setting this specific gameobject to be the item we want to destroy later
-                itemPendingConsumption = gameObject;
-                consumingFunction(healthEffect, caloriesEffect, hydrationEffect);
-            }
-
-            if (isEquippable && isInsideQuickSlot == false && EquipSystem.Instance.CheckIfFull() == false)
-            {
-                EquipSystem.Instance.AddToQuickSlots(gameObject);
-                isInsideQuickSlot = true;
-            }
-            if (isUseable)
-            {
-                //ConstructionManager.Instance.itemToBeDestroyed = gameObject;
-                gameObject.SetActive(false);
-                UseItem();
-            }
-
-
+            UseLikeRightClick();
         }
-        
+
+    }
+
+    // --- Phone: there is no right click, so a double tap does the same. A tap on a quick slot selects it (keys 1-6 on PC). --- //
+    static InventoryItem lastTappedItem;
+    static float lastTapTime;
+    const float DoubleTapSeconds = 0.4f;
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (!GameInput.TouchControls) return;
+
+        if (isInsideQuickSlot && !InventorySystem.Instance.isOpen)
+        {
+            if (isUseable || isConsumable)
+            {
+                // campfire, storage box, foundation, wall: start placing it / food: eat it
+                UseLikeRightClick();
+                FinishConsumption();
+            }
+            else
+            {
+                EquipSystem.Instance.SelectQuickSlotOf(transform.parent.gameObject);
+            }
+            return;
+        }
+
+        if (lastTappedItem == this && Time.unscaledTime - lastTapTime < DoubleTapSeconds)
+        {
+            lastTappedItem = null;
+            // same as right button down + up on PC
+            UseLikeRightClick();
+            FinishConsumption();
+        }
+        else
+        {
+            lastTappedItem = this;
+            lastTapTime = Time.unscaledTime;
+        }
+    }
+
+    private void UseLikeRightClick()
+    {
+        if (isConsumable)
+        {
+            // Setting this specific gameobject to be the item we want to destroy later
+            itemPendingConsumption = gameObject;
+            consumingFunction(healthEffect, caloriesEffect, hydrationEffect);
+        }
+
+        if (isEquippable && isInsideQuickSlot == false && EquipSystem.Instance.CheckIfFull() == false)
+        {
+            EquipSystem.Instance.AddToQuickSlots(gameObject);
+            isInsideQuickSlot = true;
+        }
+        if (isUseable)
+        {
+            //ConstructionManager.Instance.itemToBeDestroyed = gameObject;
+            gameObject.SetActive(false);
+            UseItem();
+        }
     }
 
     private void UseItem()
@@ -132,9 +173,11 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 ConstructionManager.Instance.ActivateConstructionPlacement("FoundationModel"); //for testing
                 break;
             case "wall(Clone)":
+                ConstructionManager.Instance.itemToBeDestroyed = gameObject; // so it leaves the inventory when placed (and comes back on Cancel)
                 ConstructionManager.Instance.ActivateConstructionPlacement("WallModel");
                 break;
             case "wall":
+                ConstructionManager.Instance.itemToBeDestroyed = gameObject;
                 ConstructionManager.Instance.ActivateConstructionPlacement("WallModel"); //for testing
                 break;
             case "StorageBox(Clone)":
@@ -166,14 +209,20 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            if (isConsumable && itemPendingConsumption == gameObject)
-            {
-                DestroyImmediate(gameObject);
-                InventorySystem.Instance.RecalculateList();
-                CraftingSystem.Instance.RefreshNeededItems();
-            }
+            FinishConsumption();
         }
 
+    }
+
+    // the eaten item leaves the inventory
+    private void FinishConsumption()
+    {
+        if (isConsumable && itemPendingConsumption == gameObject)
+        {
+            DestroyImmediate(gameObject);
+            InventorySystem.Instance.RecalculateList();
+            CraftingSystem.Instance.RefreshNeededItems();
+        }
     }
 
 

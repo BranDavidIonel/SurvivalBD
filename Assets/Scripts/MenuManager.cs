@@ -27,7 +27,8 @@ public class MenuManager : MonoBehaviour
     }
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.M) && !isMenuOpen)
+        bool toggle = GameInput.MenuToggleDown; // M on PC, "Meniu" button on the phone
+        if(toggle && !isMenuOpen)
         {
             uiCanvas.SetActive(false);
             menuCanvas.SetActive(true);
@@ -39,7 +40,7 @@ public class MenuManager : MonoBehaviour
             SelectionManager.Instance.DisableSelection();
             SelectionManager.Instance.GetComponent<SelectionManager>().enabled = false;
         }
-        else if (Input.GetKeyDown(KeyCode.M) && isMenuOpen)
+        else if (toggle && isMenuOpen)
         {
             saveMenu.SetActive(false);
             settingsMenu.SetActive(false);

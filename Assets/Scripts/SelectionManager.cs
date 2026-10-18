@@ -45,7 +45,7 @@ public class SelectionManager : MonoBehaviour
     void Update()
     {
         
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = GameInput.AimRay();
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit))
         {
@@ -96,7 +96,7 @@ public class SelectionManager : MonoBehaviour
 
                 selectedStorageBox = storageBox.gameObject;
 
-                if (Input.GetMouseButtonDown(0))
+                if (GameInput.PrimaryDown)
                 {
                     StorageManager.Instance.OpenBox(storageBox);
                 }
@@ -120,7 +120,7 @@ public class SelectionManager : MonoBehaviour
 
                 selectedCampfire = campfire.gameObject;
 
-                if (Input.GetMouseButtonDown(0) && campfire.isCooking == false)
+                if (GameInput.PrimaryDown && campfire.isCooking == false)
                 {
                     campfire.OpenUI();
                 }
@@ -149,7 +149,7 @@ public class SelectionManager : MonoBehaviour
 
                     handIsVisible = true;
                     
-                    if (Input.GetMouseButtonDown(0))
+                    if (GameInput.PrimaryDown)
                     {
                         Lootable lootable = animal.GetComponent<Lootable>();
                         Loot(lootable);
@@ -167,7 +167,7 @@ public class SelectionManager : MonoBehaviour
 
                     handIsVisible = false;
 
-                    if (Input.GetMouseButtonDown(0) && EquipSystem.Instance.IsHoldingWeapon() && EquipSystem.Instance.IsThereASwingLock() == false)
+                    if (GameInput.PrimaryDown && EquipSystem.Instance.IsHoldingWeapon() && EquipSystem.Instance.IsThereASwingLock() == false)
                     {
                         StartCoroutine(DealDamageTo(animal, 0.3f, EquipSystem.Instance.GetWeaponDamage()));
                     }

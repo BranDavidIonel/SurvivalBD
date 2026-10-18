@@ -16,7 +16,7 @@ public class EquipableItem : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0) && // left mouse button
+        if (GameInput.PrimaryDown && // left mouse button / "Loveste" on the phone
             InventorySystem.Instance.isOpen == false && 
             CraftingSystem.Instance.isOpen == false && 
             SelectionManager.Instance.handIsVisible == false &&

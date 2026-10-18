@@ -67,6 +67,13 @@ public class EquipSystem : MonoBehaviour
             SelectQuickSlot(5);
         }
     }
+    // tapping a quick slot on the phone (same as pressing its number key)
+    public void SelectQuickSlotOf(GameObject slot)
+    {
+        int number = quickSlotsList.IndexOf(slot);
+        if (number >= 0) SelectQuickSlot(number);
+    }
+
     void SelectQuickSlot(int number)
     {
         if (checkIfSlotIsFull(number) == true)
@@ -168,7 +175,14 @@ public class EquipSystem : MonoBehaviour
         }
 
         string selectedItemName = selectedItem.name.Replace("(Clone)", "");
-        selectedItemModel = Instantiate(Resources.Load<GameObject>(selectedItemName + "_Model"),new Vector3(2f,0,1f),Quaternion.Euler(-50,-200f,2f));
+        GameObject modelPrefab = Resources.Load<GameObject>(selectedItemName + "_Model");
+        if (modelPrefab == null)
+        {
+            // e.g. a stick or a log dragged into a quick slot: there is nothing to hold in the hand
+            Debug.LogWarning("No hand model Resources/" + selectedItemName + "_Model for the quick slot item");
+            return;
+        }
+        selectedItemModel = Instantiate(modelPrefab,new Vector3(2f,0,1f),Quaternion.Euler(-50,-200f,2f));
         selectedItemModel.transform.SetParent(toolHolder.transform, false);
     }
 
