@@ -48,7 +48,38 @@ public static class MobileSetupTool
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.BranDavidIonel.SurvivalBD");
 
         AssetDatabase.SaveAssets();
+        FixShinyTerrainOnAndroid();
         Debug.Log("Android settings applied: landscape, IL2CPP, ARM64, Android 7.0+, id " + PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android));
+    }
+
+    // On Android the terrain colour textures become ASTC, and Unity treats every ASTC texture as having an
+    // alpha channel. The built-in terrain shader then takes the smoothness from that (fully opaque) alpha
+    // instead of the layer's Smoothness, so the ground turns into a mirror of the sky (bright, hazy look).
+    // Importing those textures as ETC2 RGB (no alpha) for Android only keeps the look the same as on PC.
+    [MenuItem("Tools/Mobile/Fix Shiny Terrain On Android", false, 21)]
+    public static int FixShinyTerrainOnAndroid()
+    {
+        int changed = 0;
+        foreach (string guid in AssetDatabase.FindAssets("t:TerrainLayer"))
+        {
+            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(AssetDatabase.GUIDToAssetPath(guid));
+            if (layer == null || layer.diffuseTexture == null) continue;
+            var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(layer.diffuseTexture)) as TextureImporter;
+            if (importer == null) continue;
+            // a colour texture that really stores smoothness in its alpha keeps it (PC uses it too)
+            if (importer.DoesSourceTextureHaveAlpha() && importer.alphaSource != TextureImporterAlphaSource.None) continue;
+
+            var android = importer.GetPlatformTextureSettings("Android");
+            if (android.overridden && android.format == TextureImporterFormat.ETC2_RGB4) continue;
+            android.overridden = true;
+            android.format = TextureImporterFormat.ETC2_RGB4;
+            android.maxTextureSize = importer.GetDefaultPlatformTextureSettings().maxTextureSize;
+            importer.SetPlatformTextureSettings(android);
+            importer.SaveAndReimport();
+            changed++;
+        }
+        if (changed > 0) Debug.Log("Terrain colour textures set to ETC2 RGB for Android: " + changed);
+        return changed;
     }
 
     [MenuItem("Tools/Mobile/Build APK", false, 40)]
