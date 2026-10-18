@@ -34,8 +34,12 @@ public class PlayerMovement : MonoBehaviour
     Button buttonDown;
     Button buttonLeft;
     Button buttonRight;
+
+    PlayerWater playerWater;
     private void Start()
     {
+        playerWater = GetComponent<PlayerWater>();
+
         buttonUp = movementScreenUI.transform.Find("ButtonUp").GetComponent<Button>();
         buttonUp.onClick.AddListener(delegate { MovePlayerWithButtons("up"); });
 
@@ -116,19 +120,30 @@ public class PlayerMovement : MonoBehaviour
         //right is the red Axis, foward is the blue axis
         Vector3 move = transform.right * x + transform.forward * z;
 
-        controller.Move(move * speed * Time.deltaTime);
+        //in deep water we swim: slower, and no gravity (Space = up, Left Ctrl = down)
+        bool isSwimming = playerWater != null && playerWater.IsSwimming;
+        float moveSpeed = isSwimming ? speed * playerWater.swimSpeedMultiplier : speed;
 
-        //check if the player is on the ground so he can jump
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        controller.Move(move * moveSpeed * Time.deltaTime);
+
+        if (isSwimming)
         {
-            //the equation for jumping
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            velocity.y = playerWater.GetSwimVerticalSpeed();
+        }
+        else
+        {
+            //check if the player is on the ground so he can jump
+            if (Input.GetButtonDown("Jump") && isGrounded)
+            {
+                //the equation for jumping
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            }
+
+            velocity.y += gravity * Time.deltaTime;
         }
 
-        velocity.y += gravity * Time.deltaTime;
-
         controller.Move(velocity * Time.deltaTime);
-        if (lastPosition != gameObject.transform.position && isGrounded == true)
+        if (lastPosition != gameObject.transform.position && isGrounded == true && !isSwimming)
         {
             isMoving = true;
             SoundManager.Instance.PlaySound(SoundManager.Instance.grassWalkSound);
@@ -139,5 +154,10 @@ public class PlayerMovement : MonoBehaviour
             SoundManager.Instance.grassWalkSound.Stop();
         }
         lastPosition = gameObject.transform.position;
+    }
+
+    public void ResetVelocity()
+    {
+        velocity = Vector3.zero;
     }
 }

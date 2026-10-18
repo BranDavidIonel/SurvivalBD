@@ -15,6 +15,7 @@ public static class WaterFitTool
     const int MinHollowCells = 10;     // ...and so are tiny ones
     const float SearchRadius = 150f;   // how far from the water to look for a hollow (metres)
     const string DefaultWaterMaterialGuid = "008541be8ad8b3f42a5318e1c4a73d1c"; // Bitgem example-water-03
+    public const float LakeDepth = 8f;  // how deep Deepen Lake digs in the middle (metres)
 
     static readonly int[] dx = { 1, -1, 0, 0 };
     static readonly int[] dz = { 0, 0, 1, -1 };
@@ -141,6 +142,235 @@ public static class WaterFitTool
         material.enableInstancing = false;
         if (material.renderQueue <= 2500) material.renderQueue = -1; // back to the shader's own (transparent) queue
         EditorUtility.SetDirty(material);
+    }
+
+    [MenuItem("Tools/Water/Deepen Lake")]
+    static void DeepenLakeMenu()
+    {
+        if (DeepenLake(LakeDepth, out var message)) EditorUtility.DisplayDialog("Water", message, "OK");
+        else Fail(message);
+    }
+
+    [MenuItem("Tools/Water/Add Swimming To Player")]
+    static void AddPlayerComponentsMenu()
+    {
+        if (AddPlayerComponents(out var message)) EditorUtility.DisplayDialog("Water", message, "OK");
+        else Fail(message);
+    }
+
+    // Digs the ground under the water into a bowl `depth` metres deep in the middle, with gentle shores.
+    // Only the ground under the water changes, and running it again changes nothing.
+    public static bool DeepenLake(float depth, out string message)
+    {
+        var volumes = Object.FindObjectsOfType<WaterVolumeTransforms>();
+        if (volumes.Length != 1)
+        {
+            message = volumes.Length == 0 ? "No water volume found in the open scene." : "There is more than one water volume in the scene.";
+            return false;
+        }
+        var waterRenderer = volumes[0].GetComponent<MeshRenderer>();
+        if (waterRenderer == null)
+        {
+            message = "The water volume has no MeshRenderer.";
+            return false;
+        }
+        var bounds = waterRenderer.bounds;
+        var level = bounds.max.y;
+        var terrain = FindTerrain(bounds.center);
+        if (terrain == null)
+        {
+            message = "No terrain found under the water.";
+            return false;
+        }
+
+        // heightmap samples under the water box
+        var data = terrain.terrainData;
+        var origin = terrain.transform.position;
+        var res = data.heightmapResolution;
+        var cellX = data.heightmapScale.x;
+        var cellZ = data.heightmapScale.z;
+        var x0 = Mathf.Clamp(Mathf.FloorToInt((bounds.min.x - origin.x) / cellX), 0, res - 1);
+        var z0 = Mathf.Clamp(Mathf.FloorToInt((bounds.min.z - origin.z) / cellZ), 0, res - 1);
+        var w = Mathf.Clamp(Mathf.CeilToInt((bounds.max.x - origin.x) / cellX), 0, res - 1) - x0 + 1;
+        var h = Mathf.Clamp(Mathf.CeilToInt((bounds.max.z - origin.z) / cellZ), 0, res - 1) - z0 + 1;
+        var raw = data.GetHeights(x0, z0, w, h);
+        var ground = new float[w * h];
+        var deepest = 0;
+        for (var i = 0; i < ground.Length; i++)
+        {
+            ground[i] = raw[i / w, i % w] * data.size.y + origin.y;
+            if (ground[i] < ground[deepest]) deepest = i;
+        }
+        if (ground[deepest] >= level)
+        {
+            message = "There is no ground under the water to dig.";
+            return false;
+        }
+
+        // the lake bed: ground under the water that is connected to its deepest point
+        var lake = new bool[ground.Length];
+        var stack = new Stack<int>();
+        stack.Push(deepest);
+        lake[deepest] = true;
+        var lakeCells = new List<int>();
+        while (stack.Count > 0)
+        {
+            var c = stack.Pop();
+            lakeCells.Add(c);
+            int x = c % w, z = c / w;
+            for (var d = 0; d < 4; d++)
+            {
+                int nx = x + dx[d], nz = z + dz[d];
+                if (nx < 0 || nz < 0 || nx >= w || nz >= h) continue;
+                var n = nz * w + nx;
+                if (lake[n] || ground[n] >= level) continue;
+                lake[n] = true;
+                stack.Push(n);
+            }
+        }
+
+        // how far every point of the lake is from the shore
+        var shore = new List<Vector2>();
+        foreach (var c in lakeCells)
+        {
+            int x = c % w, z = c / w;
+            for (var d = 0; d < 4; d++)
+            {
+                int nx = x + dx[d], nz = z + dz[d];
+                if (nx >= 0 && nz >= 0 && nx < w && nz < h && lake[nz * w + nx]) continue;
+                shore.Add(new Vector2(x * cellX, z * cellZ));
+                break;
+            }
+        }
+        var distance = new Dictionary<int, float>();
+        var maxDistance = 0f;
+        foreach (var c in lakeCells)
+        {
+            var p = new Vector2(c % w * cellX, c / w * cellZ);
+            var best = float.MaxValue;
+            foreach (var s in shore) best = Mathf.Min(best, (p - s).sqrMagnitude);
+            distance[c] = Mathf.Sqrt(best);
+            maxDistance = Mathf.Max(maxDistance, distance[c]);
+        }
+
+        Undo.SetCurrentGroupName("Deepen Lake");
+        var group = Undo.GetCurrentGroup();
+        Undo.RegisterCompleteObjectUndo(data, "Deepen Lake");
+
+        // the terrain cannot go below its own position, so lower the whole terrain and raise its heights
+        // by the same amount first (nothing moves in the world)
+        var bottom = level - depth;
+        var shifted = 0f;
+        if (bottom < origin.y + 0.5f)
+        {
+            if (!ShiftTerrainDown(terrain, origin.y + 0.5f - bottom, out shifted, out message))
+            {
+                Undo.RevertAllDownToGroup(group);
+                return false;
+            }
+            origin = terrain.transform.position;
+        }
+
+        // bowl shape: full depth in the middle, rising smoothly to the shore
+        var ramp = Mathf.Max(cellX, maxDistance * 0.7f);
+        var lowest = float.MaxValue;
+        var changed = 0;
+        foreach (var c in lakeCells)
+        {
+            var target = level - depth * Mathf.SmoothStep(0f, 1f, distance[c] / ramp);
+            var newGround = Mathf.Min(ground[c], target);
+            if (newGround < ground[c] - 0.01f) changed++;
+            lowest = Mathf.Min(lowest, newGround);
+            raw[c / w, c % w] = (newGround - origin.y) / data.size.y;
+        }
+        if (shifted > 0f)
+        {
+            // the cells outside the lake were raised by the shift too
+            for (var i = 0; i < ground.Length; i++)
+            {
+                if (!lake[i]) raw[i / w, i % w] = (ground[i] - origin.y) / data.size.y;
+            }
+        }
+        data.SetHeights(x0, z0, raw);
+        Undo.CollapseUndoOperations(group);
+
+        message = $"Lake deepened: water level {level:F2} m, deepest point now {lowest:F2} m ({level - lowest:F1} m deep), " +
+                  $"{changed} heightmap points lowered" + (shifted > 0f ? $", terrain moved down {shifted:F2} m with its heights raised to match." : ".");
+        return true;
+    }
+
+    // Moves the terrain down by at least `amount` and raises every height by exactly the same amount,
+    // so the ground stays where it was in the world but there is room to dig deeper.
+    static bool ShiftTerrainDown(Terrain terrain, float amount, out float shifted, out string error)
+    {
+        var data = terrain.terrainData;
+        var res = data.heightmapResolution;
+        var step = 1f / 32766f; // heights are stored as 16-bit steps of this size
+        var steps = Mathf.CeilToInt(amount / data.size.y / step);
+        var delta = steps * step;
+        shifted = delta * data.size.y;
+        error = null;
+
+        // remember how high every tree stands above the ground
+        var trees = data.treeInstances;
+        var treeOffsets = new float[trees.Length];
+        for (var i = 0; i < trees.Length; i++)
+        {
+            treeOffsets[i] = trees[i].position.y - data.GetInterpolatedHeight(trees[i].position.x, trees[i].position.z) / data.size.y;
+        }
+
+        var heights = data.GetHeights(0, 0, res, res);
+        for (var z = 0; z < res; z++)
+        {
+            for (var x = 0; x < res; x++)
+            {
+                heights[z, x] += delta;
+                if (heights[z, x] > 1f)
+                {
+                    error = "The terrain is too tall to make room for a deeper lake.";
+                    return false;
+                }
+            }
+        }
+
+        Undo.RecordObject(terrain.transform, "Deepen Lake");
+        data.SetHeights(0, 0, heights);
+        terrain.transform.position -= new Vector3(0f, shifted, 0f);
+
+        trees = data.treeInstances;
+        for (var i = 0; i < trees.Length && i < treeOffsets.Length; i++)
+        {
+            var p = trees[i].position;
+            p.y = data.GetInterpolatedHeight(p.x, p.z) / data.size.y + treeOffsets[i];
+            trees[i].position = p;
+        }
+        if (trees.Length > 0) data.treeInstances = trees;
+        return true;
+    }
+
+    // Puts the swimming / breath / death scripts on the player (only the ones that are missing).
+    public static bool AddPlayerComponents(out string message)
+    {
+        var player = Object.FindObjectOfType<PlayerMovement>(true);
+        if (player == null)
+        {
+            message = "No PlayerMovement found in the open scene.";
+            return false;
+        }
+
+        var added = new List<string>();
+        if (player.GetComponent<PlayerWater>() == null)
+        {
+            Undo.AddComponent<PlayerWater>(player.gameObject);
+            added.Add(nameof(PlayerWater));
+        }
+        if (player.GetComponent<PlayerDeath>() == null)
+        {
+            Undo.AddComponent<PlayerDeath>(player.gameObject);
+            added.Add(nameof(PlayerDeath));
+        }
+        message = added.Count > 0 ? $"Added {string.Join(", ", added)} to \"{player.name}\"." : $"\"{player.name}\" already has swimming.";
+        return true;
     }
 
     static bool TryFindPlacement(Vector3[] seeds, float tile, out Placement placement, out string error)
