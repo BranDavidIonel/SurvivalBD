@@ -10,6 +10,14 @@ using UnityEngine.SceneManagement;
 public class SaveManager : MonoBehaviour
 {
     public static SaveManager Instance { get; set; }
+
+    // how many save slots the Save Game / Load Game screens show (see SaveSlotList)
+    public const int SlotCount = 10;
+
+    // the picture of the game shown on each save slot (taken when saving, without the menus)
+    const int ThumbnailWidth = 400;
+    const int ThumbnailHeight = 225;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -20,6 +28,7 @@ public class SaveManager : MonoBehaviour
         {
             Instance = this;
         }
+        SetSavePaths(); // also here, so the save screens can ask about the slots before Start
     }
     //json project save path
     string jsonPathProject;
@@ -37,6 +46,11 @@ public class SaveManager : MonoBehaviour
     public bool isLoading;
     private void Start()
     {
+        SetSavePaths();
+    }
+
+    private void SetSavePaths()
+    {
         // In the editor saves stay in Assets/. In a build (phone) the game folder is read-only, so use the app's save folder.
         jsonPathProject = (Application.isEditor ? Application.dataPath : Application.persistentDataPath) + Path.AltDirectorySeparatorChar;
         jsonPathPersistant = Application.persistentDataPath + Path.AltDirectorySeparatorChar;
@@ -53,7 +67,114 @@ public class SaveManager : MonoBehaviour
         data.enviromentData = GetEnviromentData();
 
         SavingTypeSwitch(data, slotNumber);
+
+        SaveThumbnail(slotNumber);
+
+        // the name and date shown on the slot
+        string time = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        PlayerPrefs.SetString("Slot" + slotNumber + "Description", "Saved Game" + slotNumber + " | " + time);
+        PlayerPrefs.Save();
     }
+
+    #region ||  ---- Slot picture (thumbnail) ----- ||
+    // The picture is a JPG next to the save file: SaveGame1.json -> SaveGame1.jpg
+    public string ThumbnailPath(int slotNumber)
+    {
+        if (string.IsNullOrEmpty(jsonPathProject)) SetSavePaths();
+        return jsonPathProject + fileName + slotNumber + ".jpg";
+    }
+
+    // Takes a small picture of what the player sees, without the menus, and stores it with the save.
+    // A failure here only means the slot shows no picture: the save itself is already written.
+    private void SaveThumbnail(int slotNumber)
+    {
+        Texture2D picture = null;
+        try
+        {
+            picture = CaptureGameView(ThumbnailWidth, ThumbnailHeight);
+            if (picture != null)
+            {
+                File.WriteAllBytes(ThumbnailPath(slotNumber), picture.EncodeToJPG(85));
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("Could not save the picture of save slot " + slotNumber + ": " + e.Message);
+        }
+        finally
+        {
+            if (picture != null) Destroy(picture);
+        }
+    }
+
+    // Renders the game camera into a texture. The menus are Screen Space Overlay canvases, which a
+    // camera never draws into a texture, so the picture shows only the game world.
+    public static Texture2D CaptureGameView(int width, int height)
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return null;
+
+        // drawn at twice the size and then halved: smoother edges
+        var big = RenderTexture.GetTemporary(width * 2, height * 2, 24, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+        var small = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+        big.filterMode = FilterMode.Bilinear;
+
+        // canvases drawn by this camera itself (Screen Space - Camera) would show up: hide them meanwhile
+        var hiddenCanvases = new List<Canvas>();
+        foreach (var canvas in FindObjectsOfType<Canvas>())
+        {
+            if (canvas.enabled && canvas.isRootCanvas && canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == cam)
+            {
+                canvas.enabled = false;
+                hiddenCanvases.Add(canvas);
+            }
+        }
+
+        RenderTexture oldTarget = cam.targetTexture;
+        RenderTexture oldActive = RenderTexture.active;
+        try
+        {
+            cam.targetTexture = big;
+            cam.aspect = (float)width / height; // the middle of the view, at the slot picture's shape
+            cam.Render();
+        }
+        finally
+        {
+            cam.targetTexture = oldTarget;
+            cam.ResetAspect();
+            foreach (var canvas in hiddenCanvases) canvas.enabled = true;
+        }
+
+        Graphics.Blit(big, small);
+        RenderTexture.active = small;
+        var picture = new Texture2D(width, height, TextureFormat.RGB24, false);
+        picture.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
+        picture.Apply(false);
+        RenderTexture.active = oldActive;
+
+        RenderTexture.ReleaseTemporary(big);
+        RenderTexture.ReleaseTemporary(small);
+        return picture;
+    }
+
+    // "2026-10-21 22:12": from the slot's description, or else the time of the save file
+    public string GetSlotDate(int slotNumber)
+    {
+        string description = PlayerPrefs.GetString("Slot" + slotNumber + "Description");
+        int bar = description.IndexOf('|');
+        if (bar >= 0 && bar + 1 < description.Length)
+        {
+            return description.Substring(bar + 1).Trim();
+        }
+        try
+        {
+            string path = jsonPathProject + fileName + slotNumber + (isSavingToJson ? ".json" : ".bin");
+            if (File.Exists(path)) return File.GetLastWriteTime(path).ToString("yyyy-MM-dd HH:mm");
+        }
+        catch (Exception) { }
+        return "";
+    }
+    #endregion
 
     private EnviromentData GetEnviromentData()
     {

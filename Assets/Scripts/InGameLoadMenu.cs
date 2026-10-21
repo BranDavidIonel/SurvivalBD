@@ -6,10 +6,10 @@ using UnityEngine.UI;
 // Adds "Load Game" to the in-game menu (Save Game / Load Game / Settings / Quit), built at runtime from
 // the existing buttons and the Save Game screen, so the scene does not have to be edited.
 // Picking a saved slot reloads the game from it, the same way Load Game in the main menu does.
+// Both screens show their slots with SaveSlotList (a scrolling list with a picture on each slot).
 public class InGameLoadMenu : MonoBehaviour
 {
     GameObject loadMenu;
-    readonly TextMeshProUGUI[] slotTexts = new TextMeshProUGUI[4];
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
@@ -31,35 +31,31 @@ public class InGameLoadMenu : MonoBehaviour
     void Start()
     {
         var mm = MenuManager.Instance != null ? MenuManager.Instance : GetComponent<MenuManager>();
-        if (mm == null || mm.menu == null || mm.saveMenu == null) return;
+        if (mm == null || mm.saveMenu == null) return;
 
-        var saveButton = mm.menu.transform.Find("SaveGameButton") as RectTransform;
-        var settingsButton = mm.menu.transform.Find("SettingsButton") as RectTransform;
-        var quitButton = mm.menu.transform.Find("ExitButton") as RectTransform;
-        if (saveButton == null || settingsButton == null) return;
+        var saveButton = mm.menu != null ? mm.menu.transform.Find("SaveGameButton") as RectTransform : null;
+        var settingsButton = mm.menu != null ? mm.menu.transform.Find("SettingsButton") as RectTransform : null;
+        var quitButton = mm.menu != null ? mm.menu.transform.Find("ExitButton") as RectTransform : null;
+        if (saveButton == null || settingsButton == null)
+        {
+            SaveSlotList.Attach(mm.saveMenu, SaveSlotList.Mode.Save);
+            return;
+        }
 
         // --- the Load Game screen: a copy of the Save Game screen whose slots load instead of save --- //
+        // (copied before the Save Game screen gets its slot list, so the copy gets its own list)
         loadMenu = Instantiate(mm.saveMenu, mm.saveMenu.transform.parent);
         loadMenu.name = "LoadGameMenu";
         loadMenu.SetActive(false);
         var overrideAlert = loadMenu.transform.Find("OverrideAlert");
-        if (overrideAlert != null) Destroy(overrideAlert.gameObject);
+        if (overrideAlert != null) DestroyImmediate(overrideAlert.gameObject);
         var title = loadMenu.transform.Find("Title")?.GetComponent<TMP_Text>();
         if (title != null) title.text = "Load Game";
-
-        foreach (var saveSlot in loadMenu.GetComponentsInChildren<SaveSlot>(true))
-        {
-            int slot = saveSlot.slotNumber;
-            var button = saveSlot.GetComponent<Button>();
-            if (slot >= 0 && slot < slotTexts.Length) slotTexts[slot] = saveSlot.transform.Find("Text (TMP)")?.GetComponent<TextMeshProUGUI>();
-            DestroyImmediate(saveSlot); // never woke up (the copy is inactive), so it saves nothing
-            button.onClick.AddListener(() =>
-            {
-                if (SaveManager.Instance != null && !SaveManager.Instance.IsSlotEmpty(slot))
-                    SaveManager.Instance.StartLoadedGame(slot); // reloads the game scene from that save
-            });
-        }
+        // picking a saved slot reloads the game scene from that save
         // (its Back button already returns to the menu: the copy's own links point to the copy)
+        SaveSlotList.Attach(loadMenu, SaveSlotList.Mode.Load);
+
+        SaveSlotList.Attach(mm.saveMenu, SaveSlotList.Mode.Save);
 
         // --- the Load Game button: a copy of the Settings button, placed under Save Game --- //
         var loadButton = (RectTransform)Instantiate(settingsButton.gameObject, settingsButton.parent).transform;
@@ -94,14 +90,5 @@ public class InGameLoadMenu : MonoBehaviour
         // the menu was closed (M / Menu button) while the Load Game screen was open
         if (loadMenu.activeSelf && MenuManager.Instance != null && !MenuManager.Instance.isMenuOpen)
             loadMenu.SetActive(false);
-
-        if (!loadMenu.activeInHierarchy || SaveManager.Instance == null) return;
-        for (int slot = 0; slot < slotTexts.Length; slot++)
-        {
-            if (slotTexts[slot] == null) continue;
-            string description = PlayerPrefs.GetString("Slot" + slot + "Description");
-            if (string.IsNullOrEmpty(description)) description = "Saved Game " + slot; // older saves have no description
-            slotTexts[slot].text = SaveManager.Instance.IsSlotEmpty(slot) ? "Empty" : description;
-        }
     }
 }
