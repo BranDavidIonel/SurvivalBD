@@ -13,6 +13,13 @@ public class EnviromentData
 
     public List<StorageData> storage;
 
+    // 0 (saves made before this field existed): treeData has every direct child of the Trees object,
+    // scenery too (the firs as "Tree_Parent", the Birch_forest groups as "Stump"), and no tree inside a group.
+    // 1: treeData has only the choppable trees and the stumps, wherever they are under Trees.
+    // No initializer on purpose: an old save has no such field and must read as 0.
+    public int treeSaveVersion;
+    public const int CurrentTreeSaveVersion = 1;
+
 
     public EnviromentData(List<string> _pickedupItems, List<TreeData> _treeData, List<string> _animals, List<StorageData> _storage)
     {
@@ -20,6 +27,7 @@ public class EnviromentData
         treeData = _treeData;
         animals = _animals;
         storage = _storage;
+        treeSaveVersion = CurrentTreeSaveVersion;
     }
 
 

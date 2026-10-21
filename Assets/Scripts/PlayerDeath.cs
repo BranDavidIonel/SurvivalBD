@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-// When health reaches 0: the screen goes dark with "Ai murit", then the player comes back where the game
+// When health reaches 0: the screen goes dark with "Game over!", then the player comes back where the game
 // started, with full health and air. The inventory is kept.
 public class PlayerDeath : MonoBehaviour
 {

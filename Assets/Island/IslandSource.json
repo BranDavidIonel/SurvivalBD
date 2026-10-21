@@ -1,0 +1,9 @@
+{
+    "terrainDataPath": "Assets/New Terrain.asset",
+    "position": {
+        "x": 0.0,
+        "y": -24.931678771972658,
+        "z": 0.0
+    },
+    "cameraFar": 1000.0
+}

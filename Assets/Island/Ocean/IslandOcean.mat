@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: IslandOcean
+  m_Shader: {fileID: 4800000, guid: 00fc04f69d8f28b41b689eee78ba9dd2, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _FoamTex:
+        m_Texture: {fileID: 2800000, guid: 058b4829695279e4d9868ce9b66a6f0c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SkyTexA:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SkyTexB:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaveNormal:
+        m_Texture: {fileID: 2800000, guid: 8917da6ce1877644bbb5d44a8b197dba, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ClearShallow: 0.8
+    - _DeepDepth: 9
+    - _FoamDepth: 0.6
+    - _Gloss: 900
+    - _HasSky: 0
+    - _Reflection: 1
+    - _ShoreWaveDepth: 0.1
+    - _ShoreWaveSpacing: 0.2
+    - _ShoreWaveSpeed: 2
+    - _SkyBlend: 0
+    - _SkyRotation: 0
+    - _Specular: 1.1
+    - _SwellStrength: 0.15
+    - _VisibleDepth: 3
+    - _WaterLevel: 0
+    - _BigWaveDirection: 30
+    - _BigWaveHeight: 0.9
+    - _BigWaveLength: 26
+    - _BigWaveShoreCalm: 35
+    - _BigWaveSpeed: 1
+    - _WaveFadeDistance: 450
+    - _WaveScale: 14
+    - _WaveSpeed: 1.2
+    - _WaveStrength: 0.5
+    m_Colors:
+    - _DeepColor: {r: 0.02, g: 0.16999996, b: 0.35999998, a: 1}
+    - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShallowColor: {r: 0.11999995, g: 0.72, b: 0.74, a: 1}
+    - _SkyMul: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []

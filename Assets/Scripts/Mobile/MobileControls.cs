@@ -190,6 +190,7 @@ public class MobileControls : MonoBehaviour
 
     void Update()
     {
+        KeepCursorFree(); // runs before the EventSystem, so this frame's drags are not dropped
         GameInput.BeginTouchFrame();
 
         bool inventoryOpen = InventorySystem.Instance != null && InventorySystem.Instance.isOpen;
@@ -234,13 +235,20 @@ public class MobileControls : MonoBehaviour
 
     void LateUpdate()
     {
-        // The game locks the mouse cursor (PC style). In the editor (Simulator / forced touch) that
-        // would stop the mouse from pressing the on-screen buttons, so keep it free there.
-        if (Application.isEditor && Cursor.lockState != CursorLockMode.None)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        // again after the game scripts, which lock the cursor when a menu closes
+        KeepCursorFree();
+    }
+
+    // The game locks the mouse cursor (PC style). While it is locked the EventSystem sends no drag
+    // events at all, not even for touches (PointerInputModule.ProcessDrag), so on the phone the
+    // joysticks and the camera swipe would only get OnPointerDown and stay at 0. In the editor a
+    // locked cursor would also stop the mouse from pressing the on-screen buttons. These controls
+    // only exist with touch controls on, so keep the cursor free whenever they are there.
+    static void KeepCursorFree()
+    {
+        if (Cursor.lockState == CursorLockMode.None) return;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     static string PrimaryLabel(bool building, bool placing)

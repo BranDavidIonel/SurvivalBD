@@ -47,9 +47,14 @@ public static class MobileSetupTool
         if (PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android).Contains("DefaultCompany"))
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.BranDavidIonel.SurvivalBD");
 
+        // Pink lake on Vulkan phones: with "Apply display rotation during rendering" on, UnityCG.cginc needs
+        // UNITY_DISPLAY_ORIENTATION_PRETRANSFORM, which the water Shader Graph (Built-in target) never declares,
+        // so its Vulkan version does not compile. Android then rotates the picture itself (a tiny cost).
+        PlayerSettings.vulkanEnablePreTransform = false;
+
         AssetDatabase.SaveAssets();
         FixShinyTerrainOnAndroid();
-        Debug.Log("Android settings applied: landscape, IL2CPP, ARM64, Android 7.0+, id " + PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android));
+        Debug.Log("Android settings applied: landscape, IL2CPP, ARM64, Android 7.0+, no Vulkan pre-rotation, id " + PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android));
     }
 
     // On Android the terrain colour textures become ASTC, and Unity treats every ASTC texture as having an

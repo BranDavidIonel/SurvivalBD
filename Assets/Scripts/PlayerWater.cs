@@ -93,8 +93,17 @@ public class PlayerWater : MonoBehaviour
         float speed;
         if (GameInput.SwimDownHeld) speed = -swimVerticalSpeed;
         else if (GameInput.SwimUpHeld) speed = swimVerticalSpeed;
-        else speed = toSurface * 2f;
+        else speed = toSurface * 5f; // quick enough to ride the sea waves
         speed = Mathf.Clamp(speed, -swimVerticalSpeed, swimVerticalSpeed);
+
+        // The CharacterController ignores moves shorter than its Min Move Distance, so at a high frame rate the
+        // slow drift up would stop a bit below the floating height (eyes almost touching the water).
+        if (controller != null && Time.deltaTime > 0f && !GameInput.SwimDownHeld && !GameInput.SwimUpHeld)
+        {
+            var minStep = Mathf.Max(controller.minMoveDistance, 0.0005f) * 2f;
+            if (Mathf.Abs(toSurface) > minStep && Mathf.Abs(speed) * Time.deltaTime < minStep)
+                speed = Mathf.Sign(toSurface) * minStep / Time.deltaTime;
+        }
 
         // never pop out above the floating height
         if (speed > 0f && Time.deltaTime > 0f) speed = Mathf.Min(speed, Mathf.Max(toSurface, 0f) / Time.deltaTime);
@@ -145,6 +154,18 @@ public class PlayerWater : MonoBehaviour
             if (overWater && bounds.max.y <= surface) continue;
             overWater = true;
             surface = bounds.max.y;
+        }
+
+        // the sea around the island, waves included (a lake higher up wins)
+        var ocean = Ocean.Instance;
+        if (ocean != null && ocean.DistanceFromShore(position) > -40f)
+        {
+            var sea = ocean.SurfaceHeight(position);
+            if (!overWater || sea > surface)
+            {
+                overWater = true;
+                surface = sea;
+            }
         }
     }
 

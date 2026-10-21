@@ -59,28 +59,18 @@ public class SaveManager : MonoBehaviour
     {
         List<string> itemsPickedup = InventorySystem.Instance.itemsPickedup;
 
-        //get all trees and stumps
+        //get all choppable trees and stumps (the scenery trees, like the firs, are not saved: they never change)
         List<TreeData> treesToSave = new List<TreeData>();
-        foreach(Transform tree in EnviromentManager.Instance.allTrees.transform)
+        var trees = new List<Transform>();
+        var stumps = new List<Transform>();
+        FindSavedTrees(EnviromentManager.Instance.allTrees.transform, true, trees, stumps);
+        foreach(Transform tree in trees)
         {
-            if (tree.CompareTag("Tree"))
-            {
-                var td = new TreeData();
-                td.name = "Tree_Parent"; // This needs to be same as preafab name
-                td.position = tree.position;
-                td.rotation = new Vector3(tree.rotation.x, tree.rotation.y, tree.rotation.z);
-
-                treesToSave.Add(td);
-            }
-            else
-            {
-                var td = new TreeData();
-                td.name = "Stump"; // This needs to be same as preafab name
-                td.position = tree.position;
-                td.rotation = new Vector3(tree.rotation.x, tree.rotation.y, tree.rotation.z);
-
-                treesToSave.Add(td);
-            }
+            treesToSave.Add(NewTreeData("Tree_Parent", tree)); // This needs to be same as preafab name
+        }
+        foreach(Transform stump in stumps)
+        {
+            treesToSave.Add(NewTreeData("Stump", stump)); // This needs to be same as preafab name
         }
         //get all animals
         List<string> allAnimals = new List<string>();
@@ -107,6 +97,61 @@ public class SaveManager : MonoBehaviour
         }
 
         return new EnviromentData(itemsPickedup, treesToSave, allAnimals, allStorage);
+    }
+
+    // The trees a save can rebuild: the choppable trees (Tree_Parent) and the stumps left after chopping.
+    // Everything else under Trees is scenery (the firs, the Birch_forest groups): it is never saved or removed.
+    // withGroups: also look inside the scenery groups (the Birch_forest trees), not only at the direct children.
+    static void FindSavedTrees(Transform parent, bool withGroups, List<Transform> trees, List<Transform> stumps)
+    {
+        foreach(Transform child in parent)
+        {
+            if (IsStump(child))
+            {
+                stumps.Add(child);
+            }
+            else if (IsChoppableTree(child))
+            {
+                trees.Add(child);
+            }
+            else if (withGroups)
+            {
+                FindSavedTrees(child, true, trees, stumps);
+            }
+        }
+    }
+
+    // a Tree_Parent: its ChoppableTree sits two levels down (tree_base -> birch_tree -> Tree_Parent)
+    static bool IsChoppableTree(Transform t)
+    {
+        var choppable = t.GetComponentInChildren<ChoppableTree>(true);
+        return choppable != null && choppable.transform.parent != null && choppable.transform.parent.parent == t;
+    }
+
+    // what is left after chopping (ChoppedTree) or a stump loaded from a save
+    static bool IsStump(Transform t)
+    {
+        return t.name.StartsWith("ChoppedTree") || t.name.StartsWith("Stump");
+    }
+
+    static TreeData NewTreeData(string prefabName, Transform tree)
+    {
+        var td = new TreeData();
+        td.name = prefabName;
+        td.position = tree.position;
+        td.rotation = new Vector3(tree.rotation.x, tree.rotation.y, tree.rotation.z);
+        return td;
+    }
+
+    // Old saves also stored the scenery that sat directly under Trees, at its own position.
+    static bool IsSceneryPosition(Transform allTrees, Vector3 position)
+    {
+        foreach(Transform child in allTrees)
+        {
+            if (IsStump(child) || IsChoppableTree(child)) continue;
+            if (Vector3.Distance(child.position, position) < 0.05f) return true;
+        }
+        return false;
     }
 
     private PlayerData GetPlayerData()
@@ -206,15 +251,28 @@ public class SaveManager : MonoBehaviour
 
         InventorySystem.Instance.itemsPickedup = enviromentData.pickedupItems;
 
-        //tress 
-        // remove all default trees
-        foreach(Transform tree in EnviromentManager.Instance.allTrees.transform)
+        //tress
+        // remove the default choppable trees and stumps (the scenery, like the firs, stays).
+        // An old save never stored the trees inside the Birch_forest groups, so for it they stay as well.
+        Transform allTrees = EnviromentManager.Instance.allTrees.transform;
+        bool oldSave = enviromentData.treeSaveVersion < 1;
+        var trees = new List<Transform>();
+        var stumps = new List<Transform>();
+        FindSavedTrees(allTrees, !oldSave, trees, stumps);
+        foreach(Transform tree in trees)
         {
             Destroy(tree.gameObject);
+        }
+        foreach(Transform stump in stumps)
+        {
+            Destroy(stump.gameObject);
         }
         //add trees and stumps
         foreach(TreeData tree in enviromentData.treeData)
         {
+            // an old save turned every fir into a "Tree_Parent" and every group into a "Stump": skip those
+            if (oldSave && IsSceneryPosition(allTrees, tree.position)) continue;
+
             var treePrefab = Instantiate(Resources.Load<GameObject>(tree.name),
                 new Vector3(tree.position.x, tree.position.y, tree.position.z),
                 Quaternion.Euler(tree.rotation.x, tree.rotation.y, tree.rotation.z));
