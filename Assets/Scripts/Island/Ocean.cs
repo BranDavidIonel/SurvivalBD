@@ -10,6 +10,10 @@ public class Ocean : MonoBehaviour
 {
     public static Ocean Instance { get; private set; }
 
+    // A sky made in code (SkyLighting renders the sky into this cube). When set, the sea reflects it
+    // instead of the skybox material's cube texture.
+    public static Texture ExternalSky;
+
     [Tooltip("Distance from this object to the waterline, evenly spread around the island (first one towards +X, then counter-clockwise).")]
     public float[] shoreRadius = new float[0];
     [Tooltip("How far under the beach the water mesh starts (metres).")]
@@ -221,6 +225,17 @@ public class Ocean : MonoBehaviour
         var blend = 0f;
         var multiplier = Color.white;
         var rotation = 0f;
+        if (ExternalSky != null && Application.isPlaying)
+        {
+            block.SetTexture(SkyTexAId, ExternalSky);
+            block.SetTexture(SkyTexBId, ExternalSky);
+            block.SetFloat(SkyBlendId, 0f);
+            block.SetColor(SkyMulId, Color.white);
+            block.SetFloat(SkyRotationId, 0f);
+            block.SetFloat(HasSkyId, 1f);
+            meshRenderer.SetPropertyBlock(block);
+            return;
+        }
         if (sky != null)
         {
             if (sky.HasProperty("_Tex") && sky.GetTexture("_Tex") is Cubemap cube)

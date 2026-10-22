@@ -80,5 +80,16 @@ public class TimeManager : MonoBehaviour
         dayUI.text = $"{currentDayOfWeek} day: {daysInCurrentSeason}, Season:{currentSeason}, Year:{yearInGame}";
     }
 
+    public int DaysPerSeason => daysPerSeason;
+    public int DayInSeason => daysInCurrentSeason;
+
+    // TEST (in-game Settings > Test panel): jump to another season, starting on its first day
+    public void SetSeason(Season season)
+    {
+        currentSeason = season;
+        daysInCurrentSeason = 1;
+        updateUI();
+    }
+
 
 }

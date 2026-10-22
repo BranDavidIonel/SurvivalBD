@@ -14,6 +14,7 @@ TagManager:
   - placedFoundation
   - wallGhost
   - placedWall
+  - Burnable
   layers:
   - Default
   - TransparentFX

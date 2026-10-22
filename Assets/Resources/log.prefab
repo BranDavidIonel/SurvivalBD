@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: -1997089787733593075}
   m_Layer: 5
   m_Name: log
-  m_TagString: Untagged
+  m_TagString: Burnable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -128,3 +128,4 @@ MonoBehaviour:
   isEquippable: 0
   isInsideQuickSlot: 0
   isSelected: 0
+  isUseable: 0

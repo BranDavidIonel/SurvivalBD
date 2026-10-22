@@ -115,12 +115,13 @@ public class SelectionManager : MonoBehaviour
 
             if (campfire && campfire.playerInRange && PlacementSystem.Instance.inPlacementMode == false)
             {
-                interaction_text.text = "Interect";
+                interaction_text.text = campfire.InteractionText;
                 interaction_Info_UI.SetActive(true);
 
                 selectedCampfire = campfire.gameObject;
 
-                if (GameInput.PrimaryDown && campfire.isCooking == false)
+                // the window also opens while food cooks (it shows how far it is)
+                if (GameInput.PrimaryDown && CampfireUIManager.Instance.isUiOpen == false)
                 {
                     campfire.OpenUI();
                 }
