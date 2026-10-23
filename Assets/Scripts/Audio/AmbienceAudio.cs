@@ -69,8 +69,10 @@ public class AmbienceAudio : MonoBehaviour
         }
 
         float cutoff = underwater ? 500f : 22000f;
-        day.Update(dayVolume * birds * master, cutoff);
-        night.Update(nightVolume * crickets * master, cutoff);
+        // the forest goes quiet while the night shadow hunts (its music plays instead)
+        float shadowQuiet = 1f - 0.8f * NightShadow.Presence;
+        day.Update(dayVolume * birds * master * shadowQuiet, cutoff);
+        night.Update(nightVolume * crickets * master * shadowQuiet, cutoff);
         sea.Update(seaVolume * shore * master, cutoff);
 
         UpdateOwl(listener, master, rain, underwater);
@@ -80,7 +82,7 @@ public class AmbienceAudio : MonoBehaviour
     {
         if (Time.time < nextOwl) return;
         nextOwl = Time.time + Random.Range(25f, 70f);
-        if (dayLight > 0.2f || rain > 0.4f || underwater || owl.isPlaying) return;
+        if (dayLight > 0.2f || rain > 0.4f || underwater || owl.isPlaying || NightShadow.Presence > 0.05f) return;
 
         // somewhere in the trees around the player
         float angle = Random.Range(0f, Mathf.PI * 2f);

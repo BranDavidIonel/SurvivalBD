@@ -1,19 +1,28 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// When health reaches 0: the screen goes dark with "Game over!", then the player comes back where the game
-// started, with full health and air. The inventory is kept.
+// When health reaches 0: the screen goes dark with "Game over!", then the game goes back to the main menu.
+// (With backToMainMenu off, the player comes back where the game started instead, with full health and air,
+// keeping the inventory.)
 public class PlayerDeath : MonoBehaviour
 {
     public float deathScreenSeconds = 3f;
     public float fadeSeconds = 0.6f;
     public string deathMessage = "Game over!";
+    public bool backToMainMenu = true;
+    public string mainMenuScene = "MainMenu";
 
     public bool IsDead { get; private set; }
 
     Vector3 spawnPosition;
     CanvasGroup screen;
+    Text messageText;
+    string nextMessage;
+
+    // Shows a different text on the next death screen only (for example the night shadow's).
+    public void SetNextDeathMessage(string text) => nextMessage = text;
 
     void Start()
     {
@@ -34,6 +43,8 @@ public class PlayerDeath : MonoBehaviour
     IEnumerator Die()
     {
         IsDead = true;
+        if (messageText != null) messageText.text = string.IsNullOrEmpty(nextMessage) ? deathMessage : nextMessage;
+        nextMessage = null;
         var movement = GetComponent<PlayerMovement>();
         var look = GetComponent<MouseMovement>();
         if (movement != null) movement.enabled = false;
@@ -42,6 +53,15 @@ public class PlayerDeath : MonoBehaviour
 
         yield return Fade(0f, 1f);
         yield return new WaitForSeconds(deathScreenSeconds);
+
+        if (backToMainMenu)
+        {
+            // the game is over: back to the main menu (load a save or start a new game from there)
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            SceneManager.LoadScene(mainMenuScene);
+            yield break;
+        }
 
         // back to the start (the controller has to be off to move the player directly)
         var controller = GetComponent<CharacterController>();
@@ -115,6 +135,7 @@ public class PlayerDeath : MonoBehaviour
         text.color = new Color(0.85f, 0.1f, 0.1f);
         text.text = deathMessage;
         Stretch(text.rectTransform);
+        messageText = text;
 
         root.SetActive(false);
     }

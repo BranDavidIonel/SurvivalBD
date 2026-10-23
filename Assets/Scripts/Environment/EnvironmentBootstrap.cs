@@ -29,6 +29,10 @@ public static class EnvironmentBootstrap
         pines.AddComponent<PineForest>();  // pines that grow, spread and can be chopped
         pines.AddComponent<PinePlanting>(); // planting a pine cone where the player looks
 
+        // the shadow that comes for the player at night when no fire burns near them
+        // (its settings, like the 20 seconds, are in Assets/Resources/NightShadow.prefab)
+        NightShadow.Create();
+
         // footsteps and swimming sounds on the player
         var player = Object.FindObjectOfType<PlayerMovement>();
         if (player != null && player.GetComponent<FootstepAudio>() == null) player.gameObject.AddComponent<FootstepAudio>();
