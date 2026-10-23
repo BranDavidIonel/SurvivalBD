@@ -197,8 +197,14 @@ public class CampfireUIManager : MonoBehaviour
         rf.transform.SetParent(foodSlot.transform);
     }
 
+    // the campfire window opens the inventory next to it, and closes it again if it was closed before
+    bool inventoryOpenedByFire;
+
     public void OpenUI()
     {
+        // the crafting window uses the same side of the screen
+        if (CraftingSystem.Instance != null && CraftingSystem.Instance.isOpen) CraftingSystem.Instance.CloseUI();
+
         campfirePanel.SetActive(true);
         isUiOpen = true;
 
@@ -209,6 +215,7 @@ public class CampfireUIManager : MonoBehaviour
         SelectionManager.Instance.GetComponent<SelectionManager>().enabled = false;
 
 
+        inventoryOpenedByFire = !InventorySystem.Instance.isOpen;
         InventorySystem.Instance.OpenUI();
     }
     public void CloseUI()
@@ -216,6 +223,9 @@ public class CampfireUIManager : MonoBehaviour
         ReturnItemsToInventory();
         campfirePanel.SetActive(false);
         isUiOpen = false;
+
+        if (inventoryOpenedByFire && InventorySystem.Instance.isOpen) InventorySystem.Instance.CloseUI();
+        inventoryOpenedByFire = false;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;

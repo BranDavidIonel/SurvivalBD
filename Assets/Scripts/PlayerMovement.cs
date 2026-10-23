@@ -144,16 +144,8 @@ public class PlayerMovement : MonoBehaviour
         }
 
         controller.Move(velocity * Time.deltaTime);
-        if (lastPosition != gameObject.transform.position && isGrounded == true && !isSwimming)
-        {
-            isMoving = true;
-            SoundManager.Instance.PlaySound(SoundManager.Instance.grassWalkSound);
-        }
-        else
-        {
-            isMoving = false;
-            SoundManager.Instance.grassWalkSound.Stop();
-        }
+        // (the footsteps and swimming sounds are played by FootstepAudio)
+        isMoving = lastPosition != gameObject.transform.position && isGrounded == true && !isSwimming;
         lastPosition = gameObject.transform.position;
     }
 

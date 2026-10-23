@@ -69,6 +69,8 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     // Triggered when the mouse exits the area of the item that has this script.
     public void OnPointerExit(PointerEventData eventData)
     {
+        // on the phone the finger "leaves" as soon as it lifts: keep showing the last tapped item
+        if (GameInput.TouchControls) return;
         itemInfoUI.SetActive(false);
     }
 
@@ -94,16 +96,7 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         if (isInsideQuickSlot && !InventorySystem.Instance.isOpen)
         {
-            if (isUseable || isConsumable)
-            {
-                // campfire, storage box, foundation, wall: start placing it / food: eat it
-                UseLikeRightClick();
-                FinishConsumption();
-            }
-            else
-            {
-                EquipSystem.Instance.SelectQuickSlotOf(transform.parent.gameObject);
-            }
+            UseFromQuickSlot();
             return;
         }
 
@@ -118,6 +111,22 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             lastTappedItem = this;
             lastTapTime = Time.unscaledTime;
+        }
+    }
+
+    // A tap on this item in the quick bar, or on its white number button: a tool goes in the hand (tap again: put
+    // away); a campfire, storage box, foundation or wall starts being placed; food is eaten.
+    public void UseFromQuickSlot()
+    {
+        if (!isInsideQuickSlot || transform.parent == null) return;
+        if (isUseable || isConsumable)
+        {
+            UseLikeRightClick();
+            FinishConsumption();
+        }
+        else
+        {
+            EquipSystem.Instance.SelectQuickSlotOf(transform.parent.gameObject);
         }
     }
 
@@ -145,7 +154,7 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     private void UseItem()
     {
-        Debug.Log("use item");
+        if (itemInfoUI == null) itemInfoUI = InventorySystem.Instance.ItemInfoUI; // (used from the quick bar before the inventory was ever opened)
         itemInfoUI.SetActive(true);
         InventorySystem.Instance.isOpen = false;
         InventorySystem.Instance.inventoryScreenUI.SetActive(false);
@@ -196,6 +205,13 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 PlacementSystem.Instance.inventoryItemToDestory = gameObject;
                 PlacementSystem.Instance.ActivatePlacementMode("CampfireModel");
                 break;
+            case "pinecone(Clone)":
+            case "pinecone":
+                // plant it where the player looks (a small pine shows the spot: green = it can grow there)
+                itemInfoUI.SetActive(false);
+                if (PinePlanting.Instance != null) PinePlanting.Instance.Begin(gameObject);
+                else gameObject.SetActive(true);
+                break;
             default:
                 break;
         }
@@ -228,6 +244,7 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     private void consumingFunction(float healthEffect, float caloriesEffect, float hydrationEffect)
     {
+        if (itemInfoUI == null) itemInfoUI = InventorySystem.Instance.ItemInfoUI;
         itemInfoUI.SetActive(false);
 
         healthEffectCalculation(healthEffect);

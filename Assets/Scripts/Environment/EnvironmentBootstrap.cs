@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Starts the sky, the weather effects and the snow in every scene that has a DayNightSystem (the game scene),
-// without editing the scene: they are made in code when the scene loads.
+// Starts the sky, the weather effects, the snow and the forest / footstep sounds in every scene that has a
+// DayNightSystem (the game scene), without editing the scene: they are made in code when the scene loads.
 public static class EnvironmentBootstrap
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -24,6 +24,14 @@ public static class EnvironmentBootstrap
         go.AddComponent<SkyLighting>();
         go.AddComponent<WeatherEffects>();
         go.AddComponent<SnowCover>();
+        go.AddComponent<AmbienceAudio>(); // forest sounds by day and night, the sea, an owl
+        var pines = new GameObject("Pine Forest (made in code)");
+        pines.AddComponent<PineForest>();  // pines that grow, spread and can be chopped
+        pines.AddComponent<PinePlanting>(); // planting a pine cone where the player looks
+
+        // footsteps and swimming sounds on the player
+        var player = Object.FindObjectOfType<PlayerMovement>();
+        if (player != null && player.GetComponent<FootstepAudio>() == null) player.gameObject.AddComponent<FootstepAudio>();
 
         // TEST ONLY: the test settings in the in-game Settings screen (remove for the release)
         DebugEnvironmentPanel.Attach();

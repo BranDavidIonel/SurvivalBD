@@ -85,7 +85,7 @@ public class CraftingSystem : MonoBehaviour
         WallBLP.Req2amount = 0;
 
         //storage box small
-        GameObject gO5 = new GameObject("WallBLP");
+        GameObject gO5 = new GameObject("StorageBoxBLP");
         StorageBoxBLP = gO5.AddComponent<Blueprint>();
         StorageBoxBLP.itemName = "StorageBox";
         StorageBoxBLP.numberOfItemsToProduce = 1;
@@ -183,159 +183,155 @@ public class CraftingSystem : MonoBehaviour
 
     void CraftAnyItem(Blueprint blueprintToCraft)
     {
-        SoundManager.Instance.PlaySound(SoundManager.Instance.craftingSound);
-        StartCoroutine(craftedDelayForSound(blueprintToCraft));
-
-
-
-        //remove resources from iventory
-        if (blueprintToCraft.numeOfRequirements == 1)
+        // the button can be out of date (items moved since): check again before taking anything
+        if (!CanCraft(blueprintToCraft))
         {
-            InventorySystem.Instance.RemoveItem(blueprintToCraft.Req1, blueprintToCraft.Req1amount);
+            RefreshNeededItems();
+            return;
         }
-        else if (blueprintToCraft.numeOfRequirements == 2)
+
+        //remove resources from iventory (and from the quick bar if needed)
+        InventorySystem.Instance.RemoveItem(blueprintToCraft.Req1, blueprintToCraft.Req1amount);
+        if (blueprintToCraft.numeOfRequirements >= 2)
         {
-            InventorySystem.Instance.RemoveItem(blueprintToCraft.Req1, blueprintToCraft.Req1amount);
             InventorySystem.Instance.RemoveItem(blueprintToCraft.Req2, blueprintToCraft.Req2amount);
-           
         }
-        StartCoroutine(calculate());
-    }
-    public IEnumerator calculate()
-    {
-        yield return 0;// so there is no dealay
-        InventorySystem.Instance.RecalculateList();
-        RefreshNeededItems();
 
-        //yield return new WaitForSeconds(1f);
-        //InventorySystem.Instance.RecalculateList();
-    }
-    public IEnumerator craftedDelayForSound(Blueprint blueprintToCraft)
-    {
-        yield return new WaitForSeconds(1f);
-        //add items into iventory
+        //add the new items right away (before, they came 1 s later without checking for room and could get lost)
         for (var i = 0; i < blueprintToCraft.numberOfItemsToProduce; i++)
         {
-            InventorySystem.Instance.AddToIventory(blueprintToCraft.itemName);
+            InventorySystem.Instance.AddToIventory(blueprintToCraft.itemName, false);
         }
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayCraft();
 
+        InventorySystem.Instance.RecalculateList();
+        RefreshNeededItems();
+    }
+
+    // enough materials (inventory + quick bar) and room in the inventory for what is made
+    bool CanCraft(Blueprint blueprint)
+    {
+        var inventory = InventorySystem.Instance;
+        if (inventory.CountItem(blueprint.Req1) < blueprint.Req1amount) return false;
+        if (blueprint.numeOfRequirements >= 2 && inventory.CountItem(blueprint.Req2) < blueprint.Req2amount) return false;
+
+        // the materials taken from the inventory free their slots
+        int freed = Mathf.Min(blueprint.Req1amount, inventory.CountInInventory(blueprint.Req1));
+        if (blueprint.numeOfRequirements >= 2) freed += Mathf.Min(blueprint.Req2amount, inventory.CountInInventory(blueprint.Req2));
+        return inventory.EmptySlotCount() + freed >= blueprint.numberOfItemsToProduce;
     }
 
     // Update is called once per frame
     void Update()
     {
         bool toggle = GameInput.CraftingToggleDown; // C on PC, "Crafting" button on the phone
-        if (toggle && !isOpen && !ConstructionManager.Instance.inConstructionMode)
+        if (toggle && !isOpen && !ConstructionManager.Instance.inConstructionMode && !OtherWindowOpen())
         {
-            craftingScreenUI.SetActive(true);
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-
-            SelectionManager.Instance.DisableSelection();
-            SelectionManager.Instance.GetComponent<SelectionManager>().enabled = false;
-
-            isOpen = true;
-
+            OpenUI();
         }
         else if (toggle && isOpen)
         {
-            craftingScreenUI.SetActive(false);
-            toolsScreenUI.SetActive(false);
-            survivalScreenUI.SetActive(false);
-            refineScreenUI.SetActive(false);
-            constructionScreenUI.SetActive(false);
-            if (!InventorySystem.Instance.isOpen)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-
-                SelectionManager.Instance.EnableSelection();
-                SelectionManager.Instance.GetComponent<SelectionManager>().enabled = true;
-            }
-            isOpen = false;
+            CloseUI();
         }
     }
+
+    // the storage box and the campfire use the right side of the screen too
+    static bool OtherWindowOpen()
+    {
+        return (StorageManager.Instance != null && StorageManager.Instance.storageUIOpen)
+            || (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen);
+    }
+
+    public void OpenUI()
+    {
+        ShowCategories();
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        SelectionManager.Instance.DisableSelection();
+        SelectionManager.Instance.GetComponent<SelectionManager>().enabled = false;
+
+        isOpen = true;
+        InventorySystem.Instance.RecalculateList();
+        RefreshNeededItems();
+    }
+
+    // the X button (and C / the Crafting button again)
+    public void CloseUI()
+    {
+        craftingScreenUI.SetActive(false);
+        toolsScreenUI.SetActive(false);
+        survivalScreenUI.SetActive(false);
+        refineScreenUI.SetActive(false);
+        constructionScreenUI.SetActive(false);
+        isOpen = false;
+        if (!InventorySystem.Instance.isOpen && !OtherWindowOpen())
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            SelectionManager.Instance.EnableSelection();
+            SelectionManager.Instance.GetComponent<SelectionManager>().enabled = true;
+        }
+    }
+
+    // the "< Back" button of a category: back to the 4 categories
+    public void ShowCategories()
+    {
+        craftingScreenUI.SetActive(true);
+        toolsScreenUI.SetActive(false);
+        survivalScreenUI.SetActive(false);
+        refineScreenUI.SetActive(false);
+        constructionScreenUI.SetActive(false);
+    }
+
     public void RefreshNeededItems()
     {
-        int stoneCount = 0;
-        int stickCount = 0;
-        int logCount = 0;
-        int plankCount = 0;
+        if (AxeReq1 == null) return; // before Start
         inventoryItemList = InventorySystem.Instance.itemList;
-        foreach(string itemName in inventoryItemList)
-        {
-            switch (itemName)
-            {
-                case "stone":
-                    stoneCount+=1;
-                    break;
-                case "stick":
-                    stickCount+=1;
-                    break;
-                case "log":
-                    logCount += 1;
-                    break;
-                case "plank":
-                    plankCount += 1;
-                    break;
-            }
-        }
-        // ------ Axe --------//
-        AxeReq1.text = "3 Stone[" + stoneCount + "]";
-     
-        //Debug.Log("3 Stone[" + stoneCount + "]");
-        AxeReq2.text = "3 Stone[" + stickCount + "]";
-        if(stoneCount >= 3 && stickCount >= 3 && InventorySystem.Instance.CheckSlotsAvailable(1))
-        {
-            craftAxeBTN.gameObject.SetActive(true);
-        }
-        else
-        {
-            craftAxeBTN.gameObject.SetActive(false);
-        }
 
-        // ------ Plank X 2--------//
-        PlankReq1.text = "1 Log[" + logCount + "]";
-        if (logCount >= 1 && InventorySystem.Instance.CheckSlotsAvailable(2))
-        {
-            craftPlankBTN.gameObject.SetActive(true);
-        }
-        else
-        {
-            craftPlankBTN.gameObject.SetActive(false);
-        }
+        RefreshCard(AxeBLP, AxeReq1, AxeReq2, craftAxeBTN);
+        RefreshCard(PlankBLP, PlankReq1, null, craftPlankBTN);
+        RefreshCard(FoundationBLP, FoundationReq1, null, craftFoundationBTN);
+        RefreshCard(WallBLP, WallReq1, null, craftWallBTN);
+        RefreshCard(StorageBoxBLP, StorageBoxReq1, null, craftStorageBoxBTN);
+    }
 
-        // ------ Foundation --------//
-        FoundationReq1.text = "4 Plank[" + plankCount + "]";
-        if (plankCount >= 4 && InventorySystem.Instance.CheckSlotsAvailable(1))
-        {
-            craftFoundationBTN.gameObject.SetActive(true);
-        }
-        else
-        {
-            craftFoundationBTN.gameObject.SetActive(false);
-        }
-        // ------ Wall --------//
-        WallReq1.text = "2 Plank[" + plankCount + "]";
-        if (plankCount >= 2 && InventorySystem.Instance.CheckSlotsAvailable(1))
-        {
-            craftWallBTN.gameObject.SetActive(true);
-        }
-        else
-        {
-            craftWallBTN.gameObject.SetActive(false);
-        }
+    // "Stone  2 / 3" in red until there is enough, then green; the Craft button greys out when it can't craft
+    void RefreshCard(Blueprint blueprint, Text req1, Text req2, Button craftButton)
+    {
+        var inventory = InventorySystem.Instance;
+        SetRequirement(req1, blueprint.Req1, inventory.CountItem(blueprint.Req1), blueprint.Req1amount);
+        if (blueprint.numeOfRequirements >= 2) SetRequirement(req2, blueprint.Req2, inventory.CountItem(blueprint.Req2), blueprint.Req2amount);
+        else if (req2 != null) req2.text = "";
 
-        // ------ Storage box small --------//
-        StorageBoxReq1.text = "2 Plank[" + plankCount + "]";
-        if (plankCount >= 2 && InventorySystem.Instance.CheckSlotsAvailable(1))
+        if (craftButton == null) return;
+        bool can = CanCraft(blueprint);
+        if (!craftButton.gameObject.activeSelf) craftButton.gameObject.SetActive(true);
+        craftButton.interactable = can;
+        var label = craftButton.GetComponentInChildren<Text>(true);
+        if (label != null)
         {
-            craftStorageBoxBTN.gameObject.SetActive(true);
+            bool enough = inventory.CountItem(blueprint.Req1) >= blueprint.Req1amount
+                && (blueprint.numeOfRequirements < 2 || inventory.CountItem(blueprint.Req2) >= blueprint.Req2amount);
+            label.text = can || !enough ? "Craft" : "Inventory full";
+            label.color = can ? Color.white : new Color(1f, 1f, 1f, 0.55f);
         }
-        else
-        {
-            craftStorageBoxBTN.gameObject.SetActive(false);
-        }
+    }
 
+    static readonly Color EnoughColor = new Color(0.58f, 0.93f, 0.47f);
+    static readonly Color MissingColor = new Color(1f, 0.52f, 0.44f);
+
+    static void SetRequirement(Text text, string item, int have, int need)
+    {
+        if (text == null) return;
+        text.text = DisplayName(item) + "  " + Mathf.Min(have, 99) + " / " + need;
+        text.color = have >= need ? EnoughColor : MissingColor;
+    }
+
+    static string DisplayName(string item)
+    {
+        if (string.IsNullOrEmpty(item)) return "";
+        return char.ToUpper(item[0]) + item.Substring(1);
     }
 }

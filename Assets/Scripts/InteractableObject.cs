@@ -6,10 +6,11 @@ public class InteractableObject : MonoBehaviour
 {
     public bool playerInRange;
     public string ItemName;
+    public string displayName; // shown when looking at it (e.g. "Pine Log" for the item "pinelog"); empty: ItemName
 
     public string GetItemName()
     {
-        return ItemName;
+        return string.IsNullOrEmpty(displayName) ? ItemName : displayName;
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -40,7 +41,7 @@ public class InteractableObject : MonoBehaviour
             }
             else
             {
-                Debug.Log("Ivenotory is full from IteractableObject.cs");
+                InventorySystem.Instance.ShowMessage("Inventory is full");
             }
         }
     }

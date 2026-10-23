@@ -74,11 +74,29 @@ public class EquipSystem : MonoBehaviour
         if (number >= 0) SelectQuickSlot(number);
     }
 
+    // the white number buttons of the quick bar (phone): take the item in the hand / put it away
+    public void ToggleQuickSlot(int number)
+    {
+        if (number >= 0 && number < quickSlotsList.Count) SelectQuickSlot(number);
+    }
+
     void SelectQuickSlot(int number)
     {
         if (checkIfSlotIsFull(number) == true)
         {
-            if (selectedNumber != number)
+            // something that is used, not held (a pine cone, a campfire, a storage box, food): keys 1-6 use it,
+            // like a tap on it on the phone (plant / place / eat)
+            var slotItem = quickSlotsList[number].transform.GetChild(0).GetComponent<InventoryItem>();
+            if (slotItem != null && (slotItem.isUseable || slotItem.isConsumable))
+            {
+                slotItem.UseFromQuickSlot();
+                return;
+            }
+
+            // "already selected" only if the item in the hand really is the one in this slot
+            bool alreadyHeld = selectedNumber == number && selectedItem != null
+                && selectedItem.transform.parent == quickSlotsList[number].transform;
+            if (!alreadyHeld)
             {
 
                 selectedNumber = number;
@@ -95,13 +113,8 @@ public class EquipSystem : MonoBehaviour
 
                 SetEquippedModel(selectedItem);
 
-                //changing color (unselected)
-                foreach (Transform child in numbersHolder.transform)
-                {
-                    child.GetComponentInChildren<Text>().color = Color.yellow;
-                }
-                Text toBeChanged = numbersHolder.transform.Find("number" + number).GetComponentInChildren<Text>();
-                toBeChanged.color = Color.red;
+                // the quick bar shows the selected slot with a gold frame and a gold number button
+                QuickBarUI.Changed();
             }
             else //we try to select the same slot
             {
@@ -119,12 +132,7 @@ public class EquipSystem : MonoBehaviour
                     selectedItemModel = null;
                 }
 
-                //changing color (unselected)
-                foreach (Transform child in numbersHolder.transform)
-                {
-                    child.GetComponentInChildren<Text>().color = Color.yellow;
-                }
-
+                QuickBarUI.Changed();
             }
         }
      

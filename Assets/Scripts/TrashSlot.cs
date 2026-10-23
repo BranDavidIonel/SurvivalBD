@@ -95,7 +95,6 @@ public class TrashSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("OnPointerEnter trash");
         if (draggedItem != null && draggedItem.GetComponent<InventoryItem>().isTrashable == true)
         {
             imageComponent.sprite = trash_opened;

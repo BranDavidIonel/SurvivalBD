@@ -191,7 +191,23 @@ public class SelectionManager : MonoBehaviour
             }
 
         }
-        
+        else
+        {
+            // looking at the sky: no tree is targeted any more (a swing used to chop the last tree looked at)
+            ClearSelectedTree();
+        }
+
+    }
+
+    void ClearSelectedTree()
+    {
+        if (selectedTree != null)
+        {
+            var tree = selectedTree.GetComponent<ChoppableTree>();
+            if (tree != null) tree.canBeChopped = false;
+            selectedTree = null;
+        }
+        if (chopHolder != null && chopHolder.activeSelf) chopHolder.SetActive(false);
     }
 
     private void Loot(Lootable lootable)
@@ -265,6 +281,7 @@ public class SelectionManager : MonoBehaviour
         centerDotImage.enabled = false;
         interaction_Info_UI.SetActive(false);
         selectedObject = null;
+        ClearSelectedTree(); // the tree's health bar does not stay over the windows
     }
 
     public void EnableSelection()

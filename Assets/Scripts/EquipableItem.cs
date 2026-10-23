@@ -17,11 +17,15 @@ public class EquipableItem : MonoBehaviour
     void Update()
     {
         if (GameInput.PrimaryDown && // left mouse button / "Loveste" on the phone
-            InventorySystem.Instance.isOpen == false && 
-            CraftingSystem.Instance.isOpen == false && 
+            InventorySystem.Instance.isOpen == false &&
+            CraftingSystem.Instance.isOpen == false &&
             SelectionManager.Instance.handIsVisible == false &&
             swingWait == false &&
-            !ConstructionManager.Instance.inConstructionMode
+            !ConstructionManager.Instance.inConstructionMode &&
+            !OtherWindowOpen() &&
+            !PinePlanting.Active && // planting a pine cone: the click plants it
+
+            !windowOpenLastFrame // the click that closed a window (its X button) is not a swing
             )
         {
             //wait for the swing to complete, before allowing another swing 
@@ -32,12 +36,26 @@ public class EquipableItem : MonoBehaviour
             StartCoroutine(NewSwingDelay());
         }
     }
+    static bool OtherWindowOpen()
+    {
+        return (StorageManager.Instance != null && StorageManager.Instance.storageUIOpen)
+            || (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen)
+            || (MenuManager.Instance != null && MenuManager.Instance.isMenuOpen);
+    }
+
+    bool windowOpenLastFrame;
+
+    void LateUpdate()
+    {
+        windowOpenLastFrame = InventorySystem.Instance.isOpen || CraftingSystem.Instance.isOpen || OtherWindowOpen();
+    }
+
     public void GetHit()
     {
         GameObject selectedTree = SelectionManager.Instance.selectedTree;
         if(selectedTree != null)
         {
-            SoundManager.Instance.PlaySound(SoundManager.Instance.chopSound);
+            SoundManager.Instance.PlayChop();
             selectedTree.GetComponent<ChoppableTree>().GetHit();
         }
 
@@ -45,7 +63,7 @@ public class EquipableItem : MonoBehaviour
     IEnumerator SwingSoundDelay()
     {
         yield return new WaitForSeconds(0.1f);
-        SoundManager.Instance.PlaySound(SoundManager.Instance.toolSwingSound);
+        SoundManager.Instance.PlaySwing(); // a whoosh on every swing, also in the air
     }
     IEnumerator NewSwingDelay()
     {

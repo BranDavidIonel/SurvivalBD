@@ -1,0 +1,36 @@
+SurvivalBD - sound credits and licenses
+=======================================
+Checked 2026-10-23. CC0 = public domain: free for personal AND commercial use, no credit required
+(credit is still given here as thanks).
+
+Assets/Resources/Sounds/  (used by the game)
+--------------------------------------------
+Footsteps/Grass, Snow, Wood, Sand, Rock     "Impact Sounds" by Kenney (www.kenney.nl) - CC0
+  (footstep_grass/snow/wood/carpet/concrete)  https://kenney.nl/assets/impact-sounds
+Chop/impactWood_heavy_*                     "Impact Sounds" by Kenney - CC0
+Craft (impactWood_medium_*, impactMining_*) "Impact Sounds" by Kenney - CC0
+Footsteps/Dirt (footstep00-09)              "RPG Audio" by Kenney - CC0   https://kenney.nl/assets/rpg-audio
+Chop/chop.ogg                               "RPG Audio" by Kenney - CC0
+UI/Pickup (handleSmallLeather*)             "RPG Audio" by Kenney - CC0
+UI/Drop (dropLeather, cloth1-2)             "RPG Audio" by Kenney - CC0
+Ambience/DayBirdsAndWind.ogg                "Birds and Wind - Ambient" by Spring Spring - CC0
+                                            (bird sounds by isaiah658, syncopika, pauliuw - public domain)
+                                            https://opengameart.org/content/birds-and-wind-ambient-birds-wind-and-synth
+Ambience/NightCrickets.mp3                  "Crickets Ambient Noise - loopable" by Wolfgang_ - CC0
+                                            (optional credit: Ted Kerr)
+                                            https://opengameart.org/content/crickets-ambient-noise-loopable
+
+Made in code (no files, belong to the game): fire crackle, rain, wind, swimming strokes, water splash,
+tool swing (whoosh), a tree falling (cracks, branches, the crash),
+owl hoots, sea waves  (Assets/Scripts/Environment/ProceduralAudio.cs)
+
+Assets/Sound/  (older files)
+----------------------------
+toolSwingMyVoice.wav        recorded by the author (Bran David Ionel)
+Rabbit/RabbitHitAndDie.mp3  SOURCE UNKNOWN - check the license or replace before publishing
+Rabbit/RabbitHitAndScream.mp3  SOURCE UNKNOWN - check the license or replace before publishing
+
+Removed on 2026-10-23 (unknown source/license, still in git history): Music/Adventure-music.mp3, chop.wav,
+wolhin-on-grass.wav, walk.wav, pickup_item.wav, dropItem.wav, drop-item.wav, craftingSound.wav.
+
+License texts: Assets/Sound/Licenses/

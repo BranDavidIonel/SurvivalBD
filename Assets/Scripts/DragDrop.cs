@@ -12,8 +12,11 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
     private CanvasGroup canvasGroup;
 
     public static GameObject itemBeingDragged;
+    public static Transform dragStartParent; // the slot the dragged item came from
     Vector3 startPosition;
     Transform startParent;
+
+    const float DragScale = 1.15f; // a bit bigger while dragged, so it shows around the finger
 
 
 
@@ -28,14 +31,15 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-
-        Debug.Log("OnBeginDrag");
-        canvasGroup.alpha = .5f;
+        canvasGroup.alpha = .75f;
         //So the ray cast will ignore the item itself.
         canvasGroup.blocksRaycasts = false;
         startPosition = transform.position;
         startParent = transform.parent;
+        dragStartParent = startParent;
         transform.SetParent(transform.root);
+        transform.SetAsLastSibling(); // drawn above the windows
+        transform.localScale = Vector3.one * DragScale;
         itemBeingDragged = gameObject;
 
     }
@@ -52,19 +56,34 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
 
     public void OnEndDrag(PointerEventData eventData)
     {
-
+        // (a slot's OnDrop runs before this; if one took the item, its parent is that slot now)
         itemBeingDragged = null;
 
-        if (transform.parent == startParent || transform.parent == transform.root)
+        if (transform.parent == transform.root)
+        {
+            // Not dropped exactly on a slot: put it in the nearest slot, if the finger let go close to one
+            // (much easier on a phone). Dropped on the trash can: it waits there for the "throw away?" answer.
+            bool onTrash = eventData.pointerCurrentRaycast.gameObject != null
+                && eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TrashSlot>() != null;
+            ItemSlot nearest = onTrash ? null : ItemSlot.FindNearest(eventData.position, startParent);
+            if (nearest == null || !nearest.TryPlace(gameObject, startParent))
+            {
+                transform.SetParent(startParent);
+                transform.position = startPosition;
+            }
+        }
+        else if (transform.parent == startParent)
         {
             transform.position = startPosition;
-            transform.SetParent(startParent);
-
         }
 
-        Debug.Log("OnEndDrag");
+        dragStartParent = null;
+        transform.localScale = Vector3.one;
         //no more transparent
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
+
+        var fitter = transform.parent != null ? transform.parent.GetComponent<SlotFitter>() : null;
+        if (fitter != null) fitter.Fit();
     }
 }

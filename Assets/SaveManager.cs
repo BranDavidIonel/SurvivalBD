@@ -217,7 +217,9 @@ public class SaveManager : MonoBehaviour
             }
         }
 
-        return new EnviromentData(itemsPickedup, treesToSave, allAnimals, allStorage);
+        var enviromentData = new EnviromentData(itemsPickedup, treesToSave, allAnimals, allStorage);
+        if (PineForest.Instance != null) enviromentData.pineForest = PineForest.Instance.GetData();
+        return enviromentData;
     }
 
     // The trees a save can rebuild: the choppable trees (Tree_Parent) and the stumps left after chopping.
@@ -399,6 +401,9 @@ public class SaveManager : MonoBehaviour
                 Quaternion.Euler(tree.rotation.x, tree.rotation.y, tree.rotation.z));
             treePrefab.transform.SetParent(EnviromentManager.Instance.allTrees.transform);
         }
+        // the pine forest as it was saved (a save from before the pine forest keeps the new one)
+        if (PineForest.Instance != null) PineForest.Instance.SetData(enviromentData.pineForest);
+
         // destroy animals that should not exist 
         List<string> allAnimals = new List<string>();
         foreach (Transform animalType in EnviromentManager.Instance.allAnimals.transform)// rabbits, wolfs
@@ -457,7 +462,7 @@ public class SaveManager : MonoBehaviour
         //Setting the inventory content
         foreach(string item in playerData.inventoryContent)
         {
-            InventorySystem.Instance.AddToIventory(item,false);
+            InventorySystem.Instance.AddToIventory(item, false, false);
         }
         foreach(string item in playerData.quickSlotsContent)
         {
@@ -467,6 +472,9 @@ public class SaveManager : MonoBehaviour
             var itemToAdd = Instantiate(Resources.Load<GameObject>(item));
 
             itemToAdd.transform.SetParent(availableSlot.transform, false);
+            // so a tap on it (phone) takes it in the hand, like before saving
+            var quickItem = itemToAdd.GetComponent<InventoryItem>();
+            if (quickItem != null) quickItem.isInsideQuickSlot = true;
         }
 
         

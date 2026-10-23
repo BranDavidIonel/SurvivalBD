@@ -20,6 +20,9 @@ public class EnviromentData
     public int treeSaveVersion;
     public const int CurrentTreeSaveVersion = 1;
 
+    // the pine forest (pines, cones, stumps); null in saves made before it existed
+    public PineForestData pineForest;
+
 
     public EnviromentData(List<string> _pickedupItems, List<TreeData> _treeData, List<string> _animals, List<StorageData> _storage)
     {

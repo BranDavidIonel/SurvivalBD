@@ -77,6 +77,7 @@ public class InventorySystem : MonoBehaviour
     }
     public void OpenUI()
     {
+        if (ItemInfoUI != null) ItemInfoUI.SetActive(false); // no old item info from the last time
         inventoryScreenUI.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -90,7 +91,10 @@ public class InventorySystem : MonoBehaviour
     public void CloseUI()
     {
         inventoryScreenUI.SetActive(false);
-        if (!CraftingSystem.Instance.isOpen)
+        bool otherWindowOpen = CraftingSystem.Instance.isOpen
+            || (StorageManager.Instance != null && StorageManager.Instance.storageUIOpen)
+            || (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen);
+        if (!otherWindowOpen)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -108,32 +112,63 @@ public class InventorySystem : MonoBehaviour
     {
         pickupAlert.SetActive(false);
     }
-    public void AddToIventory(string itemName, bool withSound = true)
+    // false when the inventory is full (then nothing is added)
+    public bool AddToIventory(string itemName, bool withSound = true, bool showPopup = true)
     {
-        if (withSound)
+        whatSlotToEquip = FindNextEmptySlot();
+        GameObject prefab = Resources.Load<GameObject>(itemName);
+        if (whatSlotToEquip == null || prefab == null)
+        {
+            if (whatSlotToEquip == null) ShowMessage("Inventory is full");
+            else Debug.LogWarning("No item prefab Resources/" + itemName);
+            return false;
+        }
+
+        if (withSound && SoundManager.Instance != null)
         {
             SoundManager.Instance.PlaySound(SoundManager.Instance.pickupItemSound);
-        } 
+        }
 
-        whatSlotToEquip = FindNextEmptySlot();
-        Debug.Log("item name:"+itemName);
-        itemToAdd = Instantiate(Resources.Load<GameObject>(itemName), whatSlotToEquip.transform.position, whatSlotToEquip.transform.rotation);
+        itemToAdd = Instantiate(prefab, whatSlotToEquip.transform.position, whatSlotToEquip.transform.rotation);
         itemToAdd.transform.SetParent(whatSlotToEquip.transform);
         itemList.Add(itemName);
 
         Sprite spriteImageItem = itemToAdd.GetComponent<Image>().sprite;
-        TriggerPickupPopUp(itemName, spriteImageItem);
+        var info = itemToAdd.GetComponent<InventoryItem>();
+        string shownName = info != null && !string.IsNullOrEmpty(info.thisName) ? info.thisName : itemName;
+        if (showPopup) TriggerPickupPopUp("+1  " + shownName, spriteImageItem);
 
         RecalculateList();
         CraftingSystem.Instance.RefreshNeededItems();
-
+        return true;
     }
+
+    // ---- the pickup message (top left): goes away by itself after a moment ---- //
+    const float PopupSeconds = 2.5f;
+    Coroutine hidePopup;
 
     void TriggerPickupPopUp(string itemName, Sprite itemSprite)
     {
+        if (pickupAlert == null) return;
         pickupAlert.SetActive(true);
         pickupName.text = itemName;
         pickupImage.sprite = itemSprite;
+        pickupImage.enabled = itemSprite != null;
+        if (hidePopup != null) StopCoroutine(hidePopup);
+        hidePopup = StartCoroutine(HidePopupLater());
+    }
+
+    // a short message in the same place (e.g. "Inventory is full")
+    public void ShowMessage(string message)
+    {
+        TriggerPickupPopUp(message, null);
+    }
+
+    IEnumerator HidePopupLater()
+    {
+        yield return new WaitForSecondsRealtime(PopupSeconds);
+        if (pickupAlert != null) pickupAlert.SetActive(false);
+        hidePopup = null;
     }
 
     private GameObject FindNextEmptySlot()
@@ -144,9 +179,72 @@ public class InventorySystem : MonoBehaviour
             {
                 return slot;
             }
-           
+
         }
-        return new GameObject();
+        return null;
+    }
+
+    public int EmptySlotCount()
+    {
+        int empty = 0;
+        foreach (GameObject slot in slotList)
+        {
+            if (slot.transform.childCount == 0) empty++;
+        }
+        return empty;
+    }
+
+    // "stone(Clone)" / "stone" -> "stone" (items taken out of a storage box have no "(Clone)")
+    public static string CleanName(string name)
+    {
+        return name.Replace("(Clone)", "").Trim();
+    }
+
+    // how many of this item are in the inventory and in the quick bar
+    public int CountItem(string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName)) return 0;
+        int count = CountInInventory(itemName);
+        if (EquipSystem.Instance != null) count += CountIn(EquipSystem.Instance.quickSlotsList, itemName, true);
+        return count;
+    }
+
+    public int CountInInventory(string itemName)
+    {
+        return CountIn(slotList, itemName, false);
+    }
+
+    // Items that also count as another one for crafting: a pine log is a log too (planks...).
+    static readonly Dictionary<string, string[]> Substitutes = new Dictionary<string, string[]>
+    {
+        { "log", new[] { "pinelog" } },
+    };
+
+    static bool Matches(string clean, string wanted)
+    {
+        if (clean == wanted) return true;
+        return Substitutes.TryGetValue(wanted, out var others) && Array.IndexOf(others, clean) >= 0;
+    }
+
+    static int CountIn(List<GameObject> slots, string itemName, bool skipHeldItem)
+    {
+        int count = 0;
+        foreach (GameObject slot in slots)
+        {
+            if (slot == null || slot.transform.childCount == 0) continue;
+            Transform item = slot.transform.GetChild(0);
+            if (!Matches(CleanName(item.name), itemName)) continue;
+            if (skipHeldItem && IsHeld(item)) continue;
+            count++;
+        }
+        return count;
+    }
+
+    // the item taken in the hand from the quick bar is never used up by crafting
+    static bool IsHeld(Transform item)
+    {
+        var inventoryItem = item.GetComponent<InventoryItem>();
+        return inventoryItem != null && inventoryItem.isSelected;
     }
 
     public bool CheckSlotsAvailable(int emptyMeeded)
@@ -171,23 +269,37 @@ public class InventorySystem : MonoBehaviour
         }
     }
 
+    // takes the items from the inventory first (last slots first), then from the quick bar (never the item in the hand)
+    // (the item itself first, then what can stand in for it: logs before pine logs)
     public void RemoveItem(string nameToRemove,int amountToRemove)
     {
+        var names = new List<string> { nameToRemove };
+        if (Substitutes.TryGetValue(nameToRemove, out var others)) names.AddRange(others);
         int counter = amountToRemove;
-        for(var i = slotList.Count - 1; i >= 0; i--)
+        foreach (string name in names)
         {
-            if (slotList[i].transform.childCount > 0)
+            counter = RemoveFrom(slotList, name, counter, false);
+            if (counter > 0 && EquipSystem.Instance != null)
             {
-                if (slotList[i].transform.GetChild(0).name==nameToRemove+"(Clone)" && counter!=0)
-                {
-                    //Destroy(slotList[i].transform.GetChild(0).gameObject);
-                    DestroyImmediate(slotList[i].transform.GetChild(0).gameObject);
-                    counter--;
-                }
+                counter = RemoveFrom(EquipSystem.Instance.quickSlotsList, name, counter, true);
             }
         }
         RecalculateList();
         CraftingSystem.Instance.RefreshNeededItems();
+    }
+
+    static int RemoveFrom(List<GameObject> slots, string nameToRemove, int counter, bool skipHeldItem)
+    {
+        for (var i = slots.Count - 1; i >= 0 && counter > 0; i--)
+        {
+            if (slots[i] == null || slots[i].transform.childCount == 0) continue;
+            Transform item = slots[i].transform.GetChild(0);
+            if (CleanName(item.name) != nameToRemove) continue;
+            if (skipHeldItem && IsHeld(item)) continue;
+            DestroyImmediate(item.gameObject);
+            counter--;
+        }
+        return counter;
     }
     public void RecalculateList()
     {
@@ -196,7 +308,7 @@ public class InventorySystem : MonoBehaviour
         {
             if (slot.transform.childCount > 0)
             {
-                string name = slot.transform.GetChild(0).name;//Stone (Clone)
+                string name = slot.transform.GetChild(0).name;//Stone (Clone) or Stone (from a storage box)
                 string findStr = "(Clone)";
                 string result = name.Replace(findStr, "");
                 itemList.Add(result);

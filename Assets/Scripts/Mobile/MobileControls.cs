@@ -121,10 +121,14 @@ public class MobileControls : MonoBehaviour
         // an older joystick from the Joystick Pack may still be in the scene: these controls replace it
         foreach (var oldJoystick in FindObjectsOfType<Joystick>()) oldJoystick.gameObject.SetActive(false);
 
-        if (FindObjectOfType<EventSystem>() == null)
+        var eventSystem = FindObjectOfType<EventSystem>();
+        if (eventSystem == null)
         {
-            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule)).GetComponent<EventSystem>();
         }
+        // A finger moves a little while it taps. With the default 10 px a tap on an inventory item or a quick slot
+        // often turned into a "drag" and the tap was lost. (The joysticks and the camera swipe ignore this.)
+        eventSystem.pixelDragThreshold = Mathf.Max(10, Mathf.RoundToInt(Screen.height * 0.025f));
 
         LetTouchesThroughHud();
         BuildUI();
@@ -153,39 +157,31 @@ public class MobileControls : MonoBehaviour
         return false;
     }
 
-    void Start()
-    {
-        EnlargeQuickSlots();
-    }
-
     void OnDestroy()
     {
         GameInput.ResetTouch();
     }
 
-    // The quick slots (1-6) were made for a mouse; make them big enough for a finger.
-    const float QuickSlotScale = 1.6f;
+    // The quick bar (made big by QuickBarUI) sits at the bottom centre, between the two joystick areas. These areas
+    // are above the game UI and would take the touches meant for the quick slots: keep them clear of the bar.
+    float nextZoneFit;
 
-    static void EnlargeQuickSlots()
+    void FitJoysticksAroundQuickBar()
     {
+        if (Time.unscaledTime < nextZoneFit) return;
+        nextZoneFit = Time.unscaledTime + 0.5f;
+
         var equip = EquipSystem.Instance;
-        if (equip == null || equip.quickSlotsPanel == null) return;
-
-        // grow around the bottom centre of the panel, so it stays at the bottom of the screen
-        var panel = equip.quickSlotsPanel.transform;
+        if (equip == null || equip.quickSlotsPanel == null || Screen.width <= 0) return;
         var corners = new Vector3[4];
-        ((RectTransform)panel).GetWorldCorners(corners);
-        Vector3 pivot = (corners[0] + corners[3]) * 0.5f;
+        ((RectTransform)equip.quickSlotsPanel.transform).GetWorldCorners(corners); // overlay canvas: screen pixels
+        float left = corners[0].x / Screen.width - 0.01f;
+        float right = corners[2].x / Screen.width + 0.01f;
 
-        ScaleAround(panel, pivot);
-        if (equip.numbersHolder != null && !equip.numbersHolder.transform.IsChildOf(panel))
-            ScaleAround(equip.numbersHolder.transform, pivot);
-    }
-
-    static void ScaleAround(Transform target, Vector3 pivot)
-    {
-        target.position = pivot + (target.position - pivot) * QuickSlotScale;
-        target.localScale *= QuickSlotScale;
+        var moveZone = (RectTransform)moveStick.transform;
+        var lookZone = (RectTransform)lookStick.transform;
+        moveZone.anchorMax = new Vector2(Mathf.Clamp(left, 0.2f, 0.36f), moveZone.anchorMax.y);
+        lookZone.anchorMin = new Vector2(Mathf.Clamp(right, 0.64f, 0.8f), lookZone.anchorMin.y);
     }
 
     void Update()
@@ -200,7 +196,8 @@ public class MobileControls : MonoBehaviour
         bool menuOpen = MenuManager.Instance != null && MenuManager.Instance.isMenuOpen;
         bool dead = playerDeath != null && playerDeath.IsDead;
         bool building = ConstructionManager.Instance != null && ConstructionManager.Instance.inConstructionMode;
-        bool placing = PlacementSystem.Instance != null && PlacementSystem.Instance.inPlacementMode && PlacementSystem.Instance.IsHoldingItem;
+        bool placing = (PlacementSystem.Instance != null && PlacementSystem.Instance.inPlacementMode && PlacementSystem.Instance.IsHoldingItem)
+            || PinePlanting.Active; // planting a pine cone: "Place" and "Cancel"
         bool swimming = PlayerWater.Instance != null && PlayerWater.Instance.IsSwimming;
 
         bool playing = !inventoryOpen && !craftingOpen && !storageOpen && !campfireOpen && !menuOpen && !dead;
@@ -237,6 +234,7 @@ public class MobileControls : MonoBehaviour
     {
         // again after the game scripts, which lock the cursor when a menu closes
         KeepCursorFree();
+        FitJoysticksAroundQuickBar();
     }
 
     // The game locks the mouse cursor (PC style). While it is locked the EventSystem sends no drag
@@ -422,62 +420,12 @@ public class MobileControls : MonoBehaviour
 
     // ---------------- generated sprites (no image files needed) ---------------- //
 
+    // the same round / rounded sprites as the game windows (UISkin)
     static void CreateSprites()
     {
-        if (font == null)
-        {
-            font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-        }
-        if (discSprite != null) return;
-
-        const int size = 256;
-        const float radius = size * 0.5f - 1f;
-
-        var disc = NewTexture(size);
-        var ring = NewTexture(size);
-        var center = new Vector2(size * 0.5f - 0.5f, size * 0.5f - 0.5f);
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float d = Vector2.Distance(new Vector2(x, y), center);
-                float inside = Mathf.Clamp01(radius - d + 0.5f);
-                disc.SetPixel(x, y, new Color(1f, 1f, 1f, inside));
-
-                float border = Mathf.Clamp01(d - (radius - 12f) + 0.5f) * inside; // 12 px ring
-                float fill = 0.18f * inside;
-                ring.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Max(border, fill)));
-            }
-        }
-        disc.Apply();
-        ring.Apply();
-        discSprite = Sprite.Create(disc, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
-        ringSprite = Sprite.Create(ring, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
-
-        // rounded rectangle, 9-sliced so it stretches to any size
-        const int pillSize = 96;
-        const float corner = 40f;
-        var pillTexture = NewTexture(pillSize);
-        for (int y = 0; y < pillSize; y++)
-        {
-            for (int x = 0; x < pillSize; x++)
-            {
-                float cx = Mathf.Clamp(x + 0.5f, corner, pillSize - corner);
-                float cy = Mathf.Clamp(y + 0.5f, corner, pillSize - corner);
-                float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cx, cy));
-                pillTexture.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(corner - d + 0.5f)));
-            }
-        }
-        pillTexture.Apply();
-        pillSprite = Sprite.Create(pillTexture, new Rect(0, 0, pillSize, pillSize), new Vector2(0.5f, 0.5f), 100f,
-            0, SpriteMeshType.FullRect, new Vector4(corner, corner, corner, corner));
-    }
-
-    static Texture2D NewTexture(int size)
-    {
-        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.filterMode = FilterMode.Bilinear;
-        return texture;
+        font = UISkin.Font;
+        discSprite = UISkin.Disc;
+        ringSprite = UISkin.Ring;
+        pillSprite = UISkin.Pill;
     }
 }

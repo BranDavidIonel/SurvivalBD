@@ -18,6 +18,8 @@ public class CookingData : ScriptableObject
         new FuelBurnTime("Stick", 30f),
         new FuelBurnTime("Plank", 90f),
         new FuelBurnTime("Log", 180f),
+        new FuelBurnTime("Pine Log", 150f),  // resinous: burns a bit faster than a birch log
+        new FuelBurnTime("Pine Cone", 15f),
     };
     [Tooltip("Burn time of a Burnable item that is not in the list above (game minutes)")]
     public float defaultBurnMinutes = 30f;
