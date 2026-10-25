@@ -200,7 +200,9 @@ public static class CaveTool
                     float h = heights[z, x] * sy + tp.y;
                     float need = ceiling + cover - h;
                     if (need <= 0f) continue;
-                    float k = Mathf.SmoothStep(1f, 0f, Mathf.Clamp01((d - RadiusWide * 2f) / (reach - RadiusWide * 2f)));
+                    float k = Mathf.SmoothStep(1f, 0f, Mathf.Clamp01((d - (RadiusWide + 3f)) / (reach - (RadiusWide + 3f))));
+                    // never near the mouth: raising the ground there buries the way in (the wider cave did that)
+                    k *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((Flat(w - path[0]) - 10f) / 10f));
                     float raised = h + need * k;
                     if (raised > h) { heights[z, x] = Mathf.Clamp01((raised - tp.y) / sy); changed = true; }
                 }
@@ -222,7 +224,7 @@ public static class CaveTool
         float cx = data.size.x / hr, cz = data.size.z / hr;
         var holes = data.GetHoles(0, 0, hr, hr);
         int cut = 0;
-        for (int i = 0; i < Mathf.Min(path.Count, 8); i++)
+        for (int i = 0; i < Mathf.Min(path.Count, 10); i++)
         {
             Vector3 c = path[i];
             float floor = c.y - FloorBelow, roof = c.y + RadiusHigh;
@@ -242,7 +244,7 @@ public static class CaveTool
                     if (Vector2.Dot(q0 - a0, b0 - a0) < 0f) continue;
                     float k = Mathf.Clamp(y, -RadiusHigh * 0.99f, RadiusHigh * 0.99f) / RadiusHigh;
                     float halfWidth = RadiusWide * Mathf.Sqrt(1f - k * k);
-                    if (DistanceToSegments(path, 0, Mathf.Min(path.Count - 1, 8), w) > halfWidth * 0.92f) continue;
+                    if (DistanceToSegments(path, 0, Mathf.Min(path.Count - 1, 10), w) > halfWidth * 0.92f) continue;
                     if (holes[z, x]) { holes[z, x] = false; cut++; }
                 }
         }
