@@ -8,6 +8,9 @@ public class InteractableObject : MonoBehaviour
     public string ItemName;
     public string displayName; // shown when looking at it (e.g. "Pine Log" for the item "pinelog"); empty: ItemName
 
+    // Set by Vegetation: the plant is not destroyed when picked (it grows back), the callback hides it instead.
+    public System.Action<InteractableObject> onPicked;
+
     public string GetItemName()
     {
         return string.IsNullOrEmpty(displayName) ? ItemName : displayName;
@@ -34,6 +37,11 @@ public class InteractableObject : MonoBehaviour
             if (InventorySystem.Instance.CheckSlotsAvailable(1))
             {
                 InventorySystem.Instance.AddToIventory(ItemName);
+                if (onPicked != null)
+                {
+                    onPicked(this);
+                    return;
+                }
 
                 InventorySystem.Instance.itemsPickedup.Add(gameObject.name);
                 Debug.Log("Item added to iventory");

@@ -239,8 +239,24 @@ public class NightShadow : MonoBehaviour
     {
         SetState(State.Retreating);
         messageUntil = Time.time + 3f;
-        message.text = fireNear ? "The fire drives the shadow away..."
+        message.text = prayed ? "The prayer drives the shadow away..." : fireNear ? "The fire drives the shadow away..."
             : night ? "The shadow fades away..." : "The daylight drives the shadow away...";
+        prayed = false;
+    }
+
+    // The prayer book was opened (BookReader): the shadow goes away and keeps away for a while (game hours).
+    // With the fire it is the second way to be safe from it.
+    bool prayed;
+    public void Banish(float gameHours)
+    {
+        float hoursPerSecond = Mathf.Max(0.0001f, DayNightSystem.WeatherHoursPerSecond);
+        safeUntil = Mathf.Max(safeUntil, Time.time + gameHours / hoursPerSecond);
+        if (state == State.Hunting || state == State.Attacking)
+        {
+            prayed = true;
+            Retreat(true);
+        }
+        else if (state == State.Waiting) SetState(State.Safe);
     }
 
     void Grab()

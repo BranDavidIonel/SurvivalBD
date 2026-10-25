@@ -9,6 +9,14 @@ public class MouseMovement : MonoBehaviour
     float xRotation = 0f;
     float YRotation = 0f;
 
+    // turns the view (degrees): yaw left/right, pitch up/down (the story start, a loaded game)
+    public void SetLook(float yaw, float pitch)
+    {
+        YRotation = yaw;
+        xRotation = Mathf.Clamp(pitch, -90f, 90f);
+        transform.localRotation = Quaternion.Euler(xRotation, YRotation, 0f);
+    }
+
     void Start()
     {
         //Locking the cursor to the middle of the screen and making it invisible

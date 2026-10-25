@@ -70,7 +70,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8f569dc33ae26144cb5047cb49dc4593, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f435376cb818a4c42a22beaeb685815f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -117,9 +117,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isTrashable: 0
-  thisName: Axe
-  thisDescription: A sharp tool
-  thisFunctionality: Use to chop down trees.
+  thisName: Stone Axe
+  thisDescription: A sharp stone tied to a stick.
+  thisFunctionality: Chops trees (logs and branches) and hunts rabbits.
   isConsumable: 0
   healthEffect: 0
   caloriesEffect: 0

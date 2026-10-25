@@ -2,14 +2,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A tree the axe can chop. The birch trees (Tree_Parent) shake with their Animator and leave a ChoppedTree;
-// the pines of the pine forest (PineTree on the same object) shake and fall over in code.
+// A tree the axe can chop. The trees of the forests (ForestTree on the same object) shake and fall over in code;
+// an old birch (Tree_Parent) shakes with its Animator and leaves a ChoppedTree (they are turned into forest trees
+// when the game starts, this is kept for safety).
 [RequireComponent(typeof(BoxCollider))]
 public class ChoppableTree : MonoBehaviour
 {
 
     public bool playerInRange;
-    public bool canBeChopped;
+
+    // true while the crosshair is on it (SelectionManager). A forest tree only runs Update while it is
+    // targeted: thousands of trees each doing a little work every frame would slow the phone down.
+    public bool canBeChopped
+    {
+        get => targeted;
+        set
+        {
+            targeted = value;
+            if (forestTree != null && enabled != value) enabled = value;
+        }
+    }
+    bool targeted;
 
     public float treeMaxHealth;
     public float treeHealth;
@@ -18,14 +31,20 @@ public class ChoppableTree : MonoBehaviour
 
     public float caloriesSpentChoppingWood = 20;
 
-    PineTree pine;
+    ForestTree forestTree;
+
+    void Awake()
+    {
+        forestTree = GetComponent<ForestTree>();
+        if (forestTree != null) enabled = false;
+    }
 
     private void Start()
     {
-        treeHealth = treeMaxHealth;
-        pine = GetComponent<PineTree>();
+        if (treeHealth <= 0f) treeHealth = treeMaxHealth;
+        forestTree = GetComponent<ForestTree>();
         // birch: tree_base -> birch_tree (Animator) -> Tree_Parent
-        if (animator == null && pine == null && transform.parent != null && transform.parent.parent != null)
+        if (animator == null && forestTree == null && transform.parent != null && transform.parent.parent != null)
         {
             animator = transform.parent.parent.GetComponent<Animator>();
         }
@@ -48,10 +67,15 @@ public class ChoppableTree : MonoBehaviour
     public void GetHit()
     {
         if (treeHealth <= 0) return; // already falling
-        if (pine != null) pine.Shake();
+        if (forestTree != null) forestTree.Shake();
         else if (animator != null) animator.SetTrigger("shake");
-        treeHealth -= 1;
+        // the iron axe fells any tree in 3 blows, the stone axe needs one blow per piece of its health
+        var held = EquipSystem.Instance != null ? EquipSystem.Instance.selectedItem : null;
+        bool ironAxe = held != null && held.name.StartsWith("ironaxe");
+        treeHealth -= ironAxe ? Mathf.Max(1f, Mathf.Ceil(treeMaxHealth / 3f)) : 1f;
         PlayerState.Instance.currentCalories -= caloriesSpentChoppingWood;
+        GlobalState.Instance.resourceHealth = treeHealth;
+        GlobalState.Instance.resourceMaxHealth = treeMaxHealth;
 
         if (treeHealth <= 0)
         {
@@ -68,9 +92,9 @@ public class ChoppableTree : MonoBehaviour
         //health bar of trees
         SelectionManager.Instance.chopHolder.SetActive(false);
 
-        if (pine != null)
+        if (forestTree != null)
         {
-            pine.Fall(); // it falls over, then leaves its logs and a stump (PineForest)
+            forestTree.Fall(); // it falls over, then leaves its logs, branches and a stump (Forest)
             return;
         }
 

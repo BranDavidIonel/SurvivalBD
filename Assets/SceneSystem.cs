@@ -8,6 +8,9 @@ public class SceneSystem : MonoBehaviour
 {
     public Image loadingScreen;
 
+    // the save slot being loaded right now (-1: none): the story does not start a new game meanwhile
+    public static int PendingLoadSlot = -1;
+
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -26,6 +29,7 @@ public class SceneSystem : MonoBehaviour
             int slotNumber = CheckAndGetLoadedGame();
             if (slotNumber != -1)
             {
+                PendingLoadSlot = slotNumber;
                 //SaveManager.Instance.LoadGame();
                 ActivateLoadingScreen();
                 StartCoroutine(DelayedLoading(slotNumber));
@@ -38,6 +42,7 @@ public class SceneSystem : MonoBehaviour
         yield return new WaitForSeconds(2.0f);
         print("DelayedLoading2");
         SaveManager.Instance.LoadGame(slotNumber);
+        PendingLoadSlot = -1;
         DisableLoadingScreen();
 
     }

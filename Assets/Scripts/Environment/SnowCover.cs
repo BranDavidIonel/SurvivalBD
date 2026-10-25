@@ -112,9 +112,27 @@ public class SnowCover : MonoBehaviour
         return false;
     }
 
+    // The forest and the plants handle their snow themselves (their own shaders, or hidden under the snow): their
+    // thousands of objects are not searched every few seconds.
+    static readonly HashSet<Transform> excluded = new HashSet<Transform>();
+    public static void Exclude(Transform root) { if (root != null) excluded.Add(root); }
+
+    readonly List<MeshRenderer> found = new List<MeshRenderer>();
+
+    void Collect(Transform t)
+    {
+        if (excluded.Contains(t) || !t.gameObject.activeInHierarchy) return;
+        var r = t.GetComponent<MeshRenderer>();
+        if (r != null) found.Add(r);
+        for (int i = 0; i < t.childCount; i++) Collect(t.GetChild(i));
+    }
+
     void AddObjectSnow()
     {
-        foreach (var r in FindObjectsOfType<MeshRenderer>())
+        excluded.RemoveWhere(t => t == null);
+        found.Clear();
+        foreach (var root in gameObject.scene.GetRootGameObjects()) Collect(root.transform);
+        foreach (var r in found)
         {
             if (Skip(r)) continue;
             var materials = r.sharedMaterials;

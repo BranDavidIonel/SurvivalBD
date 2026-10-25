@@ -197,6 +197,117 @@ public class SelectionManager : MonoBehaviour
             ClearSelectedTree();
         }
 
+        if (!UpdateRaft(ray)) UpdateDrinking(ray);
+    }
+
+    // the raft of the last level: on the beach it shows what it still needs (click: add what you carry);
+    // finished and in the sea, board it to leave the island (the end of the game)
+    bool raftShown;
+    bool UpdateRaft(Ray ray)
+    {
+        // looking anywhere at it counts (the deck, the mast or the sail), if nothing solid is in between
+        bool can = false;
+        var raft = Raft.Instance;
+        if (raft != null && !raft.IsBoarded)
+        {
+            Vector3 at = raft.transform.position;
+            var box = raft.InWater ? new Bounds(at + Vector3.up * 1.9f, new Vector3(4.8f, 4.8f, 4.8f))
+                                   : new Bounds(at + Vector3.up * 0.4f, new Vector3(4.8f, 1.8f, 4.8f));
+            if (box.IntersectRay(ray, out float distance) && distance < (raft.InWater ? 14f : 8f))
+            {
+                can = true;
+                foreach (var hit in Physics.RaycastAll(ray, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                {
+                    // the player's own body and the raft itself don't block the view
+                    if (hit.collider.GetComponentInParent<Raft>() != null || hit.collider.GetComponentInParent<PlayerMovement>() != null) continue;
+                    can = false;
+                    break;
+                }
+            }
+        }
+        if (can)
+        {
+            interaction_text.text = Raft.Instance.Status;
+            // the raft's list is longer than the usual names: let it spill out of the small box
+            interaction_text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            interaction_text.verticalOverflow = VerticalWrapMode.Overflow;
+            interaction_Info_UI.SetActive(true);
+            centerDotImage.gameObject.SetActive(false);
+            handIcon.gameObject.SetActive(true);
+            handIsVisible = true;
+            raftShown = true;
+            if (GameInput.PrimaryDown) Raft.Instance.Use();
+            return true;
+        }
+        if (raftShown)
+        {
+            raftShown = false;
+            handIsVisible = false;
+            handIcon.gameObject.SetActive(false);
+            centerDotImage.gameObject.SetActive(true);
+            interaction_Info_UI.SetActive(false);
+        }
+        return false;
+    }
+
+    // ---- water: only the river's water can be drunk (the sea is salty) ---- //
+    bool waterShown;
+
+    void UpdateDrinking(Ray ray)
+    {
+        bool busy = onTargetSelectItem || selectedStorageBox != null || selectedCampfire != null || selectedTree != null;
+        var state = PlayerState.Instance;
+        bool lookingDown = ray.direction.y < -0.15f;
+        Vector3 at = state != null && state.playerBody != null ? state.playerBody.transform.position : ray.origin;
+        var fresh = FreshWater.Instance;
+        var source = !busy && lookingDown && fresh != null ? fresh.At(at) : FreshWater.Source.None;
+        bool atFresh = source != FreshWater.Source.None;
+        bool atSea = !busy && !atFresh && lookingDown && Ocean.Instance != null && Ocean.Instance.DistanceFromShore(at) > -4f
+            && at.y < Ocean.Instance.Level + 4f;
+        Vector3 grassSpot = Vector3.zero;
+        bool grass = !busy && !atFresh && !atSea && lookingDown && GrassPicking.CanPick(ray, out grassSpot);
+        if (atFresh)
+        {
+            bool full = state != null && state.currentHydrationPercent >= state.maxHydrationPercent - 0.5f;
+            interaction_text.text = full ? "Fresh water (not thirsty)" : source == FreshWater.Source.Puddle ? "Drink rain water" : "Drink water";
+            interaction_Info_UI.SetActive(true);
+            centerDotImage.gameObject.SetActive(false);
+            handIcon.gameObject.SetActive(true);
+            handIsVisible = true;
+            waterShown = true;
+            if (GameInput.PrimaryDown) fresh.Drink(at);
+        }
+        else if (grass)
+        {
+            // dry grass on the meadows: hay for the fire, picked anywhere
+            interaction_text.text = "Pick grass (hay)";
+            interaction_Info_UI.SetActive(true);
+            centerDotImage.gameObject.SetActive(false);
+            handIcon.gameObject.SetActive(true);
+            handIsVisible = true;
+            waterShown = true;
+            if (GameInput.PrimaryDown) GrassPicking.Pick(grassSpot);
+        }
+        else if (atSea)
+        {
+            interaction_text.text = "Sea water (salty)";
+            interaction_Info_UI.SetActive(true);
+            waterShown = true;
+            if (GameInput.PrimaryDown && InventorySystem.Instance != null)
+                InventorySystem.Instance.ShowMessage("Too salty to drink! Find the river that comes from the mountain");
+        }
+        else if (waterShown)
+        {
+            waterShown = false;
+            if (!busy)
+            {
+                handIsVisible = false;
+                handIcon.gameObject.SetActive(false);
+                centerDotImage.gameObject.SetActive(true);
+                interaction_text.text = "";
+                interaction_Info_UI.SetActive(false);
+            }
+        }
     }
 
     void ClearSelectedTree()
@@ -219,7 +330,8 @@ public class SelectionManager : MonoBehaviour
             {
                 // 0 -> 1 ( 50% drop rate) 1/2
                 //-1 -> 1 (33% drop rate) 1/3
-                var lootAmount = UnityEngine.Random.Range(loot.amountMin, loot.amountMax + 1);
+                // at least one of each (a rabbit always gives meat and its hide)
+                var lootAmount = Mathf.Max(1, UnityEngine.Random.Range(loot.amountMin, loot.amountMax + 1));
                 if(lootAmount > 0) //dropt rate control ( range -2,1) to decrease received
                 {
                     LootRecieved lt = new LootRecieved();
@@ -242,9 +354,13 @@ public class SelectionManager : MonoBehaviour
             {
                 Debug.Log(lootRecieved.item.name + "_Model");
                 
-                GameObject lootSpawn = Instantiate(Resources.Load<GameObject>(lootRecieved.item.name + "_Model"),
-                    new Vector3(lootSpawnPosition.x,0.2f,lootSpawnPosition.z),
-                    Quaternion.Euler(0,0,0));
+                // on the ground around the body (before: at height 0.2 of the world, high above the island's ground)
+                var lootPrefab = Resources.Load<GameObject>(lootRecieved.item.name + "_Model");
+                if (lootPrefab == null) continue;
+                Vector2 spread = UnityEngine.Random.insideUnitCircle * 0.9f;
+                Vector3 at = new Vector3(lootSpawnPosition.x + spread.x, 0f, lootSpawnPosition.z + spread.y);
+                at.y = Forest.GroundY(at) + 0.35f;
+                GameObject lootSpawn = Instantiate(lootPrefab, at, Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0));
                 
             }
         }

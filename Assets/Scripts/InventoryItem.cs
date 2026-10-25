@@ -36,6 +36,9 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public bool isUseable;
 
+    // an item was eaten (its inventory name, e.g. "porcini")
+    public static event System.Action<string> Consumed;
+
 
     private void Start()
     {
@@ -205,14 +208,24 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 PlacementSystem.Instance.inventoryItemToDestory = gameObject;
                 PlacementSystem.Instance.ActivatePlacementMode("CampfireModel");
                 break;
-            case "pinecone(Clone)":
-            case "pinecone":
-                // plant it where the player looks (a small pine shows the spot: green = it can grow there)
+            case "journal(Clone)":
+            case "journal":
+            case "prayerbook(Clone)":
+            case "prayerbook":
+                // the monk's books open in front of the player (they stay in the inventory)
                 itemInfoUI.SetActive(false);
-                if (PinePlanting.Instance != null) PinePlanting.Instance.Begin(gameObject);
-                else gameObject.SetActive(true);
+                gameObject.SetActive(true);
+                BookReader.Open(gameObject.name.StartsWith("journal") ? BookReader.Book.Journal : BookReader.Book.PrayerBook);
                 break;
             default:
+                // a seed (pine cone, acorn, beechnut, birch catkin): plant it where the player looks
+                // (the seed in a mound of earth shows the spot: green = a tree can grow there)
+                if (TreeSpecies.FromSeedItem(gameObject.name) >= 0)
+                {
+                    itemInfoUI.SetActive(false);
+                    if (SeedPlanting.Instance != null) SeedPlanting.Instance.Begin(gameObject);
+                    else gameObject.SetActive(true);
+                }
                 break;
         }
 
@@ -252,6 +265,9 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         caloriesEffectCalculation(caloriesEffect);
 
         hydrationEffectCalculation(hydrationEffect);
+
+        // the story's goals listen to this (eat mushrooms...)
+        if (Consumed != null) Consumed(InventorySystem.CleanName(gameObject.name));
 
     }
 

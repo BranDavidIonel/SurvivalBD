@@ -23,7 +23,7 @@ public class EquipableItem : MonoBehaviour
             swingWait == false &&
             !ConstructionManager.Instance.inConstructionMode &&
             !OtherWindowOpen() &&
-            !PinePlanting.Active && // planting a pine cone: the click plants it
+            !SeedPlanting.Active && // planting a seed: the click plants it
 
             !windowOpenLastFrame // the click that closed a window (its X button) is not a swing
             )

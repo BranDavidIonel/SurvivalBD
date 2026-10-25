@@ -330,9 +330,9 @@ public class GameWindowsLayout : MonoBehaviour
             }
         }
 
-        LayoutCards(craftingScreens[1], new[] { "Axe" }, new[] { "Stone Axe" });
-        LayoutCards(craftingScreens[2], new[] { "StorageBox" }, new[] { "Storage Box" });
-        LayoutCards(craftingScreens[3], new[] { "Plank" }, new[] { "Planks x2" });
+        LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe" }, new[] { "Stone Axe", "Torch", "Iron Axe" });
+        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox" }, new[] { "Campfire", "Storage Box" });
+        LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" });
         LayoutCards(craftingScreens[4], new[] { "Foundation", "Wall" }, new[] { "Foundation", "Wall" });
 
         crafting.RefreshNeededItems();
@@ -364,15 +364,19 @@ public class GameWindowsLayout : MonoBehaviour
                 image.color = Color.white;
             }
 
+            // a card with many lines (the raft) gets a smaller picture and tighter lines
+            bool many = card.Find("req3") != null;
+            float cardIcon = many ? iconSize * 0.6f : iconSize;
+            float lineHeight = many ? reqHeight * 0.86f : reqHeight;
             float y = -18f;
             var icon = card.Find("Image") as RectTransform;
             if (icon != null)
             {
-                UISkin.Place(icon, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(iconSize, iconSize));
+                UISkin.Place(icon, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardIcon, cardIcon));
                 var iconImage = icon.GetComponent<Image>();
                 if (iconImage != null) iconImage.preserveAspect = true;
             }
-            y -= iconSize + 8f;
+            y -= cardIcon + 8f;
 
             var name = card.Find("Text") as RectTransform;
             if (name != null)
@@ -384,13 +388,13 @@ public class GameWindowsLayout : MonoBehaviour
             }
             y -= nameHeight + 8f;
 
-            foreach (var reqName in new[] { "req1", "req2" })
+            foreach (var reqName in new[] { "req1", "req2", "req3", "req4", "req5" })
             {
                 var req = card.Find(reqName) as RectTransform;
                 if (req == null) continue;
-                UISkin.Place(req, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 16f, reqHeight));
-                UISkin.Style(req.GetComponent<Text>(), smallFont + 2, UISkin.TextColor, TextAnchor.MiddleCenter);
-                y -= reqHeight + 2f;
+                UISkin.Place(req, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 16f, lineHeight));
+                UISkin.Style(req.GetComponent<Text>(), many ? smallFont : smallFont + 2, UISkin.TextColor, TextAnchor.MiddleCenter);
+                y -= lineHeight + 2f;
             }
 
             var craft = card.Find("Button") as RectTransform;

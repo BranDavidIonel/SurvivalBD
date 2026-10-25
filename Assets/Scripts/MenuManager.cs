@@ -42,6 +42,14 @@ public class MenuManager : MonoBehaviour
         }
         else if (toggle && isMenuOpen)
         {
+            CloseMenu();
+        }
+    }
+
+    // back to the game (the menu button again, or the TEST panel's story buttons)
+    public void CloseMenu()
+    {
+        {
             saveMenu.SetActive(false);
             settingsMenu.SetActive(false);
             menu.SetActive(true);

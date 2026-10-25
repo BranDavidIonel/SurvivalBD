@@ -22,6 +22,12 @@ public class CraftingSystem : MonoBehaviour
     public Blueprint FoundationBLP;
     public Blueprint WallBLP;
     public Blueprint StorageBoxBLP;
+    public Blueprint CampfireBLP;
+    Text CampfireReq1;
+    Button craftCampfireBTN;
+    public Blueprint TorchBLP;
+    Text TorchReq1, TorchReq2;
+    Button craftTorchBTN;
     //public Blueprint AxeBLP = new Blueprint("Axe", 1, 2, "stone", 3, "stick", 3);
     //public Blueprint PlankBLP = new Blueprint("Plank", 2, 1, "log", 1, "", 0);
 
@@ -47,9 +53,9 @@ public class CraftingSystem : MonoBehaviour
         AxeBLP.numberOfItemsToProduce = 1;
         AxeBLP.numeOfRequirements = 2;
         AxeBLP.Req1 = "stone";
-        AxeBLP.Req1amount = 3;
+        AxeBLP.Req1amount = 1;   // a primitive stone axe: one stone tied to two sticks
         AxeBLP.Req2 = "stick";
-        AxeBLP.Req2amount = 3;
+        AxeBLP.Req2amount = 2;
 
         // Plank
         GameObject gO2 = new GameObject("PlankBLP");
@@ -94,6 +100,28 @@ public class CraftingSystem : MonoBehaviour
         StorageBoxBLP.Req1amount = 2;
         StorageBoxBLP.Req2 = "";
         StorageBoxBLP.Req2amount = 0;
+
+        // torch: a stick with dry grass tied around it (it lights the dark cave)
+        GameObject gO7 = new GameObject("TorchBLP");
+        TorchBLP = gO7.AddComponent<Blueprint>();
+        TorchBLP.itemName = "torch";
+        TorchBLP.numberOfItemsToProduce = 1;
+        TorchBLP.numeOfRequirements = 2;
+        TorchBLP.Req1 = "stick";
+        TorchBLP.Req1amount = 1;
+        TorchBLP.Req2 = "hay";
+        TorchBLP.Req2amount = 2;
+
+        // campfire: only a ring of stones (to light it you need wood and hay: the campfire window)
+        GameObject gO6 = new GameObject("CampfireBLP");
+        CampfireBLP = gO6.AddComponent<Blueprint>();
+        CampfireBLP.itemName = "Campfire";
+        CampfireBLP.numberOfItemsToProduce = 1;
+        CampfireBLP.numeOfRequirements = 1;
+        CampfireBLP.Req1 = "stone";
+        CampfireBLP.Req1amount = 6;
+        CampfireBLP.Req2 = "";
+        CampfireBLP.Req2amount = 0;
 
 
     }
@@ -140,10 +168,104 @@ public class CraftingSystem : MonoBehaviour
         craftStorageBoxBTN = survivalScreenUI.transform.Find("StorageBox").transform.Find("Button").GetComponent<Button>();
         craftStorageBoxBTN.onClick.AddListener(delegate { CraftAnyItem(StorageBoxBLP); });
 
+        // Campfire: a copy of the storage box card (made in code, the scene is not edited)
+        var boxCard = survivalScreenUI.transform.Find("StorageBox");
+        if (boxCard != null && survivalScreenUI.transform.Find("Campfire") == null)
+        {
+            var fireCard = Instantiate(boxCard.gameObject, boxCard.parent);
+            fireCard.name = "Campfire";
+            CampfireReq1 = fireCard.transform.Find("req1").GetComponent<Text>();
+            var req2 = fireCard.transform.Find("req2");
+            if (req2 != null) req2.gameObject.SetActive(false);
+            craftCampfireBTN = fireCard.transform.Find("Button").GetComponent<Button>();
+            craftCampfireBTN.onClick = new Button.ButtonClickedEvent();
+            craftCampfireBTN.onClick.AddListener(delegate { CraftAnyItem(CampfireBLP); });
+            var icon = fireCard.transform.Find("Image");
+            var item = Resources.Load<GameObject>("Campfire");
+            if (icon != null && item != null && icon.GetComponent<Image>() != null && item.GetComponent<Image>() != null)
+                icon.GetComponent<Image>().sprite = item.GetComponent<Image>().sprite;
+        }
+        // Torch: a copy of the axe card
+        var axeCard = toolsScreenUI.transform.Find("Axe");
+        if (axeCard != null && toolsScreenUI.transform.Find("Torch") == null)
+        {
+            var torchCard = Instantiate(axeCard.gameObject, axeCard.parent);
+            torchCard.name = "Torch";
+            TorchReq1 = torchCard.transform.Find("req1").GetComponent<Text>();
+            TorchReq2 = torchCard.transform.Find("req2").GetComponent<Text>();
+            craftTorchBTN = torchCard.transform.Find("Button").GetComponent<Button>();
+            craftTorchBTN.onClick = new Button.ButtonClickedEvent();
+            craftTorchBTN.onClick.AddListener(delegate { CraftAnyItem(TorchBLP); });
+            var icon = torchCard.transform.Find("Image");
+            var item = Resources.Load<GameObject>("torch");
+            if (icon != null && item != null && icon.GetComponent<Image>() != null && item.GetComponent<Image>() != null)
+                icon.GetComponent<Image>().sprite = item.GetComponent<Image>().sprite;
+        }
+        // Iron axe (Tools): 10 iron ore from the cave and a log
+        IronAxeBLP = NewBlueprint("IronAxeBLP", "ironaxe", "ironore", 10, "log", 1);
+        CloneCard(toolsScreenUI.transform, "Axe", "IronAxe", IronAxeBLP, out IronAxeReq1, out IronAxeReq2, out craftIronAxeBTN);
+        // Rope (Refine & Process): 3 hemp
+        RopeBLP = NewBlueprint("RopeBLP", "rope", "hemp", 3, "", 0);
+        CloneCard(refineScreenUI.transform, "Plank", "Rope", RopeBLP, out RopeReq1, out RopeReq2, out craftRopeBTN);
+
+        // the axe card shows the stone axe's picture
+        var axeIcon = toolsScreenUI.transform.Find("Axe/Image");
+        var axeItem = Resources.Load<GameObject>("Axe");
+        if (axeIcon != null && axeItem != null && axeIcon.GetComponent<Image>() != null && axeItem.GetComponent<Image>() != null)
+            axeIcon.GetComponent<Image>().sprite = axeItem.GetComponent<Image>().sprite;
+
 
 
     }
 
+
+    // ---------------- recipes added in code (their cards are copies of the scene's cards) ---------------- //
+
+    public Blueprint IronAxeBLP, RopeBLP;
+    Text IronAxeReq1, IronAxeReq2, RopeReq1, RopeReq2;
+    Button craftIronAxeBTN, craftRopeBTN;
+
+    static Blueprint NewBlueprint(string name, string item, string req1, int amount1, string req2, int amount2)
+    {
+        var bp = new GameObject(name).AddComponent<Blueprint>();
+        bp.itemName = item;
+        bp.numberOfItemsToProduce = 1;
+        bp.numeOfRequirements = string.IsNullOrEmpty(req2) ? 1 : 2;
+        bp.Req1 = req1;
+        bp.Req1amount = amount1;
+        bp.Req2 = req2;
+        bp.Req2amount = amount2;
+        return bp;
+    }
+
+    void CloneCard(Transform screen, string from, string name, Blueprint blueprint, out Text req1, out Text req2, out Button button)
+    {
+        req1 = req2 = null;
+        button = null;
+        var source = screen.Find(from);
+        if (source == null || screen.Find(name) != null) return;
+        var card = Instantiate(source.gameObject, source.parent);
+        card.name = name;
+        req1 = card.transform.Find("req1").GetComponent<Text>();
+        var r2 = card.transform.Find("req2");
+        if (r2 != null)
+        {
+            r2.gameObject.SetActive(blueprint.numeOfRequirements >= 2);
+            req2 = r2.GetComponent<Text>();
+        }
+        button = card.transform.Find("Button").GetComponent<Button>();
+        button.onClick = new Button.ButtonClickedEvent();
+        button.onClick.AddListener(delegate { CraftAnyItem(blueprint); });
+        SetCardIcon(card.transform, blueprint.itemName);
+    }
+
+    static void SetCardIcon(Transform card, string item)
+    {
+        var icon = card.Find("Image");
+        var prefab = Resources.Load<GameObject>(item);
+        if (icon != null && prefab != null && icon.GetComponent<Image>() != null && prefab.GetComponent<Image>() != null)
+            icon.GetComponent<Image>().sprite = prefab.GetComponent<Image>().sprite;
+    }
 
     void OpenToolsCategory()
     {
@@ -295,6 +417,10 @@ public class CraftingSystem : MonoBehaviour
         RefreshCard(FoundationBLP, FoundationReq1, null, craftFoundationBTN);
         RefreshCard(WallBLP, WallReq1, null, craftWallBTN);
         RefreshCard(StorageBoxBLP, StorageBoxReq1, null, craftStorageBoxBTN);
+        if (CampfireReq1 != null) RefreshCard(CampfireBLP, CampfireReq1, null, craftCampfireBTN);
+        if (TorchReq1 != null) RefreshCard(TorchBLP, TorchReq1, TorchReq2, craftTorchBTN);
+        if (IronAxeReq1 != null) RefreshCard(IronAxeBLP, IronAxeReq1, IronAxeReq2, craftIronAxeBTN);
+        if (RopeReq1 != null) RefreshCard(RopeBLP, RopeReq1, RopeReq2, craftRopeBTN);
     }
 
     // "Stone  2 / 3" in red until there is enough, then green; the Craft button greys out when it can't craft
@@ -329,9 +455,19 @@ public class CraftingSystem : MonoBehaviour
         text.color = have >= need ? EnoughColor : MissingColor;
     }
 
+    // the item's own name ("ironore" -> "Iron Ore"), from its inventory prefab
+    static readonly Dictionary<string, string> names = new Dictionary<string, string>();
     static string DisplayName(string item)
     {
         if (string.IsNullOrEmpty(item)) return "";
-        return char.ToUpper(item[0]) + item.Substring(1);
+        if (!names.TryGetValue(item, out var shown))
+        {
+            var prefab = Resources.Load<GameObject>(item);
+            var info = prefab != null ? prefab.GetComponent<InventoryItem>() : null;
+            shown = info != null && !string.IsNullOrEmpty(info.thisName) ? info.thisName : char.ToUpper(item[0]) + item.Substring(1);
+            if (item == "log") shown = "Log";
+            names[item] = shown;
+        }
+        return shown;
     }
 }

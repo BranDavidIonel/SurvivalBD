@@ -197,7 +197,7 @@ public class MobileControls : MonoBehaviour
         bool dead = playerDeath != null && playerDeath.IsDead;
         bool building = ConstructionManager.Instance != null && ConstructionManager.Instance.inConstructionMode;
         bool placing = (PlacementSystem.Instance != null && PlacementSystem.Instance.inPlacementMode && PlacementSystem.Instance.IsHoldingItem)
-            || PinePlanting.Active; // planting a pine cone: "Place" and "Cancel"
+            || SeedPlanting.Active; // planting a seed: "Place" and "Cancel"
         bool swimming = PlayerWater.Instance != null && PlayerWater.Instance.IsSwimming;
 
         bool playing = !inventoryOpen && !craftingOpen && !storageOpen && !campfireOpen && !menuOpen && !dead;

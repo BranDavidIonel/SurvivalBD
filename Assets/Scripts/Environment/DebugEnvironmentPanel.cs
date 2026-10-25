@@ -173,6 +173,11 @@ public class DebugEnvironmentPanel : MonoBehaviour
         });
         snowValue = NewLabel(row, "", 140f, LabelSize, Color.white);
 
+        // 8b. the story: jump to the next level (to test a level without playing the ones before)
+        row = NewRow(content, "Story");
+        NewButton(row, "Next level", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.SkipLevel(); });
+        NewButton(row, "Give items", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.GiveTestItems(); });
+
         // 9. what the weather is doing now
         row = NewRow(content, "Now");
         info = NewLabel(row, "", 1100f, 26f, InfoColor);

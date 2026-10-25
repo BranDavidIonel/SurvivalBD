@@ -218,7 +218,24 @@ public class SaveManager : MonoBehaviour
         }
 
         var enviromentData = new EnviromentData(itemsPickedup, treesToSave, allAnimals, allStorage);
-        if (PineForest.Instance != null) enviromentData.pineForest = PineForest.Instance.GetData();
+        if (Forest.Instance != null) enviromentData.pineForest = Forest.Instance.GetData();
+        if (Vegetation.Instance != null) enviromentData.vegetation = Vegetation.Instance.GetData();
+        if (RabbitPopulation.Instance != null) enviromentData.rabbits = RabbitPopulation.Instance.GetData();
+        if (StoryManager.Instance != null) enviromentData.story = StoryManager.Instance.GetData();
+        if (FreshWater.Instance != null) enviromentData.puddles = FreshWater.Instance.GetData();
+        enviromentData.campfires = new List<CampfireData>();
+        foreach (Transform placeable in EnviromentManager.Instance.placeables.transform)
+        {
+            var fire = placeable.GetComponent<Campfire>();
+            if (fire == null) continue;
+            enviromentData.campfires.Add(new CampfireData
+            {
+                position = placeable.position,
+                rotation = placeable.eulerAngles,
+                fuelMinutes = fire.fuelMinutes,
+                burnedMinutes = fire.burnedMinutes,
+            });
+        }
         return enviromentData;
     }
 
@@ -402,10 +419,34 @@ public class SaveManager : MonoBehaviour
             treePrefab.transform.SetParent(EnviromentManager.Instance.allTrees.transform);
         }
         // the pine forest as it was saved (a save from before the pine forest keeps the new one)
-        if (PineForest.Instance != null) PineForest.Instance.SetData(enviromentData.pineForest);
+        if (Forest.Instance != null) Forest.Instance.SetData(enviromentData.pineForest);
+        if (Vegetation.Instance != null) Vegetation.Instance.SetData(enviromentData.vegetation);
+        if (StoryManager.Instance != null) StoryManager.Instance.SetData(enviromentData.story);
+        if (FreshWater.Instance != null) FreshWater.Instance.SetData(enviromentData.puddles);
+
+        // the campfires (before, a loaded game had none: they were never saved)
+        if (enviromentData.campfires != null)
+        {
+            foreach (var saved in enviromentData.campfires)
+            {
+                var prefab = Resources.Load<GameObject>("CampfireModel");
+                if (prefab == null) break;
+                var fireObject = Instantiate(prefab, saved.position, Quaternion.Euler(saved.rotation));
+                fireObject.transform.SetParent(EnviromentManager.Instance.placeables.transform, true);
+                var placeable = fireObject.GetComponent<PlacebleItem>();
+                if (placeable != null) { placeable.SetDefaultColor(); placeable.enabled = false; }
+                var fire = fireObject.GetComponent<Campfire>();
+                if (fire != null) { fire.fuelMinutes = saved.fuelMinutes; fire.burnedMinutes = saved.burnedMinutes; }
+            }
+        }
+
+        // the rabbits: a newer save has all of them (RabbitPopulation); an old one only their names
+        bool rabbitsSaved = enviromentData.rabbits != null && enviromentData.rabbits.version >= 1;
+        if (RabbitPopulation.Instance != null) RabbitPopulation.Instance.SetData(enviromentData.rabbits);
 
         // destroy animals that should not exist 
         List<string> allAnimals = new List<string>();
+        if (!rabbitsSaved && RabbitPopulation.Instance == null)
         foreach (Transform animalType in EnviromentManager.Instance.allAnimals.transform)// rabbits, wolfs
         {
             foreach (Transform animal in animalType.transform)
@@ -590,13 +631,14 @@ public class SaveManager : MonoBehaviour
     #region ||  ---- Encrypt/Decrypt Section ----- ||
     public string EncryptionDecryption(string jsonString)
     {
-        string result = "";
+        // (one char array instead of adding to a string: the forest makes saves big, and adding a
+        // character at a time to a string got very slow)
+        var result = new char[jsonString.Length];
         for (int i = 0; i < jsonString.Length; i++)
         {
-            result += (char)(jsonString[i] ^ keyEncription[i % keyEncription.Length]);
-
+            result[i] = (char)(jsonString[i] ^ keyEncription[i % keyEncription.Length]);
         }
-        return result;
+        return new string(result);
         //XOR = "is there a difference"
 
         // -- Encrypt -- //

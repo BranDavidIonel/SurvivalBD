@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SurvivalBD – jocul</title>
+<link rel="icon" href="images/app-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <img src="images/app-icon.png" alt="Iconița jocului: insula">
+    <div>
+      <h1>SurvivalBD</h1>
+      <p>Un joc de supraviețuire pe o insulă pustie. Naufragiat, singur, cu o umbră care vine noaptea. Faci foc, cauți apă și mâncare, cobori în peștera muntelui și, la final, îți construiești o plută ca să pleci acasă.</p>
+      <div class="by">Un joc de Bran David Ionel · Unity 2021.3 · telefon (Android) și PC (Windows)</div>
+    </div>
+  </div>
+</header>
+
+<nav class="top"><div class="inner">
+  <a href="#poveste">Povestea</a>
+  <a href="#niveluri">Nivelurile</a>
+  <a href="#supravietuire">Supraviețuirea</a>
+  <a href="#umbra">Umbra</a>
+  <a href="#insula">Insula</a>
+  <a href="#retete">Rețete</a>
+  <a href="#hrana">Hrană și plante</a>
+  <a href="#controale">Controale</a>
+  <a href="dezvoltare.html">Pentru dezvoltator →</a>
+</div></nav>
+
+<main>
+
+<section id="poveste">
+  <h2>Povestea</h2>
+  <p class="lead">Jocul începe pe plajă, lângă epava corabiei. Pe ecran negru, povestea apare rând cu rând (se poate sări cu <b>Skip</b>):</p>
+  <div class="quote">
+    <p>The storm came out of nowhere.</p>
+    <p>For three nights the waves threw our ship around, until it broke apart on the rocks.</p>
+    <p>I remember the cold water... the screams... and then nothing.</p>
+    <p>When I opened my eyes, I was lying on the sand. Alone.</p>
+    <p>The ship is gone. The others are gone. I have nothing but my hands.</p>
+    <p>Night will come. First of all, I need a fire.</p>
+  </div>
+  <p>Jucătorul pornește <b>cu mâinile goale</b>, la ora 7 dimineața. Pe insulă trăiește o <b>umbră</b>: o siluetă înaltă, neagră, cu ochi albi, care vine noaptea când nu arde niciun foc aproape. În peștera din munte se află locul unde a murit <b>Fratele Ioan</b>, un călugăr care a trăit demult pe insulă și s-a luptat cu aceeași umbră. El a lăsat un jurnal și o carte de rugăciuni. Rugăciunea alungă umbra.</p>
+  <p>Tot textul din joc (poveste, obiective, mesaje) este în engleză; documentația aceasta este în română.</p>
+</section>
+
+<section id="niveluri">
+  <h2>Nivelurile</h2>
+  <p class="lead">Obiectivele nivelului curent apar în panoul din dreapta sus. Un pas bifat rămâne bifat. La finalul fiecărui nivel apare „LEVEL N COMPLETE” și povestea merge mai departe. Nivelul 9 (pluta) rămâne mereu ultimul: nivelurile noi se pun înaintea lui.</p>
+
+  <div class="level"><div class="num">1</div><div>
+    <div class="en">Make a fire</div>
+    <h3>Fă un foc</h3>
+    <ol>
+      <li>Strânge 6 pietre (pe plajă și prin iarbă).</li>
+      <li>Fă un foc de tabără: <i>Crafting › Survival › Campfire</i> (6 pietre).</li>
+      <li>Așază focul (din bara rapidă sau din inventar).</li>
+      <li>Găsește lemne (crengi / bețe) și fân (smulgi iarbă uscată de pe pajiști).</li>
+      <li>Aprinde focul: lemn în foc + 1 fân.</li>
+    </ol>
+    <div class="tip">„The fire crackles. Its warmth gives me hope.”</div>
+  </div></div>
+
+  <div class="level"><div class="num">2</div><div>
+    <div class="en">Fresh water</div>
+    <h3>Apă dulce</h3>
+    <ol>
+      <li>Găsește râul care coboară din munte sau lacul în care se varsă.</li>
+      <li>Bea: te uiți în jos la apă și apare <i>Drink water</i>.</li>
+    </ol>
+    <div class="tip">Marea e sărată: <b>niciodată</b> nu se bea din ea. După ploaie, băltoacele sunt și ele apă de băut (2–3 zile).</div>
+  </div></div>
+
+  <div class="level"><div class="num">3</div><div>
+    <div class="en">Something to eat</div>
+    <h3>Ceva de mâncare</h3>
+    <ol>
+      <li>Culege 2 ciuperci în pădure, la umbra copacilor.</li>
+      <li>Mănâncă-le (în inventar: dublu tap pe telefon / clic dreapta pe PC).</li>
+    </ol>
+    <div class="tip">Hribii (Porcini) sunt cei mai buni. Fructele de pădure și ierburile ajută și ele puțin.</div>
+  </div></div>
+
+  <div class="level"><div class="num">4</div><div>
+    <div class="en">The first night</div>
+    <h3>Prima noapte</h3>
+    <p>Povestea anunță că pe insulă e ceva ciudat: o formă întunecată privea dintre copaci și stătea departe de foc. Trebuie mult mai mult lemn.</p>
+    <ol>
+      <li>Strânge lemne de foc: 3 bușteni sau 8 bețe.</li>
+      <li>Să ai focul aprins când se lasă noaptea.</li>
+      <li>Rămâi lângă foc până dimineață.</li>
+    </ol>
+    <div class="tip">Toporul de piatră: 1 piatră + 2 bețe. Buștenii ard cel mai mult.</div>
+  </div></div>
+
+  <div class="level"><div class="num">5</div><div>
+    <div class="en">The mountain</div>
+    <h3>Muntele</h3>
+    <p>Noaptea pământul s-a cutremurat, iar în zori s-au auzit pietre căzând pe munte. Peștera, închisă până acum de pietre, se deschide.</p>
+    <ol>
+      <li>Explorează muntele.</li>
+      <li>Găsește ce au deschis pietrele căzute (gura peșterii).</li>
+    </ol>
+    <div class="tip">Înăuntru e beznă totală: fără lumină nu se intră.</div>
+  </div></div>
+
+  <div class="level"><div class="num">6</div><div>
+    <div class="en">Into the dark</div>
+    <h3>În întuneric</h3>
+    <ol>
+      <li>Fă o torță: <i>Crafting › Tools › Torch</i> (1 băț + 2 fân).</li>
+      <li>Ține torța în mână (se aprinde).</li>
+      <li>Coboară până la capătul peșterii.</li>
+      <li>Citește jurnalul vechi al Fratelui Ioan.</li>
+      <li>Ia cartea de rugăciuni.</li>
+    </ol>
+    <div class="tip"><span class="tag warn">Pericol</span> O torță arde cam 6 ore de joc în mână. Dacă ești în peșteră fără lumină (sau torța se stinge), umbra te ia după câteva secunde. Ia o torță de rezervă.</div>
+  </div></div>
+
+  <div class="level"><div class="num">7</div><div>
+    <div class="en">The prayer</div>
+    <h3>Rugăciunea</h3>
+    <ol>
+      <li>Așteaptă noaptea.</li>
+      <li>Când vine umbra, deschide cartea de rugăciuni.</li>
+    </ol>
+    <div class="tip">Cartea arată o rugăciune ortodoxă (în engleză) și alungă umbra pentru câteva ore. De acum ai două apărări: focul și rugăciunea.</div>
+  </div></div>
+
+  <div class="level"><div class="num">8</div><div>
+    <div class="en">Iron</div>
+    <h3>Fierul</h3>
+    <ol>
+      <li>Găsește 10 minereuri de fier în peșteră (cu torța!). În tunel sunt cam 50.</li>
+      <li>Să ai un buștean.</li>
+      <li>Fă toporul de fier: <i>Crafting › Tools › Iron Axe</i> (10 minereu + 1 buștean).</li>
+    </ol>
+    <div class="tip">Cu toporul de fier orice copac cade din 3 lovituri (cu cel de piatră, copacii mari cer până la 8).</div>
+  </div></div>
+
+  <div class="level final"><div class="num">9</div><div>
+    <div class="en">The raft · ultimul nivel</div>
+    <h3>Pluta</h3>
+    <p>Pe plajă, lângă epavă, apare pluta abia începută. Te uiți la ea și dai clic: tot ce are nevoie și cari la tine se pune pe ea. Poți face câte drumuri vrei; pluta crește pe măsură ce aduci materialele (bușteni, grinzi, frânghii, catarg, vela).</p>
+    <ol>
+      <li>Culege 18 cânepă (pe pantele de la poalele muntelui).</li>
+      <li>Fă 6 frânghii: <i>Crafting › Refine › Rope</i> (3 cânepă fiecare).</li>
+      <li>Mergi la plută, pe plajă, lângă epavă.</li>
+      <li>Adu-i 12 bușteni, 8 scânduri, 6 frânghii, 16 bețe și 10 fân.</li>
+      <li>Gata, pluta alunecă în mare. Urcă pe ea.</li>
+    </ol>
+    <div class="tip">Finalul: pluta pleacă spre apus, insula se micșorează în urmă, apar ultimele rânduri ale poveștii, apoi „THE END – SurvivalBD, a game by Bran David Ionel – Thank you for playing!” și jocul revine la meniul principal.</div>
+    <div class="grid" style="margin-top:12px">
+      <figure><img src="images/raft.jpg" alt="Pluta terminată, în mare, lângă plajă"><figcaption>Pluta gata, în mare. Te uiți la ea: „Board the raft”.</figcaption></figure>
+      <figure><img src="images/the-end.jpg" alt="Finalul: insula în depărtare și textul THE END"><figcaption>Finalul jocului.</figcaption></figure>
+    </div>
+  </div></div>
+</section>
+
+<section id="supravietuire">
+  <h2>Supraviețuirea</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Timpul</h3>
+      <p>O zi de joc durează <b>6 minute</b> reale (o oră de joc = 15 secunde). Sunt anotimpuri, ploaie, ceață și ninsoare; iarna zăpada acoperă pământul și unele plante.</p>
+    </div>
+    <div class="card">
+      <h3>Apa <span class="tag sea">1 zi</span></h3>
+      <p>Bara de apă plină ține o zi de joc. Se bea din <b>râu</b>, din <b>lac</b> și din <b>băltoacele</b> de după ploaie (seacă după 2–3 zile). Din mare: <i>Sea water (salty)</i>, nu se poate bea.</p>
+    </div>
+    <div class="card">
+      <h3>Hrana <span class="tag forest">~3 zile</span></h3>
+      <p>Bara de hrană plină ține cam 3 zile de joc. Mersul și tăiatul lemnelor consumă mai repede. Ciupercile, fructele, ierburile și carnea o umplu.</p>
+    </div>
+    <div class="card">
+      <h3>Viața</h3>
+      <p>Când apa sau hrana ajung la zero, viața scade până la moarte (apar avertismente înainte). Ciupercile și ierburile dau și viață.</p>
+    </div>
+    <div class="card">
+      <h3>Focul</h3>
+      <p>Un foc de tabără = 6 pietre. Ca să-l aprinzi pui lemn (bețe, bușteni, scânduri) și folosești 1 fân. Lemnul se consumă; buștenii ard cel mai mult.</p>
+    </div>
+    <div class="card">
+      <h3>Salvarea</h3>
+      <p><i>Menu › Save Game</i>: 10 locuri de salvare, fiecare cu o poză. Se salvează nivelul, copacii, plantele culese, iepurii, focurile, băltoacele și progresul plutei.</p>
+    </div>
+  </div>
+</section>
+
+<section id="umbra">
+  <h2>Umbra</h2>
+  <div class="card">
+    <p><span class="tag night">noaptea</span> Când e întuneric și nu arde niciun foc la mai puțin de 20 m, după câteva secunde umbra apare la vreo 40 m și vine spre tine. Ai cam 20 de secunde: aprinde un foc sau deschide cartea de rugăciuni. Dacă te prinde, mori și jocul revine la meniul principal.</p>
+    <p><span class="tag night">peștera</span> În peșteră e beznă și umbra trăiește acolo. Fără torță aprinsă în mână, la mai mult de câțiva metri de intrare: avertisment, bătăi de inimă, apoi „The shadow took you in the dark...”.</p>
+    <p><span class="tag forest">apărare</span> Focul (cât arde) și cartea de rugăciuni (o alungă câteva ore, de câte ori o deschizi noaptea).</p>
+  </div>
+</section>
+
+<section id="insula">
+  <h2>Insula</h2>
+  <p class="lead">O insulă ovală de aproximativ 2 km, cu un munte în mijloc și un lac în craterul lui.</p>
+  <figure>
+    <img src="images/island-air.png" alt="Insula văzută din aer">
+    <figcaption>Insula din aer: plaja, pădurile, muntele cu lacul.</figcaption>
+  </figure>
+  <div class="grid">
+    <div class="card">
+      <h3>Plaja și epava</h3>
+      <p>Locul de start. Bucăți din corabie, scânduri și lemn adus de valuri, pietre. Aici se construiește pluta la final.</p>
+    </div>
+    <div class="card">
+      <h3>Pădurile</h3>
+      <p>Patru feluri de copaci: <b>molid/brad</b>, <b>mesteacăn</b>, <b>stejar</b> și <b>fag</b>. Sub copaci pământul e întunecat, fără iarbă, cu ferigi și tufe, ciuperci, crengi căzute, trunchiuri și buturugi vechi.</p>
+    </div>
+    <div class="card">
+      <h3>Copacii cresc singuri</h3>
+      <p>Copacii își scutură semințele (conuri, ghinde, jir, mâțișori). Semințele căzute încolțesc după 2–3 zile de joc și devin copaci noi. Le poți culege și planta tu. Un copac tăiat lasă bușteni, crengi (puține la brazi, mai multe la ceilalți) și o buturugă.</p>
+    </div>
+    <div class="card">
+      <h3>Pajiștile</h3>
+      <p>Iarbă multă: <i>Pick grass (hay)</i> dă fân (același loc se poate culege din nou după o zi). Flori, cicoare, iarbă neagră (heather), tufe cu fructe.</p>
+    </div>
+    <div class="card">
+      <h3>Râul și lacul</h3>
+      <p>Râul pornește de sus de pe munte și se varsă în lacul din crater. Lângă râu se aude apa curgând. Din amândouă se poate bea.</p>
+    </div>
+    <div class="card">
+      <h3>Muntele și peștera</h3>
+      <p>Peștera coboară lung în munte: stalactite, stalagmite, ciuperci (și unele care strălucesc), minereu de fier. La capăt: o cruce ortodoxă, oasele călugărului, lumânări, jurnalul și cartea de rugăciuni. Cânepa crește pe pantele de la poalele muntelui.</p>
+    </div>
+    <div class="card">
+      <h3>Iepurii</h3>
+      <p>Peste 100 de iepuri pe toată insula. Deasupra fiecăruia scrie <i>Male</i> (albastru) sau <i>Female</i> (roz); puii cresc în o zi și jumătate. Un mascul și o femelă apropiați fac pui. Vânați cu toporul, lasă carne și blană.</p>
+    </div>
+  </div>
+  <figure>
+    <img src="images/island-map.png" alt="Harta insulei văzută de sus">
+    <figcaption>Harta de sus: pădurile, pajiștile, râul și lacul din crater.</figcaption>
+  </figure>
+</section>
+
+<section id="retete">
+  <h2>Rețete (Crafting)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Ce faci</th><th>Din ce</th><th>Unde</th><th>La ce folosește</th></tr>
+    <tr><td><b>Topor de piatră</b> (Axe)</td><td>1 piatră + 2 bețe</td><td>Tools</td><td>Tai copaci, vânezi iepuri</td></tr>
+    <tr><td><b>Torță</b> (Torch)</td><td>1 băț + 2 fân</td><td>Tools</td><td>Lumină în peșteră, ~6 ore de joc în mână</td></tr>
+    <tr><td><b>Topor de fier</b> (Iron Axe)</td><td>10 minereu de fier + 1 buștean</td><td>Tools</td><td>Orice copac din 3 lovituri</td></tr>
+    <tr><td><b>Foc de tabără</b> (Campfire)</td><td>6 pietre</td><td>Survival</td><td>Căldură, gătit, apărare de umbră</td></tr>
+    <tr><td><b>Ladă</b> (Storage Box)</td><td>2 scânduri</td><td>Survival</td><td>Păstrezi lucruri</td></tr>
+    <tr><td><b>Scânduri</b> (Plank)</td><td>1 buștean → 2 scânduri</td><td>Refine</td><td>Construcții, plută</td></tr>
+    <tr><td><b>Frânghie</b> (Rope)</td><td>3 cânepă</td><td>Refine</td><td>Pluta</td></tr>
+    <tr><td><b>Fundație / Perete</b></td><td>4 / 2 scânduri</td><td>Construction</td><td>Adăpost</td></tr>
+    <tr><td><b>Pluta</b> (pe plajă, nu în meniu)</td><td>12 bușteni, 8 scânduri, 6 frânghii, 16 bețe, 10 fân</td><td>lângă epavă</td><td>Plecarea de pe insulă (finalul)</td></tr>
+  </table></div>
+  <p>Pe fiecare card din Crafting cerințele apar cu roșu până ai destul, apoi cu verde.</p>
+  <figure><img src="images/tools.jpg" alt="Fereastra Crafting, pagina Tools: toporul de piatră, torța, toporul de fier"><figcaption>Crafting › Tools: toporul de piatră, torța și toporul de fier.</figcaption></figure>
+</section>
+
+<section id="hrana">
+  <h2>Hrană și plante</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Obiect</th><th>Unde se găsește</th><th>Efect</th></tr>
+    <tr><td>Hribi (Porcini)</td><td>în păduri</td><td>+15 viață, +250 hrană</td></tr>
+    <tr><td>Ciupercă de câmp (Field Mushroom)</td><td>în păduri</td><td>+10 viață, +150 hrană</td></tr>
+    <tr><td>Ciupercă roșie (Red Mushroom)</td><td>în păduri</td><td>+8 viață, +120 hrană</td></tr>
+    <tr><td>Fructe de pădure (Berries)</td><td>tufe la marginea pădurilor</td><td>+3 viață, +120 hrană, +6 apă</td></tr>
+    <tr><td>Cicoare (Chicory)</td><td>pajiști</td><td>+8 viață, +4 apă</td></tr>
+    <tr><td>Iarbă neagră (Heather)</td><td>pajiști, pante</td><td>+6 viață, +20 hrană</td></tr>
+    <tr><td>Carne de iepure</td><td>iepuri vânați</td><td>hrană</td></tr>
+    <tr><td>Fân (Hay)</td><td>iarba de pe pajiști</td><td>aprinzi focul, torțe, plută</td></tr>
+    <tr><td>Cânepă (Hemp)</td><td>pantele muntelui</td><td>frânghii</td></tr>
+    <tr><td>Con de brad, mâțișor de mesteacăn, ghindă, jir</td><td>sub copaci</td><td>le plantezi: devin copaci noi</td></tr>
+    <tr><td>Minereu de fier (Iron Ore)</td><td>în tunelul peșterii</td><td>toporul de fier</td></tr>
+  </table></div>
+  <p>Plantele culese cresc la loc după un timp (minereul și cărțile nu).</p>
+</section>
+
+<section id="controale">
+  <h2>Controale</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>PC (Windows)</h3>
+      <table>
+        <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>mers</td></tr>
+        <tr><td>mouse</td><td>privit</td></tr>
+        <tr><td><kbd>Space</kbd> / <kbd>Left Ctrl</kbd></td><td>sărit (în apă: sus / jos)</td></tr>
+        <tr><td>clic stânga</td><td>lovești, iei, deschizi, bei, așezi</td></tr>
+        <tr><td>clic dreapta pe obiect</td><td>folosești / mănânci</td></tr>
+        <tr><td><kbd>1</kbd>–<kbd>6</kbd></td><td>bara rapidă</td></tr>
+        <tr><td><kbd>I</kbd> <kbd>C</kbd> <kbd>M</kbd> <kbd>H</kbd></td><td>inventar, crafting, meniu, ajutor</td></tr>
+        <tr><td><kbd>Tab</kbd></td><td>eliberezi mouse-ul pentru butoane</td></tr>
+        <tr><td><kbd>X</kbd></td><td>anulezi așezarea</td></tr>
+      </table>
+      <p>Pe PC, în dreapta sus sunt și butoane: <b>Inventory [I]</b>, <b>Crafting [C]</b>, <b>Menu [M]</b>, <b>Help [H]</b>, ca să nu trebuiască ținute minte tastele.</p>
+    </div>
+    <div class="card">
+      <h3>Telefon</h3>
+      <table>
+        <tr><td>joystick stânga</td><td>mers</td></tr>
+        <tr><td>joystick dreapta / glisare</td><td>privit</td></tr>
+        <tr><td>butonul mare</td><td>Attack / Take / Open / Place (se schimbă după ce privești)</td></tr>
+        <tr><td>Jump / Down</td><td>sărit, în apă sus/jos</td></tr>
+        <tr><td>dublu tap pe obiect</td><td>folosești / mănânci</td></tr>
+        <tr><td>tap pe slotul rapid</td><td>iei în mână</td></tr>
+        <tr><td>dreapta sus</td><td>Inventory, Crafting, Menu</td></tr>
+      </table>
+    </div>
+  </div>
+  <p>În meniul jocului există butonul <b>Help</b>, cu trei pagini: <i>Controls</i>, <i>Levels</i> (unde ești acum) și <i>Tips</i>.</p>
+  <div class="grid">
+    <figure><img src="images/pc-buttons.jpg" alt="Ecranul jocului pe PC, cu butoanele din dreapta sus"><figcaption>Pe PC: butoanele din dreapta sus și obiectivele nivelului.</figcaption></figure>
+    <figure><img src="images/help.jpg" alt="Ecranul Help, pagina Tips"><figcaption>Ecranul Help (tasta H).</figcaption></figure>
+  </div>
+</section>
+
+</main>
+
+<footer>SurvivalBD · un joc de Bran David Ionel · documentație generată în proiect (folderul <code>Docs</code>)</footer>
+</body>
+</html>

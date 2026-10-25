@@ -20,8 +20,24 @@ public class EnviromentData
     public int treeSaveVersion;
     public const int CurrentTreeSaveVersion = 1;
 
-    // the pine forest (pines, cones, stumps); null in saves made before it existed
-    public PineForestData pineForest;
+    // the forests (trees, seeds, stumps); the old name of the pine forest, so old saves still load it.
+    // Saves made before it existed read it as an empty object (version 0).
+    public ForestData pineForest;
+
+    // plants picked and growing back (mushrooms, hay, berries...); version 0 in older saves
+    public VegetationData vegetation;
+
+    // every rabbit (male / female, age, babies on the way); version 0 in older saves
+    public RabbitSaveData rabbits;
+
+    // the story: which level, which goals are done; version 0 in older saves
+    public StoryData story;
+
+    // the campfires placed in the world and how much wood is still burning in them (null in older saves)
+    public List<CampfireData> campfires;
+
+    // the rain puddles (fresh water for 2-3 days after the rain); null in older saves
+    public List<PuddleData> puddles;
 
 
     public EnviromentData(List<string> _pickedupItems, List<TreeData> _treeData, List<string> _animals, List<StorageData> _storage)
@@ -36,6 +52,15 @@ public class EnviromentData
 
 
 }
+[System.Serializable]
+public class CampfireData
+{
+    public Vector3 position;
+    public Vector3 rotation;
+    public float fuelMinutes;
+    public float burnedMinutes;
+}
+
 [System.Serializable]
 public class StorageData
 {

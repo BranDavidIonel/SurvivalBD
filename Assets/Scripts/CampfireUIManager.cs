@@ -24,6 +24,9 @@ public class CampfireUIManager : MonoBehaviour
 
     public CookingData cookingData;
 
+    // the dry grass that lights a fire that is out (the wood alone does not catch fire)
+    public const string HayItem = "hay";
+
     // made in code
     Button lightFireButton;
     Text lightFireLabel;
@@ -71,8 +74,12 @@ public class CampfireUIManager : MonoBehaviour
         // food finished cooking while the window is open
         TakeReadyFood(fire);
 
-        // Cook: needs food, and a burning fire or wood to light it with
-        cookButton.interactable = foodOk && !fire.isCooking && (fire.IsBurning || fuelOk);
+        // lighting a fire that is out needs hay (dry grass) as well as the wood
+        bool hasHay = InventorySystem.Instance.CountItem(HayItem) > 0;
+        bool canLight = fire.IsBurning || hasHay;
+
+        // Cook: needs food, and a burning fire or wood (and hay) to light it with
+        cookButton.interactable = foodOk && !fire.isCooking && (fire.IsBurning || (fuelOk && hasHay));
 
         // Light Fire / Add Fuel: needs wood in the fuel slot, and room on the fire for all of it
         // (a full fire lasts a whole night when it does not rain: that is the limit)
@@ -80,7 +87,7 @@ public class CampfireUIManager : MonoBehaviour
         bool full = fire.IsFull || (fuelOk && !fits);
         if (lightFireButton != null)
         {
-            lightFireButton.interactable = fuelOk && fits;
+            lightFireButton.interactable = fuelOk && fits && canLight;
             lightFireLabel.text = full ? "Fire is full" : fire.IsBurning ? "Add Fuel" : "Light Fire";
         }
 
@@ -113,7 +120,7 @@ public class CampfireUIManager : MonoBehaviour
             }
             else
             {
-                fireNote.text = fire.IsBurning ? "" : "Put wood in the fuel slot";
+                fireNote.text = fire.IsBurning ? "" : !hasHay ? "To light it you need wood and 1 hay (pick dry grass)" : "Put wood in the fuel slot (+1 hay to light it)";
             }
         }
 
@@ -154,17 +161,30 @@ public class CampfireUIManager : MonoBehaviour
         InventoryItem food = foodSlot.GetComponentInChildren<InventoryItem>();
         if (food == null) return;
 
-        // the fire is out: light it with the wood from the fuel slot first
+        // the fire is out: light it with the wood from the fuel slot and 1 hay first
         if (!selectedCampfire.IsBurning)
         {
             InventoryItem fuel = fuelSlot.GetComponentInChildren<InventoryItem>();
             if (fuel == null || !cookingData.IsBurnable(fuel)) return;
+            if (!UseHay()) return;
             selectedCampfire.AddFuel(cookingData.BurnMinutes(fuel));
             Destroy(fuel.gameObject);
         }
 
         selectedCampfire.StartCooking(food);
         Destroy(food.gameObject);
+    }
+
+    // one hay from the inventory or the quick bar lights the wood; false: there is none
+    bool UseHay()
+    {
+        if (InventorySystem.Instance.CountItem(HayItem) <= 0)
+        {
+            InventorySystem.Instance.ShowMessage("You need hay to light the fire (pick dry grass)");
+            return false;
+        }
+        InventorySystem.Instance.RemoveItem(HayItem, 1);
+        return true;
     }
 
     // there is room on the fire for all of this wood
@@ -178,6 +198,7 @@ public class CampfireUIManager : MonoBehaviour
         if (selectedCampfire == null) return;
         InventoryItem fuel = fuelSlot.GetComponentInChildren<InventoryItem>();
         if (fuel == null || !cookingData.IsBurnable(fuel) || !WoodFits(selectedCampfire, fuel)) return;
+        if (!selectedCampfire.IsBurning && !UseHay()) return;
         if (selectedCampfire.AddFuel(cookingData.BurnMinutes(fuel)))
         {
             Destroy(fuel.gameObject);

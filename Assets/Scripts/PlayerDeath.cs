@@ -93,6 +93,8 @@ public class PlayerDeath : MonoBehaviour
         var ground = terrain.SampleHeight(position) + terrain.transform.position.y;
         var head = position.y + controller.center.y + controller.height / 2f;
         if (head > ground - 1f) return;
+        // inside the cave in the mountain the player is under the terrain on purpose
+        if (Cave.Instance != null && Cave.Instance.Contains(position)) return;
 
         controller.enabled = false;
         transform.position = new Vector3(position.x, ground - controller.center.y + controller.height / 2f + 0.2f, position.z);

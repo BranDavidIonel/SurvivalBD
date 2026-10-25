@@ -31,7 +31,7 @@ public class SettingsManager : MonoBehaviour
         // there is no background music any more: this slider now sets the forest sounds (birds, crickets, sea)
         foreach (var label in FindObjectsOfType<TMP_Text>(true))
         {
-            if (label.text.Trim() == "Music") label.text = "Ambience";
+            if (label.text != null && label.text.Trim() == "Music") label.text = "Ambience";
         }
     }
     private IEnumerator LoadAndApplySettings()

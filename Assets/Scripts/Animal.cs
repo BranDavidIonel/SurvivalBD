@@ -40,14 +40,17 @@ public class Animal : MonoBehaviour
         if (isDead == false)
         {
             currentHealth -= damage;
+            var life = GetComponent<RabbitLife>();
+            if (life != null) life.OnHit(); // it hops away for a moment
 
-            bloadSplashParticles.Play();
+            if (bloadSplashParticles != null) bloadSplashParticles.Play();
             if (currentHealth <= 0)
             {
                 PlayDyingSound();
-                animator.SetTrigger("die");
-                GetComponent<AI_Movement>().enabled = false;
-                bloodPuddle.SetActive(true);
+                if (animator != null) { animator.enabled = true; animator.SetTrigger("die"); }
+                var ai = GetComponent<AI_Movement>();
+                if (ai != null) ai.enabled = false;
+                if (bloodPuddle != null) bloodPuddle.SetActive(true);
                 isDead = true;
             }
             else

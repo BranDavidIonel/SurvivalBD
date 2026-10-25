@@ -5,7 +5,7 @@ using UnityEngine;
 
 // Tools > Trees > Add Fir Forest: a "Fir_forest" group with 12 pines (like Birch_forest), where the Scene view
 // is looking. Every pine is its own object: move, turn, delete or copy it (Ctrl+D), and set its Height and
-// "Grows Up To" in its ScenePine. In the game they become living pines (PineForest).
+// "Grows Up To" in its ScenePine. In the game they become living pines (Forest).
 public static class FirForestTool
 {
     const string Menu = "Tools/Trees/Add Fir Forest (12 pines)";
@@ -24,7 +24,7 @@ public static class FirForestTool
     // top of other things). seed: the same number gives the same pines.
     public static GameObject Create(Vector3 centre, int count, int seed)
     {
-        var variants = PineForest.Variants;
+        var variants = Forest.Variants;
         if (variants.Count == 0) { Debug.LogWarning("No pine models in Resources/PineForest"); return null; }
 
         var manager = Object.FindObjectOfType<EnviromentManager>();
@@ -33,7 +33,7 @@ public static class FirForestTool
         var group = new GameObject(UniqueName(parent, "Fir_forest"));
         Undo.RegisterCreatedObjectUndo(group, "Add Fir Forest");
         if (parent != null) group.transform.SetParent(parent, true);
-        group.transform.position = new Vector3(centre.x, PineForest.GroundY(centre), centre.z);
+        group.transform.position = new Vector3(centre.x, Forest.GroundY(centre), centre.z);
 
         var rng = new System.Random(seed);
         var placed = new List<Vector3>();
@@ -48,7 +48,7 @@ public static class FirForestTool
 
             bool tooClose = false;
             foreach (var q in placed) if ((new Vector2(q.x - p.x, q.z - p.z)).sqrMagnitude < spacing * spacing) tooClose = true;
-            if (tooClose || !PineForest.IsGoodGround(p, -8f, true, group.transform)) continue; // (its own pines: the spacing decides)
+            if (tooClose || !Forest.IsGoodGround(p, -8f, true, group.transform)) continue; // (its own pines: the spacing decides)
 
             // a few young pines, most of them grown
             float growsUpTo = Mathf.Round(Mathf.Lerp(30f, 40f, (float)full));
@@ -61,7 +61,7 @@ public static class FirForestTool
             pine.name = "Fir " + (placed.Count + 1);
             float k = height / v.nativeHeight;
             pine.transform.localScale = v.prefabScale * k;
-            pine.transform.position = new Vector3(p.x, PineForest.GroundY(p) - v.baseOffset * k - 0.15f, p.z);
+            pine.transform.position = new Vector3(p.x, Forest.GroundY(p) - v.baseOffset * k - 0.15f, p.z);
             pine.transform.rotation = Quaternion.Euler(0f, (float)turn * 360f, 0f);
             var settings = Undo.AddComponent<ScenePine>(pine);
             settings.height = height;
