@@ -49,6 +49,9 @@ public class InventorySystem : MonoBehaviour
         Cursor.visible = false;
         pickupButtonClose.onClick.AddListener(delegate { ClosePickUpAlert(); });
     }
+    [Tooltip("Slots in the inventory: the scene has 18, the rest are made in code as copies of an empty one")]
+    public int slotCount = 32;
+
     private void PopulateSlotList()
     {
         foreach (Transform child in inventoryScreenUI.transform)
@@ -58,6 +61,17 @@ public class InventorySystem : MonoBehaviour
                 slotList.Add(child.gameObject);
             }
         }
+        // more room: copies of the last slot, without what lies in it (GameWindowsLayout puts them in the grid)
+        if (slotList.Count == 0) return;
+        var template = slotList[slotList.Count - 1];
+        while (slotList.Count < slotCount)
+        {
+            var copy = Instantiate(template, template.transform.parent);
+            copy.name = "Slot (" + slotList.Count + ")";
+            for (int i = copy.transform.childCount - 1; i >= 0; i--) DestroyImmediate(copy.transform.GetChild(i).gameObject);
+            slotList.Add(copy);
+        }
+        numberOfSlots = slotList.Count;
     }
 
 

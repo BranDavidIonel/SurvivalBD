@@ -136,7 +136,7 @@ public class GameWindowsLayout : MonoBehaviour
         var inventory = InventorySystem.Instance;
         inventoryWindow = (RectTransform)inventory.inventoryScreenUI.transform;
 
-        const int columns = 6;
+        int columns = inventory.slotList.Count > 24 ? 8 : 6; // 32 slots: 4 rows of 8
         int count = inventory.slotList.Count;
         int rows = Mathf.Max(1, Mathf.CeilToInt(count / (float)columns));
         float gridWidth = columns * slot + (columns - 1) * gap;

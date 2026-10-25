@@ -120,7 +120,7 @@ public static class RiverTool
         {
             float t = lengths[i] / total2;
             hw[i] = Mathf.Lerp(1.5f, 5.2f, Mathf.Pow(t, 0.6f));
-            depth[i] = Mathf.Lerp(0.55f, 1.5f, t);
+            depth[i] = Mathf.Lerp(0.8f, 1.7f, t);
             Vector3 side = Side(path, i);
             float low = Mathf.Min(Ground(terrain, path[i]), Mathf.Min(Ground(terrain, path[i] + side * hw[i] * 1.3f), Ground(terrain, path[i] - side * hw[i] * 1.3f)));
             float s = low - 0.3f;
@@ -129,7 +129,7 @@ public static class RiverTool
         }
         for (int i = 1; i < count; i++) surface[i] = Mathf.Min(surface[i], surface[i - 1]);
 
-        Carve(terrain, path, hw, depth, surface, lakeLevel);
+        Carve(terrain, path, hw, depth, surface, lakeLevel, lakeCentre, lakeRadius);
 
         // ---- the water ----
         var points = new List<Vector3>();
@@ -284,7 +284,7 @@ public static class RiverTool
 
     // ---- digging the bed ----
 
-    static void Carve(Terrain terrain, List<Vector3> path, float[] hw, float[] depth, float[] surface, float level)
+    static void Carve(Terrain terrain, List<Vector3> path, float[] hw, float[] depth, float[] surface, float level, Vector3 lakeCentre, float lakeRadius)
     {
         var data = terrain.terrainData;
         Vector3 tp = terrain.transform.position;
@@ -298,7 +298,7 @@ public static class RiverTool
         float maxReach = 0f;
         for (int i = 0; i + 1 < path.Count; i++)
         {
-            float reach = Mathf.Max(hw[i], hw[i + 1]) * 2f + 6f;
+            float reach = Mathf.Max(hw[i], hw[i + 1]) * 2f + 24f; // (the raised land can reach far)
             maxReach = Mathf.Max(maxReach, reach);
             int x0 = Mathf.FloorToInt((Mathf.Min(path[i].x, path[i + 1].x) - reach) / cellSize), x1 = Mathf.FloorToInt((Mathf.Max(path[i].x, path[i + 1].x) + reach) / cellSize);
             int z0 = Mathf.FloorToInt((Mathf.Min(path[i].z, path[i + 1].z) - reach) / cellSize), z1 = Mathf.FloorToInt((Mathf.Max(path[i].z, path[i + 1].z) + reach) / cellSize);
@@ -328,23 +328,36 @@ public static class RiverTool
                 float s = Mathf.Lerp(surface[seg], surface[seg + 1], t);
                 float dep = Mathf.Lerp(depth[seg], depth[seg + 1], t);
                 float bank = 5f + h;
-                if (d > h + bank) continue;
+                // The bed lies in a hollow: the water's edge (h) is buried in a bank that rises above the water,
+                // so the water never hangs over lower ground (the terrain has a point only every ~2 m).
+                //   bed in the middle -> a shelf 0.35 m under the water 1 m inside the edge -> the bank's top
+                //   0.6 m over the water 0.8 m outside the edge -> back to the land around
+                float inner = Mathf.Max(0.3f, h - 1f), outer = h + 0.8f;
+                float shelf = s - 0.35f, top = s + 0.6f;
                 float orig = heights[z, x] * sy + tp.y;
+                // Where the land is lower than the water (near the lake the water stays at the lake's height), the
+                // land along the river is raised: the wider, the more it has to rise (a gentle slope, not a wall).
+                bank += Mathf.Clamp(top - orig, 0f, 4f) * 4f;
+                if (d > outer + bank) continue;
                 float bed = s - dep;
-                float edgeTop = s + 0.25f;
                 float target;
-                if (d <= h)
+                if (d <= inner)
                 {
-                    float k = d / h;
-                    target = Mathf.Min(orig, Mathf.Lerp(bed, edgeTop, k * k));
+                    float k = d / inner;
+                    target = Mathf.Lerp(bed, shelf, k * k);
+                }
+                else if (d <= outer)
+                {
+                    target = Mathf.Lerp(shelf, top, Mathf.SmoothStep(0f, 1f, (d - inner) / (outer - inner)));
+                    if (d > h) target = Mathf.Max(target, Mathf.Min(orig, top + 1.5f)); // a high bank stays high
                 }
                 else
                 {
-                    float f = Mathf.SmoothStep(0f, 1f, (d - h) / bank);
-                    if (orig >= edgeTop) target = Mathf.Lerp(edgeTop, orig, f);
-                    else if (orig >= level) target = Mathf.Min(Mathf.Lerp(edgeTop, orig, f), orig + 1.2f); // a low bank is raised a little
-                    else target = orig;
+                    float f = Mathf.SmoothStep(0f, 1f, (d - outer) / bank);
+                    target = Mathf.Lerp(top, orig, f); // (a low bank is raised)
                 }
+                // in the lake itself nothing is raised (no dams in the lake)
+                if (lakeRadius > 0f && Flat(w - lakeCentre) < lakeRadius - 1f) target = Mathf.Min(target, orig);
                 heights[z, x] = Mathf.Clamp01((target - tp.y) / sy);
                 bedAmount[((long)x << 32) | (uint)z] = d <= h + 1f ? 1f : 1f - Mathf.Clamp01((d - h - 1f) / 3f);
             }
@@ -418,6 +431,59 @@ public static class RiverTool
             if (dist < d) { d = dist; seg = i; t = k; }
         }
         return seg >= 0;
+    }
+
+    [MenuItem("Tools/Nature/2d. Dig The River Bed Again (deeper)")]
+    static void RecarveFromMenu()
+    {
+        var river = Object.FindObjectOfType<River>();
+        if (river == null) { Debug.LogWarning("River: there is no river in the scene"); return; }
+        Debug.Log("River: bed dug again, " + Recarve(river) + " plants and trees put back on the ground");
+    }
+
+    // digs the bed of the river that is in the scene again (the water stays where it is): a deeper hollow with
+    // banks over the water's edge; the plants and trees near it are put back on the new ground. Returns how many.
+    public static int Recarve(River river)
+    {
+        var terrain = Terrain.activeTerrain;
+        var ocean = Object.FindObjectOfType<Ocean>();
+        int count = river.points.Count;
+        if (terrain == null || count < 2) return 0;
+        var path = new List<Vector3>(river.points);
+        var lengths = new float[count];
+        for (int i = 1; i < count; i++) lengths[i] = lengths[i - 1] + Flat(path[i] - path[i - 1]);
+        float total = Mathf.Max(1f, lengths[count - 1]);
+        var hw = new float[count];
+        var depth = new float[count];
+        var surface = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            hw[i] = river.halfWidths[i];
+            depth[i] = Mathf.Lerp(0.8f, 1.7f, lengths[i] / total);
+            surface[i] = path[i].y;
+        }
+        float lakeLevel = river.lakeCentre.y;
+        Carve(terrain, path, hw, depth, surface, lakeLevel, river.lakeCentre, river.lakeRadius);
+        RebuildWater(river);
+
+        // what stands near the river: back on the ground
+        river.BuildCells();
+        int moved = 0;
+        void Snap(Transform t)
+        {
+            Vector3 p = t.position;
+            if (river.DistanceToWater(p) > 26f) return;
+            float g = terrain.SampleHeight(p) + terrain.transform.position.y;
+            if (Mathf.Abs(g - p.y) < 0.03f || Mathf.Abs(g - p.y) > 4.5f) return;
+            Undo.RecordObject(t, "River bed");
+            t.position = new Vector3(p.x, g - 0.03f, p.z);
+            moved++;
+        }
+        foreach (var plant in Object.FindObjectsOfType<ScenePlant>()) Snap(plant.transform);
+        foreach (var tree in Object.FindObjectsOfType<SceneTree>()) Snap(tree.transform);
+        foreach (var pine in Object.FindObjectsOfType<ScenePine>()) Snap(pine.transform);
+        EditorSceneManager.MarkSceneDirty(river.gameObject.scene);
+        return moved;
     }
 
     // ---- the water surface: 5 vertices across, in world space ----

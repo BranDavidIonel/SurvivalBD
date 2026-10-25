@@ -537,6 +537,152 @@ public static class IslandFillTool
 
     // ---------------- rabbits ---------------- //
 
+    // ---------------- more plants and stones (on top of what is there) ---------------- //
+
+    [MenuItem("Tools/Nature/Add More Plants And Stones")]
+    static void AddMoreFromMenu() => Debug.Log("More: " + AddMoreVegetation(20261026) + " plants, stones and rocks added");
+
+    // Lusher: tall grass (hay), grass, flowers and herbs on the meadows; mushrooms, ferns, branches and bushes in the
+    // forests; stones (they can be picked) and big rocks around the mountain. In groups "More ..." (NatureGroup
+    // kind "More"), one per 250 m square, so they are easy to find, change or delete. Made again: the old "More"
+    // groups are replaced. Returns how many things were placed.
+    public static int AddMoreVegetation(int seed)
+    {
+        var terrain = Terrain.activeTerrain;
+        var ocean = Object.FindObjectOfType<Ocean>();
+        var manager = Object.FindObjectOfType<EnviromentManager>();
+        if (terrain == null || ocean == null || manager == null) return 0;
+        foreach (var g in Object.FindObjectsOfType<NatureGroup>()) if (g.kind.StartsWith("More")) Undo.DestroyObjectImmediate(g.gameObject);
+        var river = Object.FindObjectOfType<River>();
+        if (river != null) river.BuildCells();
+        var cave = Object.FindObjectOfType<Cave>();
+        Vector3 caveMouth = cave != null && cave.path.Count > 0 ? cave.path[0] : new Vector3(1e6f, 0f, 1e6f);
+        var startMarker = Object.FindObjectOfType<StoryStart>();
+        Vector3 start = startMarker != null ? startMarker.transform.position : new Vector3(1e6f, 0f, 1e6f);
+        Bounds lake = LakeBounds();
+        var data = terrain.terrainData;
+        Vector3 tp = terrain.transform.position;
+        float level = ocean.Level;
+        var rng = new System.Random(seed);
+
+        // what is there already: trees (their shade makes a forest), plants and stones
+        var trees = new Hash(16f);
+        foreach (var r in manager.allTrees.GetComponentsInChildren<Renderer>()) trees.Add(r.transform.position);
+        var taken = new Hash(8f);
+        foreach (var p in Object.FindObjectsOfType<ScenePlant>()) taken.Add(p.transform.position);
+
+        var prefabs = new Dictionary<string, GameObject>();
+        GameObject Prefab(string name)
+        {
+            if (!prefabs.TryGetValue(name, out var go)) prefabs[name] = go = Resources.Load<GameObject>("Vegetation/" + name);
+            return go;
+        }
+        var rockPrefabs = new List<GameObject>();
+        foreach (var path in new[] { "Big Rock 1", "Big Rock 2", "Big Rock 3", "Rock 1", "Rock 2", "Rock 3" })
+            rockPrefabs.Add(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Low Poly Free Vegetation Kit/Prefabs/Rocks/" + path + ".prefab"));
+
+        var vegetationRoot = VegetationRoot(manager);
+        var groups = new Dictionary<string, Transform>();
+        Transform Group(string what, Vector3 p)
+        {
+            int gx = Mathf.FloorToInt((p.x - tp.x) / 250f), gz = Mathf.FloorToInt((p.z - tp.z) / 250f);
+            string key = what + " " + gx + "," + gz;
+            if (groups.TryGetValue(key, out var t)) return t;
+            var go = new GameObject("More " + what + " (" + gx + "," + gz + ")");
+            go.transform.SetParent(vegetationRoot, false);
+            go.transform.position = tp + new Vector3((gx + 0.5f) * 250f, level, (gz + 0.5f) * 250f);
+            go.AddComponent<NatureGroup>().kind = "More " + what;
+            Undo.RegisterCreatedObjectUndo(go, "More plants");
+            return groups[key] = go.transform;
+        }
+
+        string Pick(System.Random r, params string[] names) => names[r.Next(names.Length)];
+        int placed = 0;
+        const float cell = 4f;
+        int n = Mathf.RoundToInt(data.size.x / cell);
+        for (int z = 4; z < n - 4; z++)
+            for (int x = 4; x < n - 4; x++)
+            {
+                Vector3 c = tp + new Vector3((x + 0.5f) * cell, 0f, (z + 0.5f) * cell);
+                float h = terrain.SampleHeight(c) + tp.y;
+                if (h < level + 0.6f || ocean.DistanceFromShore(c) > -6f) continue;
+                if (lake.size.x > 0f && lake.Contains(new Vector3(c.x, lake.center.y, c.z))) continue;
+                if (river != null && river.DistanceToWater(c) < 2.5f) continue;
+                if (Flat(c - caveMouth) < 25f || Flat(c - start) < 8f) continue;
+                float steep = data.GetSteepness((c.x - tp.x) / data.size.x, (c.z - tp.z) / data.size.z);
+                bool beach = ocean.DistanceFromShore(c) > -28f;
+                bool forest = !beach && trees.Near(c, 7f);
+                bool mountain = !beach && (h > level + 12f || steep > 20f);
+
+                // (name, how many per square metre)
+                var list = new List<(string, float)>();
+                if (mountain)
+                {
+                    float up = Mathf.Clamp01((h - level - 8f) / 40f) + (steep > 20f ? 0.4f : 0f);
+                    list.Add(("Stone " + (1 + rng.Next(2)), 0.0016f * (0.6f + up)));
+                    list.Add(("rock", 0.00035f * (0.5f + up)));
+                    if (steep < 30f) list.Add(("Heather " + (1 + rng.Next(2)), 0.0003f));
+                    if (steep < 26f) list.Add(("Tall Grass", 0.0003f));
+                }
+                else if (forest)
+                {
+                    list.Add((Pick(rng, "Porcini", "Porcini", "Red Mushroom", "Field Mushroom", "Field Mushroom"), 0.0009f));
+                    // (no more ferns as objects: the terrain's undergrowth already has many)
+                    list.Add(("Branch " + (1 + rng.Next(3)), 0.0004f));
+                    list.Add(("Bush " + (1 + rng.Next(2)), 0.00012f));
+                    list.Add((Pick(rng, "Old Stump 1", "Old Stump 2", "Old Stump 3", "Fallen Log"), 0.00006f));
+                    list.Add(("Stone " + (1 + rng.Next(2)), 0.0001f));
+                }
+                else if (!beach)
+                {
+                    list.Add(("Tall Grass", 0.0011f));
+                    list.Add(("Grass Tuft " + (1 + rng.Next(3)), 0.0002f));
+                    list.Add((Pick(rng, "Wild Flower 1", "Wild Flower 2", "Chicory", "Chicory", "Heather 1", "Heather 2"), 0.0004f));
+                    list.Add(("Dry Grass " + (1 + rng.Next(3)), 0.0002f));
+                    list.Add(("Berry Bush " + (1 + rng.Next(2)), 0.0001f));
+                    list.Add(("Stone " + (1 + rng.Next(2)), 0.00015f));
+                }
+                else
+                {
+                    list.Add(("Stone " + (1 + rng.Next(2)), 0.0003f));
+                }
+
+                foreach (var (name, density) in list)
+                {
+                    if (rng.NextDouble() > density * cell * cell) continue;
+                    Vector3 p = c + new Vector3(((float)rng.NextDouble() - 0.5f) * cell, 0f, ((float)rng.NextDouble() - 0.5f) * cell);
+                    if (trees.Near(p, 1.6f) || taken.Near(p, 1.2f)) continue;
+                    if (river != null && river.DistanceToWater(p) < 2f) continue;
+                    if (name == "rock")
+                    {
+                        int kind = rng.Next(rockPrefabs.Count);
+                        var rockPrefab = rockPrefabs[kind];
+                        if (rockPrefab == null) continue;
+                        var rock = (GameObject)PrefabUtility.InstantiatePrefab(rockPrefab, Group("rocks", p));
+                        float size = kind < 3 ? Mathf.Lerp(0.12f, 0.32f, (float)rng.NextDouble()) : Mathf.Lerp(0.8f, 2.2f, (float)rng.NextDouble());
+                        rock.transform.localScale = rockPrefab.transform.localScale * size;
+                        p.y = terrain.SampleHeight(p) + tp.y - 0.3f * size * (kind < 3 ? 4f : 1f);
+                        rock.transform.position = p;
+                        var normal = data.GetInterpolatedNormal((p.x - tp.x) / data.size.x, (p.z - tp.z) / data.size.z);
+                        rock.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
+                        if (rock.GetComponentInChildren<Collider>() == null)
+                            foreach (var f in rock.GetComponentsInChildren<MeshFilter>()) f.gameObject.AddComponent<MeshCollider>().sharedMesh = f.sharedMesh;
+                        taken.Add(p);
+                        placed++;
+                        continue;
+                    }
+                    var prefab = Prefab(name);
+                    if (prefab == null) continue;
+                    string what = name.StartsWith("Stone") ? "stones" : forest ? "forest plants" : mountain ? "mountain plants" : "meadow plants";
+                    PlacePlant(Group(what, p), prefab, p, terrain, rng);
+                    taken.Add(p);
+                    placed++;
+                }
+            }
+        EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
+        return placed;
+    }
+
     // ---------------- hemp near the mountain (Level 9: ropes for the raft) ---------------- //
 
     [MenuItem("Tools/Nature/Add Hemp Near The Mountain")]

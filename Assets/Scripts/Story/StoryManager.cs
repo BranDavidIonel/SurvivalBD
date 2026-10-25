@@ -130,7 +130,7 @@ public class StoryManager : MonoBehaviour
                 "Explore the mountain",
                 "Find what the falling rocks opened",
             },
-            hint = "Look around the slopes of the mountain.",
+            hint = "Look around the slopes of the mountain: a column of light shines where the rocks fell.",
             done = "A cave! It is pitch dark in there, and something moves in the dark. I won't go in without light.",
         },
         new Level
@@ -147,7 +147,7 @@ public class StoryManager : MonoBehaviour
                 "Hold the torch in your hand (it lights up)",
                 "Go down to the end of the cave",
                 "Read the old journal",
-                "Take the prayer book",
+                "Take the prayer book (on the stone before the cross)",
             },
             hint = "A torch burns about 6 hours in the hand. Never be in the cave without light: the shadow lives in the dark!",
             done = "Brother Ioan fought the same shadow. He left me his prayers.",

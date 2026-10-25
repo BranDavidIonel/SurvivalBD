@@ -41,10 +41,27 @@ public class RabbitLife : MonoBehaviour
         if (oldAi != null) oldAi.enabled = false;
         var controller = GetComponent<CharacterController>();
         if (controller != null) controller.enabled = false; // it follows the ground in code
+        FitColliders(adultScale.x);
+        // two blows of the stone axe, one of the iron axe (chasing it four times on a phone was too much)
+        if (animal != null && !animal.isDead) animal.SetMaxHealth(20);
         waitTimer = Random.Range(0.5f, 4f);
         ApplyGrowth();
         UpdateName();
         SnapToGround();
+    }
+
+    // The rabbit prefab came with a solid box of 5.5 x 4.2 m around it (and a trigger even bigger): it caught the
+    // crosshair meant for the mushrooms and grass around it, and stood in the player's way. Now the box is about
+    // the size of the rabbit (a bit bigger, to be easy to hit with a finger); the trigger is not needed any more.
+    void FitColliders(float scale)
+    {
+        scale = Mathf.Max(0.01f, Mathf.Abs(scale));
+        foreach (var box in GetComponents<BoxCollider>())
+        {
+            if (box.isTrigger) { box.enabled = false; continue; }
+            box.center = new Vector3(0f, 0.45f, 0f) / scale;
+            box.size = new Vector3(1.1f, 0.9f, 1.4f) / scale;
+        }
     }
 
     // babies are small, they reach the full size when they are grown up
@@ -111,28 +128,29 @@ public class RabbitLife : MonoBehaviour
 
     void Update()
     {
-        if (!Alive)
-        {
-            moving = false;
-            return;
-        }
-        if (!Active) return;
+        if (!Active && Alive) return;
 
         Vector3 here = transform.position;
         Vector3 player = RabbitPopulation.Instance != null ? RabbitPopulation.Instance.PlayerPosition : here;
         Vector3 toPlayer = player - here; toPlayer.y = 0f;
 
-        // close enough for the axe (before, a trigger decided this and some rabbits could never be hit)
-        animal.playerInRange = toPlayer.sqrMagnitude < 4.2f * 4.2f;
+        // close enough for the axe, or to take its meat and hide (before, a trigger decided this and some rabbits
+        // could never be hit)
+        animal.playerInRange = toPlayer.sqrMagnitude < 4.5f * 4.5f;
+        if (!Alive)
+        {
+            moving = false;
+            return;
+        }
 
-        // hit: hop away from the player for a moment
+        // hit: a short hop away from the player (it stays close enough to be followed)
         if (Time.time - lastHit < 0.1f && fleeTimer <= 0f)
         {
-            fleeTimer = 1.8f;
+            fleeTimer = 1.2f;
             Vector3 away = -toPlayer.normalized;
             if (away.sqrMagnitude < 0.01f) away = transform.forward;
-            target = here + away * 9f;
-            speed = 5.5f;
+            target = here + away * 5f;
+            speed = 4f;
             moving = true;
         }
         if (fleeTimer > 0f) fleeTimer -= Time.deltaTime;

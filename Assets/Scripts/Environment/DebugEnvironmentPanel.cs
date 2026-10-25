@@ -178,6 +178,12 @@ public class DebugEnvironmentPanel : MonoBehaviour
         NewButton(row, "Next level", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.SkipLevel(); });
         NewButton(row, "Give items", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.GiveTestItems(); });
 
+        // 8c. any item of the game straight into the inventory: pick it in the list, then Give
+        row = NewRow(content, "Give item");
+        var itemList = NewDropdown(row, 470f);
+        NewButton(row, "Give 1", 170f, () => GiveItem(itemList.value, 1));
+        NewButton(row, "Give 5", 170f, () => GiveItem(itemList.value, 5));
+
         // 9. what the weather is doing now
         row = NewRow(content, "Now");
         info = NewLabel(row, "", 1100f, 26f, InfoColor);
@@ -388,6 +394,75 @@ public class DebugEnvironmentPanel : MonoBehaviour
         e.minWidth = e.preferredWidth = width;
         e.minHeight = e.preferredHeight = height;
         return image;
+    }
+
+    // every item that can be in the inventory (its prefab in Resources, its name in the game)
+    static readonly string[,] TestItems =
+    {
+        { "stone", "Stone" }, { "stick", "Stick" }, { "log", "Log" }, { "pinelog", "Pine Log" }, { "plank", "Plank" },
+        { "hay", "Hay" }, { "hemp", "Hemp" }, { "rope", "Rope" }, { "ironore", "Iron Ore" },
+        { "Axe", "Stone Axe" }, { "ironaxe", "Iron Axe" }, { "torch", "Torch" }, { "Campfire", "Campfire" },
+        { "StorageBox", "Storage Box" }, { "foundation", "Foundation" }, { "wall", "Wall" },
+        { "porcini", "Porcini" }, { "redmushroom", "Red Mushroom" }, { "fieldmushroom", "Field Mushroom" },
+        { "berries", "Berries" }, { "chicory", "Chicory" }, { "heather", "Heather" },
+        { "Raw Meat", "Raw Meat" }, { "Cooked Meat", "Cooked Meat" }, { "Rabbit Hide", "Rabbit Hide" },
+        { "pinecone", "Pine Cone" }, { "acorn", "Acorn" }, { "beechnut", "Beechnut" }, { "birchseed", "Birch Catkin" },
+        { "journal", "Old Journal" }, { "prayerbook", "Prayer Book" },
+    };
+
+    void GiveItem(int index, int amount)
+    {
+        var inventory = InventorySystem.Instance;
+        if (inventory == null || index < 0 || index >= TestItems.GetLength(0)) return;
+        string item = TestItems[index, 0];
+        int given = 0;
+        for (int i = 0; i < amount; i++)
+        {
+            if (!inventory.CheckSlotsAvailable(1)) break;
+            if (inventory.AddToIventory(item, false, false)) given++;
+        }
+        inventory.ShowMessage(given > 0 ? "+" + given + " " + TestItems[index, 1] : "Inventory is full");
+        if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
+    }
+
+    // a list to pick from (TextMeshPro's own dropdown, in the panel's colours)
+    TMP_Dropdown NewDropdown(RectTransform row, float width)
+    {
+        var resources = new TMP_DefaultControls.Resources { standard = sprite, background = sprite, inputField = sprite, knob = sprite };
+        var go = TMP_DefaultControls.CreateDropdown(resources);
+        go.name = "Item list";
+        var rect = (RectTransform)go.transform;
+        rect.SetParent(row, false);
+        var e = go.AddComponent<LayoutElement>();
+        e.minWidth = e.preferredWidth = width;
+        e.minHeight = e.preferredHeight = RowHeight - 10f;
+        var dropdown = go.GetComponent<TMP_Dropdown>();
+        foreach (var image in go.GetComponentsInChildren<Image>(true))
+        {
+            if (image.sprite == sprite && sprite != null && sprite.border != Vector4.zero) image.type = Image.Type.Sliced;
+            if (image.gameObject == go) image.color = new Color(0.9f, 0.88f, 0.82f, 1f);
+        }
+        foreach (var text in go.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (font != null) text.font = font;
+            text.fontSize = ButtonSize;
+            text.color = new Color(0.08f, 0.07f, 0.06f);
+            text.enableWordWrapping = false;
+        }
+        // the open list: tall enough for ~8 items, finger-sized rows
+        var template = (RectTransform)go.transform.Find("Template");
+        if (template != null) template.sizeDelta = new Vector2(template.sizeDelta.x, 470f);
+        var item = go.transform.Find("Template/Viewport/Content/Item") as RectTransform;
+        if (item != null) item.sizeDelta = new Vector2(item.sizeDelta.x, 56f);
+        var content = go.transform.Find("Template/Viewport/Content") as RectTransform;
+        if (content != null) content.sizeDelta = new Vector2(content.sizeDelta.x, 56f);
+        var scrollRect = template != null ? template.GetComponent<ScrollRect>() : null;
+        if (scrollRect != null) scrollRect.scrollSensitivity = 40f;
+        dropdown.options.Clear();
+        for (int i = 0; i < TestItems.GetLength(0); i++) dropdown.options.Add(new TMP_Dropdown.OptionData(TestItems[i, 1]));
+        dropdown.value = 0;
+        dropdown.RefreshShownValue();
+        return dropdown;
     }
 
     Button NewButton(RectTransform row, string text, float width, UnityEngine.Events.UnityAction onClick)

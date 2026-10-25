@@ -42,9 +42,21 @@ public class SelectionManager : MonoBehaviour
         }
     }
 
+    // the living animal the crosshair is on (in reach): the axe's swing hits it
+    Animal aimedAnimal;
+
+    // EquipableItem: a swing of the tool in the hand has started
+    public void OnSwing()
+    {
+        var target = aimedAnimal;
+        if (target == null || target.isDead || !target.playerInRange) return;
+        if (!EquipSystem.Instance.IsHoldingWeapon()) return;
+        StartCoroutine(DealDamageTo(target, 0.3f, EquipSystem.Instance.GetWeaponDamage()));
+    }
+
     void Update()
     {
-        
+        aimedAnimal = null;
         Ray ray = GameInput.AimRay();
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit))
@@ -168,10 +180,9 @@ public class SelectionManager : MonoBehaviour
 
                     handIsVisible = false;
 
-                    if (GameInput.PrimaryDown && EquipSystem.Instance.IsHoldingWeapon() && EquipSystem.Instance.IsThereASwingLock() == false)
-                    {
-                        StartCoroutine(DealDamageTo(animal, 0.3f, EquipSystem.Instance.GetWeaponDamage()));
-                    }
+                    // the blow itself is given by the swing (OnSwing): the swing and this check used to run in
+                    // either order, and when the swing came first the blow was lost
+                    aimedAnimal = animal;
                 }               
             }
 

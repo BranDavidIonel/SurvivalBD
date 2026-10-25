@@ -262,18 +262,26 @@ public class Vegetation : MonoBehaviour
         {
             var go = p.transform.gameObject;
             var box = go.AddComponent<BoxCollider>();
-            var filter = go.GetComponent<MeshFilter>();
             Vector3 scale = p.transform.lossyScale;
-            Vector3 minSize = new Vector3(0.5f / Mathf.Max(0.01f, Mathf.Abs(scale.x)), 0.4f / Mathf.Max(0.01f, Mathf.Abs(scale.y)), 0.5f / Mathf.Max(0.01f, Mathf.Abs(scale.z)));
-            if (filter != null && filter.sharedMesh != null)
+            Vector3 inverse = new Vector3(1f / Mathf.Max(0.01f, Mathf.Abs(scale.x)), 1f / Mathf.Max(0.01f, Mathf.Abs(scale.y)), 1f / Mathf.Max(0.01f, Mathf.Abs(scale.z)));
+            // small things are easy to miss with a finger: their hand is at least 0.6 m wide
+            Vector3 minSize = Vector3.Scale(new Vector3(0.6f, 0.45f, 0.6f), inverse);
+            // the box from what is drawn (not from the mesh: a static-batched mesh is the whole batch)
+            Bounds drawn = default;
+            bool any = false;
+            foreach (var r in p.renderers)
             {
-                var b = filter.sharedMesh.bounds;
-                box.center = b.center;
-                box.size = Vector3.Max(b.size, minSize);
+                if (r == null || r is ParticleSystemRenderer) continue;
+                if (!any) { drawn = r.bounds; any = true; } else drawn.Encapsulate(r.bounds);
+            }
+            if (any && drawn.size.sqrMagnitude > 0.0001f && drawn.size.magnitude < 30f)
+            {
+                box.center = p.transform.InverseTransformPoint(drawn.center);
+                box.size = Vector3.Max(Vector3.Scale(drawn.size, inverse), minSize);
             }
             else
             {
-                box.center = Vector3.up * 0.25f / Mathf.Max(0.01f, scale.y);
+                box.center = Vector3.up * 0.25f * inverse.y;
                 box.size = minSize * 1.4f;
             }
             if (playerCollider != null) Physics.IgnoreCollision(box, playerCollider);

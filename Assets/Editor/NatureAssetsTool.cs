@@ -176,6 +176,8 @@ public static class NatureAssetsTool
                 plant.size = def.size;
                 plant.hideUnderSnow = def.hideUnderSnow;
                 if (def.berries) AddBerries(root, def.name, berryMaterial);
+                // never static: a static-batched plant can not be picked (its mesh becomes the whole batch)
+                foreach (var child in root.GetComponentsInChildren<Transform>(true)) GameObjectUtility.SetStaticEditorFlags(child.gameObject, 0);
                 PrefabUtility.SaveAsPrefabAsset(root, VegetationDir + "/" + def.name + ".prefab");
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }

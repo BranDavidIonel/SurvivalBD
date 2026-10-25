@@ -17,7 +17,16 @@ public static class CaveTool
 {
     const string Dir = "Assets/Island/Cave";
     const float Step = 4f;
-    const float RadiusWide = 3f, RadiusHigh = 2.6f, FloorBelow = 1.6f;
+    // the player is a tall capsule (3.7 m): the tunnel is wide and high, so a phone player walks in without bumping
+    const float RadiusWide = 5.6f, RadiusHigh = 4.6f, FloorBelow = 1.6f;
+
+    [MenuItem("Tools/Nature/2c. Make The Cave Wider")]
+    static void WidenFromMenu()
+    {
+        var cave = Object.FindObjectOfType<Cave>();
+        if (cave == null) { Debug.LogWarning("Cave: there is no cave in the scene"); return; }
+        Widen(cave);
+    }
 
     [MenuItem("Tools/Nature/2b. Make Cave In The Mountain")]
     static void MakeFromMenu()
@@ -217,8 +226,9 @@ public static class CaveTool
         {
             Vector3 c = path[i];
             float floor = c.y - FloorBelow, roof = c.y + RadiusHigh;
-            int x0 = Mathf.Max(0, Mathf.FloorToInt((c.x - 6f - tp.x) / cx)), x1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.x + 6f - tp.x) / cx));
-            int z0 = Mathf.Max(0, Mathf.FloorToInt((c.z - 6f - tp.z) / cz)), z1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.z + 6f - tp.z) / cz));
+            float scan = RadiusWide * 1.7f;
+            int x0 = Mathf.Max(0, Mathf.FloorToInt((c.x - scan - tp.x) / cx)), x1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.x + scan - tp.x) / cx));
+            int z0 = Mathf.Max(0, Mathf.FloorToInt((c.z - scan - tp.z) / cz)), z1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.z + scan - tp.z) / cz));
             for (int z = z0; z <= z1; z++)
                 for (int x = x0; x <= x1; x++)
                 {
@@ -267,7 +277,7 @@ public static class CaveTool
         int hallStart = count - 7;
         if (i < hallStart) return 1f;
         float t = (float)(i - hallStart) / 6f;
-        return 1f + 1.3f * Mathf.Sin(Mathf.Min(1f, t * 1.15f) * Mathf.PI * 0.5f) * (i == count - 1 ? 0.25f : 1f);
+        return 1f + 0.85f * Mathf.Sin(Mathf.Min(1f, t * 1.15f) * Mathf.PI * 0.5f) * (i == count - 1 ? 0.25f : 1f);
     }
 
     static Mesh TunnelMesh(List<Vector3> path, System.Random rng)
@@ -409,13 +419,14 @@ public static class CaveTool
         top.y = Ground(terrain, top) - 0.8f;
         if (top.y < path[1].y + RadiusHigh) top.y = path[1].y + RadiusHigh + 0.4f;
         LieOnSlope(Rock(group, rng.Next(3), top, 0.45f, rng), terrain, rng);
-        // at the foot of the mouth: low stones that hide the rough edge of the ground (a step to walk in over)
+        // at the foot of the mouth, on both sides: low stones that hide the rough edge of the ground
+        // (none in the middle: the way in stays free)
         float floor = path[0].y - FloorBelow;
-        for (int s = -1; s <= 1; s++)
+        for (int s = -1; s <= 1; s += 2)
         {
-            Vector3 at = path[0] + side * s * RadiusWide * 0.95f - dir * (s == 0 ? 1.3f : 0.4f);
-            at.y = floor - (s == 0 ? 0.62f : 0.35f);
-            Rock(group, 3 + rng.Next(3), at, s == 0 ? 1.0f : 1.3f, rng);
+            Vector3 at = path[0] + side * s * RadiusWide * 1.05f - dir * 0.4f;
+            at.y = floor - 0.45f;
+            Rock(group, 3 + rng.Next(3), at, 1.3f, rng);
         }
     }
 
@@ -458,6 +469,29 @@ public static class CaveTool
         EditorUtility.SetDirty(cave.gameObject);
     }
 
+    // The tunnel made wider and higher (the player could not get in on the phone): the mountain above it, the mouth,
+    // the tunnel's rock, the rocks at the mouth and the rockfall, the mushrooms, the ore and the stalactites again.
+    // The monk's place at the end stays where it is.
+    public static void Widen(Cave cave)
+    {
+        var terrain = Terrain.activeTerrain;
+        RaiseCover(terrain, cave.path, 5);
+        FixMouth(cave);
+        bool closed = cave.rockfall == null || cave.rockfall.activeSelf;
+        if (cave.rockfall != null) Object.DestroyImmediate(cave.rockfall);
+        cave.rockfall = Rockfall(cave.transform, cave.path, new System.Random(20261025));
+        cave.rockfall.SetActive(closed);
+        var mushrooms = cave.transform.Find("Cave mushrooms");
+        if (mushrooms != null) Object.DestroyImmediate(mushrooms.gameObject);
+        CaveMushrooms(cave.transform, cave.path, new System.Random(41));
+        AddFormations(cave);
+        AddOres(cave, 50);
+        cave.radius = RadiusWide;
+        EditorUtility.SetDirty(cave);
+        EditorUtility.SetDirty(cave.gameObject);
+        EditorSceneManager.MarkSceneDirty(cave.gameObject.scene);
+    }
+
     // the fall of rocks that closes the mouth until Level 5
     static GameObject Rockfall(Transform root, List<Vector3> path, System.Random rng)
     {
@@ -465,12 +499,15 @@ public static class CaveTool
         group.transform.SetParent(root, false);
         Vector3 c = path[1], side = Side(path, 1), dir = Along(path, 1);
         float floor = c.y - FloorBelow;
-        Rock(group.transform, 0, new Vector3(c.x, floor - 0.5f, c.z) + side * -1.3f, 0.42f, rng);
-        Rock(group.transform, 1, new Vector3(c.x, floor - 0.5f, c.z) + side * 1.4f + dir * 0.8f, 0.4f, rng);
-        Rock(group.transform, 2, new Vector3(c.x, floor + 1.2f, c.z) + dir * 1.5f, 0.38f, rng);
-        Rock(group.transform, 4, new Vector3(c.x, floor - 0.2f, c.z) - dir * 1.2f + side * 0.3f, 1.4f, rng);
-        Rock(group.transform, 5, new Vector3(c.x, floor - 0.1f, c.z) - dir * 0.8f - side * 2f, 1.2f, rng);
-        Rock(group.transform, 3, new Vector3(c.x, floor + 2.2f, c.z) + dir * 0.4f + side * 0.6f, 1.3f, rng);
+        float k = RadiusWide / 3f; // (made for a tunnel 3 m wide; it grows with it)
+        float up = RadiusHigh / 2.6f;
+        Rock(group.transform, 0, new Vector3(c.x, floor - 0.5f, c.z) + side * -1.3f * k, 0.42f * k, rng);
+        Rock(group.transform, 1, new Vector3(c.x, floor - 0.5f, c.z) + side * 1.4f * k + dir * 0.8f, 0.4f * k, rng);
+        Rock(group.transform, 2, new Vector3(c.x, floor + 1.2f * up, c.z) + dir * 1.5f, 0.38f * k, rng);
+        Rock(group.transform, 4, new Vector3(c.x, floor - 0.2f, c.z) - dir * 1.2f + side * 0.3f * k, 1.4f * k, rng);
+        Rock(group.transform, 5, new Vector3(c.x, floor - 0.1f, c.z) - dir * 0.8f - side * 2f * k, 1.2f * k, rng);
+        Rock(group.transform, 3, new Vector3(c.x, floor + 2.2f * up, c.z) + dir * 0.4f + side * 0.6f * k, 1.3f * k, rng);
+        Rock(group.transform, 1, new Vector3(c.x, floor + 3.4f * up, c.z) + dir * 1.0f - side * 0.8f * k, 0.36f * k, rng);
         return group;
     }
 
@@ -703,7 +740,7 @@ public static class CaveTool
                 Vector3 top = path[i] + side * x + Vector3.up * y + along * (((float)rng.NextDouble() - 0.5f) * Step);
                 float floorY = path[i].y - FloorBelow;
                 float length = Mathf.Lerp(0.3f, hall ? 2.2f : 1.2f, (float)rng.NextDouble() * (float)rng.NextDouble());
-                if (Mathf.Abs(x) < 1.6f) length = Mathf.Min(length, top.y - floorY - 2.3f); // room to walk under it
+                if (Mathf.Abs(x) < RadiusWide * 0.6f) length = Mathf.Min(length, top.y - floorY - 4.2f); // room to walk under it
                 if (length < 0.2f) continue;
                 Cone(v, tri, top, Vector3.down, length, Mathf.Lerp(0.07f, 0.22f, (float)rng.NextDouble()) * Mathf.Sqrt(length), rng);
             }
@@ -711,7 +748,7 @@ public static class CaveTool
             for (int k = 0; k < floor; k++)
             {
                 float sign = rng.NextDouble() < 0.5 ? -1f : 1f;
-                float x = sign * Mathf.Lerp(1.5f, RadiusWide * s * 0.72f, (float)rng.NextDouble());
+                float x = sign * Mathf.Lerp(2.4f, RadiusWide * s * 0.72f, (float)rng.NextDouble());
                 Vector3 bottom = path[i] + side * x + Vector3.up * (-FloorBelow - 0.05f) + along * (((float)rng.NextDouble() - 0.5f) * Step);
                 if (Flat(bottom - restingPlace) < 3.5f) continue; // not on the monk's place
                 float length = Mathf.Lerp(0.25f, hall ? 1.7f : 1f, (float)rng.NextDouble());

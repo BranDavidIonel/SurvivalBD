@@ -32,8 +32,18 @@ public class Animal : MonoBehaviour
 
     private void Start()
     {
-        currentHealth = maxHealth;
+        if (!healthSet) currentHealth = maxHealth;
         animator = GetComponent<Animator>();
+    }
+
+    bool healthSet;
+
+    // RabbitLife: how many hits it takes (the stone axe does 10, the iron axe 20)
+    public void SetMaxHealth(int health)
+    {
+        maxHealth = health;
+        currentHealth = health;
+        healthSet = true;
     }
     public void TakeDamage(int damage)
     {

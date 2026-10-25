@@ -30,6 +30,7 @@ public class EquipableItem : MonoBehaviour
         {
             //wait for the swing to complete, before allowing another swing 
             swingWait = true;
+            SelectionManager.Instance.OnSwing(); // an animal under the crosshair gets the blow
             //SoundManager.Instance.PlaySound(SoundManager.Instance.toolSwingSound);
             StartCoroutine(SwingSoundDelay());
             animator.SetTrigger("hit");

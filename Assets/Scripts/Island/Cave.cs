@@ -43,6 +43,52 @@ public class Cave : MonoBehaviour
     {
         Instance = this;
         SnowCover.Exclude(transform); // no snow in the cave
+        RaisePrayerBook();
+    }
+
+    // The prayer book lay on the dark floor at the foot of the cross (small, hard to see, sometimes half under the
+    // bumpy floor). Now it lies on a stone in front of the cross, bigger, with a faint warm light over it.
+    // (In Awake: before Vegetation notes where the plants and books are.)
+    void RaisePrayerBook()
+    {
+        var place = end != null ? end : transform.Find("Monk's resting place");
+        if (place == null) return;
+        Transform book = null;
+        foreach (var plant in place.GetComponentsInChildren<ScenePlant>(true)) if (plant.item == "prayerbook") { book = plant.transform; break; }
+        if (book == null || place.Find("Stone for the prayer book") != null) return;
+
+        Vector3 at = book.position;
+        Vector3 facing = place.forward; facing.y = 0f; // the place looks back at the one who comes in
+        if (facing.sqrMagnitude < 0.001f) facing = Vector3.forward;
+        facing.Normalize();
+        var stone = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        stone.name = "Stone for the prayer book";
+        stone.transform.SetParent(place, true);
+        stone.transform.position = at + Vector3.up * 0.38f;
+        stone.transform.rotation = Quaternion.LookRotation(facing, Vector3.up) * Quaternion.Euler(0f, 4f, 0f);
+        stone.transform.localScale = new Vector3(0.75f, 0.8f, 0.55f);
+        var rock = GetComponent<MeshRenderer>();
+        if (rock != null)
+        {
+            // the cave's rock, but without the daylight of the mouth (a cube has no colours: it would be lit)
+            var stoneMaterial = new Material(rock.sharedMaterial) { name = "Stone for the prayer book", hideFlags = HideFlags.DontSave };
+            stoneMaterial.SetFloat("_VertexDaylight", 0f);
+            stone.GetComponent<MeshRenderer>().sharedMaterial = stoneMaterial;
+        }
+
+        book.position = at + Vector3.up * 0.79f;
+        book.rotation = Quaternion.LookRotation(facing, Vector3.up) * Quaternion.Euler(0f, 180f, 0f);
+        book.localScale *= 1.5f;
+
+        var lightObject = new GameObject("Light over the prayer book");
+        lightObject.transform.SetParent(place, true);
+        lightObject.transform.position = at + Vector3.up * 1.6f;
+        var glow = lightObject.AddComponent<Light>();
+        glow.type = LightType.Point;
+        glow.color = new Color(1f, 0.82f, 0.5f);
+        glow.range = 3.5f;
+        glow.intensity = 1.1f;
+        glow.shadows = LightShadows.None;
     }
 
     void OnDestroy()
@@ -55,6 +101,10 @@ public class Cave : MonoBehaviour
         // closed until the story gets to Level 5 (StoryManager opens it; a loaded game opens it there too)
         var story = StoryManager.Instance;
         SetOpen(story != null && story.CurrentLevel >= 5);
+        // the column of light that shows where the cave is (Levels 5 and 6)
+        var beacon = new GameObject("Cave beacon (made in code)").AddComponent<CaveBeacon>();
+        beacon.transform.SetParent(transform, true);
+        beacon.cave = this;
     }
 
     public void SetOpen(bool open)
