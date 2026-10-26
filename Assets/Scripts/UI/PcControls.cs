@@ -19,7 +19,7 @@ public class PcControls : MonoBehaviour
         var player = FindObjectOfType<PlayerMovement>();
         if (player != null) look = player.GetComponent<MouseMovement>();
         if (!GameInput.TouchControls) BuildButtons();
-        AddMenuHelpButton();
+        StartCoroutine(AddMenuHelpButtonLater()); // after InGameLoadMenu has put "Load Game" in and moved the others
     }
 
     void Update()
@@ -103,15 +103,49 @@ public class PcControls : MonoBehaviour
         UISkin.Place(hint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-28f, -76f), new Vector2(500f, 26f));
     }
 
-    // "Help" on the game's menu screen (phone and PC)
+    System.Collections.IEnumerator AddMenuHelpButtonLater()
+    {
+        yield return null;
+        yield return null;
+        AddMenuHelpButton();
+    }
+
+    // "Help" on the game's menu screen (phone and PC): a copy of the menu's own "Settings" (the same big yellow
+    // word), one line under it; "Quit" goes one line lower
     void AddMenuHelpButton()
     {
         var menu = MenuManager.Instance != null ? MenuManager.Instance.menu : null;
         if (menu == null || menu.transform.Find("HelpButton (made in code)") != null) return;
-        var b = UISkin.NewButton("HelpButton (made in code)", menu.transform, UISkin.Pill, new Color(0.42f, 0.33f, 0.24f, 0.95f), "Help", 34, Color.white, () =>
+        Button settings = null, load = null, quit = null;
+        foreach (var b in menu.GetComponentsInChildren<Button>(true))
         {
-            HelpScreen.Open();
-        });
-        UISkin.Place((RectTransform)b.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(260f, 76f));
+            var words = b.GetComponentInChildren<TMPro.TMP_Text>(true);
+            string t = words != null ? words.text.Trim() : b.name;
+            if (t.StartsWith("Settings")) settings = b;
+            else if (t.StartsWith("Load")) load = b;
+            else if (t.StartsWith("Quit")) quit = b;
+        }
+        if (settings != null && quit != null && settings.transform.parent == quit.transform.parent)
+        {
+            var help = Instantiate(settings.gameObject, settings.transform.parent);
+            help.name = "HelpButton (made in code)";
+            var words = help.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (words != null) words.text = "Help";
+            var button = help.GetComponent<Button>();
+            button.onClick = new Button.ButtonClickedEvent(); // (not the copied "open Settings")
+            button.onClick.AddListener(HelpScreen.Open);
+            var sr = (RectTransform)settings.transform;
+            var qr = (RectTransform)quit.transform;
+            var hr = (RectTransform)help.transform;
+            float line = load != null ? ((RectTransform)load.transform).anchoredPosition.y - sr.anchoredPosition.y : 70f;
+            float gap = sr.anchoredPosition.y - qr.anchoredPosition.y;
+            hr.anchoredPosition = sr.anchoredPosition - new Vector2(0f, line);
+            qr.anchoredPosition = hr.anchoredPosition - new Vector2(0f, gap);
+            help.transform.SetSiblingIndex(settings.transform.GetSiblingIndex() + 1);
+            return;
+        }
+        // (a menu without those words: a small button at the top)
+        var pill = UISkin.NewButton("HelpButton (made in code)", menu.transform, UISkin.Pill, new Color(0.42f, 0.33f, 0.24f, 0.95f), "Help", 34, Color.white, HelpScreen.Open);
+        UISkin.Place((RectTransform)pill.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(260f, 76f));
     }
 }

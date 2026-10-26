@@ -38,7 +38,8 @@ public class StoryManager : MonoBehaviour
         public string done;      // told when it is finished
     }
 
-    static readonly string[] IntroLines =
+    static string[] IntroLines => Lang.Ro ? IntroLinesRo : IntroLinesEn; // (the language of the Settings)
+    static readonly string[] IntroLinesEn =
     {
         "The storm came out of nowhere.",
         "For three nights the waves threw our ship around, until it broke apart on the rocks.",
@@ -48,7 +49,8 @@ public class StoryManager : MonoBehaviour
         "Night will come. First of all, I need a fire.",
     };
 
-    static readonly Level[] Levels =
+    static Level[] Levels => Lang.Ro ? LevelsRo : LevelsEn;
+    static readonly Level[] LevelsEn =
     {
         new Level
         {
@@ -165,7 +167,7 @@ public class StoryManager : MonoBehaviour
                 "Wait for the night",
                 "When the shadow comes, open the prayer book",
             },
-            hint = "Use the prayer book from the inventory or the quick bar when the shadow is near (away from your fire).",
+            hint = "Use the prayer book from the inventory or the quick bar when the shadow is near (away from your fire, without a torch).",
             done = "The shadow fled from the prayer. Now I have two ways against it: the fire and the prayer.",
         },
         new Level
@@ -193,6 +195,7 @@ public class StoryManager : MonoBehaviour
             {
                 "This island is not my home. Somewhere beyond the sea, people are waiting for me.",
                 "I will build a raft on the beach, by the wreck: logs, planks, rope, branches and hay.",
+                "And food for the journey: cooked meat that will not go bad on the way.",
                 "Hemp for the rope grows on the slopes near the mountain. It will take many trips.",
             },
             steps = new[]
@@ -200,10 +203,182 @@ public class StoryManager : MonoBehaviour
                 "Pick 18 hemp (on the slopes near the mountain)",
                 "Make 6 ropes (Crafting > Refine: 3 hemp each)",
                 "Go to the raft on the beach, by the wreck",
-                "Bring it 12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay",
+                "Bring it 12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay and 5 cooked meat",
                 "Board the raft in the sea",
             },
             hint = "Look at the raft and click: what it needs and you carry goes onto it. Planks: Crafting > Refine (1 log = 2). The iron axe fells a tree in 3 blows.",
+            done = "",
+        },
+    };
+
+    // ---- the same story in Romanian (Settings > Language): the same levels, the same steps in the same order ----
+
+    static readonly string[] IntroLinesRo =
+    {
+        "Furtuna a venit din senin.",
+        "Trei nopți la rând valurile ne-au aruncat corabia încoace și încolo, până când s-a sfărâmat de stânci.",
+        "Îmi amintesc apa rece... strigătele... și apoi nimic.",
+        "Când am deschis ochii, zăceam pe nisip. Singur.",
+        "Corabia s-a dus. Ceilalți s-au dus. Nu mai am nimic în afară de mâinile mele.",
+        "Va veni noaptea. Înainte de toate, am nevoie de un foc.",
+    };
+
+    static readonly Level[] LevelsRo =
+    {
+        new Level
+        {
+            title = "FĂ UN FOC",
+            story = new string[0],
+            steps = new[]
+            {
+                "Strânge 6 pietre",
+                "Fă un foc de tabără (Crafting > Survival)",
+                "Așază focul de tabără",
+                "Găsește lemne (bețe) și fân (smulge iarbă uscată)",
+                "Aprinde focul (lemne în foc + 1 fân)",
+            },
+            hint = "Pietrele și crengile stau pe plajă și prin iarbă. Iarba uscată dă fân.",
+            done = "Focul trosnește. Căldura lui îmi dă speranță.",
+        },
+        new Level
+        {
+            title = "APĂ DULCE",
+            story = new[]
+            {
+                "Gura mi s-a uscat, iar apa mării e sărată.",
+                "Am nevoie de apă dulce. Din munte trebuie să coboare un râu... poate spre lacul pe care l-am văzut.",
+            },
+            steps = new[]
+            {
+                "Găsește apă dulce: râul sau lacul",
+                "Bea (privește în jos, la apă: Drink water)",
+            },
+            hint = "Râul coboară din munte în lac. Marea e sărată: nu bea niciodată din ea. După ploaie, și băltoacele sunt apă bună de băut.",
+            done = "Apă rece și limpede. Trebuie să țin minte unde sunt râul și lacul.",
+        },
+        new Level
+        {
+            title = "CEVA DE MÂNCARE",
+            story = new[]
+            {
+                "Mă doare stomacul de foame.",
+                "În pădure, la umbra copacilor, am văzut ciuperci.",
+            },
+            steps = new[]
+            {
+                "Culege 2 ciuperci din pădure",
+                "Mănâncă-le (inventar: dublu tap / clic dreapta)",
+            },
+            hint = "Hribii sunt cei mai buni. Fructele de pădure și ierburile ajută și ele puțin.",
+            done = "Nu e mult, dar mă ține în picioare.",
+        },
+        new Level
+        {
+            title = "PRIMA NOAPTE",
+            story = new[]
+            {
+                "Soarele apune.",
+                "Ceva nu e în regulă pe insula asta... Azi-noapte am văzut o formă întunecată printre copaci, care mă privea.",
+                "Stătea departe de foc.",
+                "Am nevoie de mult mai multe lemne, ca focul să ardă toată noaptea.",
+            },
+            steps = new[]
+            {
+                "Strânge lemne de foc: 3 bușteni sau 8 bețe",
+                "Să ai focul aprins când se lasă noaptea",
+                "Rămâi lângă foc până dimineață",
+            },
+            hint = "Fă un topor de piatră (1 piatră + 2 bețe) și taie copaci pentru bușteni. Buștenii ard cel mai mult. Nu lăsa focul să se stingă!",
+            done = "Răsare soarele. Am trecut de noapte... dar umbra se va întoarce.",
+        },
+        new Level
+        {
+            title = "MUNTELE",
+            story = new[]
+            {
+                "Azi-noapte s-a cutremurat pământul.",
+                "În zori am auzit pietre căzând, sus pe munte. Ceva s-a deschis acolo.",
+                "Trebuie să văd ce ascunde muntele.",
+            },
+            steps = new[]
+            {
+                "Explorează muntele",
+                "Găsește ce au deschis pietrele căzute",
+            },
+            hint = "Caută pe pantele muntelui: o coloană de lumină strălucește acolo unde au căzut pietrele.",
+            done = "O peșteră! Înăuntru e beznă și ceva se mișcă în întuneric. Nu intru fără lumină.",
+        },
+        new Level
+        {
+            title = "ÎN ÎNTUNERIC",
+            story = new[]
+            {
+                "Am nevoie de o lumină pe care s-o pot purta cu mine.",
+                "Un băț cu iarbă uscată legată în jurul lui va arde câteva ore. Poate două, ca să fiu sigur.",
+            },
+            steps = new[]
+            {
+                "Fă o torță (Crafting > Tools)",
+                "Ține torța în mână (se aprinde)",
+                "Coboară până la capătul peșterii",
+                "Citește jurnalul vechi",
+                "Ia cartea de rugăciuni (pe piatra din fața crucii)",
+            },
+            hint = "O torță arde cam 6 ore în mână. Nu sta niciodată în peșteră fără lumină: umbra trăiește în întuneric!",
+            done = "Fratele Ioan s-a luptat cu aceeași umbră. Mi-a lăsat rugăciunile lui.",
+        },
+        new Level
+        {
+            title = "RUGĂCIUNEA",
+            story = new[]
+            {
+                "Fratele Ioan a scris că umbra nu suportă rugăciunea.",
+                "În noaptea asta, când va veni după mine, voi vedea dacă avea dreptate.",
+            },
+            steps = new[]
+            {
+                "Așteaptă noaptea",
+                "Când vine umbra, deschide cartea de rugăciuni",
+            },
+            hint = "Folosește cartea de rugăciuni din inventar sau din bara rapidă când umbra e aproape (departe de foc, fără torță).",
+            done = "Umbra a fugit de rugăciune. Acum am două arme împotriva ei: focul și rugăciunea.",
+        },
+        new Level
+        {
+            title = "FIERUL",
+            story = new[]
+            {
+                "Ca să plec de pe insula asta, voi avea nevoie de mult lemn. Toporul de piatră e prea încet.",
+                "În peșteră am văzut pietre ruginite: minereu de fier! Cu un buștean drept coadă poate deveni un topor adevărat.",
+            },
+            steps = new[]
+            {
+                "Găsește 10 minereuri de fier în peșteră (ia o torță!)",
+                "Să ai un buștean",
+                "Fă toporul de fier (Crafting > Tools)",
+            },
+            hint = "Minereul de fier stă de-a lungul tunelului peșterii. Cu toporul de fier orice copac cade din 3 lovituri.",
+            done = "Acum pot tăia tot lemnul de care am nevoie.",
+        },
+        new Level
+        {
+            title = "PLUTA",
+            story = new[]
+            {
+                "Insula asta nu e casa mea. Undeva, dincolo de mare, oamenii mă așteaptă.",
+                "Voi construi o plută pe plajă, lângă epavă: bușteni, scânduri, frânghie, crengi și fân.",
+                "Și hrană pentru drum: carne gătită, care să nu se strice pe drum.",
+                "Cânepa pentru frânghie crește pe pantele de lângă munte. Vor fi multe drumuri.",
+            },
+            steps = new[]
+            {
+                "Culege 18 cânepă (pe pantele de lângă munte)",
+                "Fă 6 frânghii (Crafting > Refine: câte 3 cânepă)",
+                "Mergi la pluta de pe plajă, lângă epavă",
+                "Adu-i 12 bușteni, 8 scânduri, 6 frânghii, 16 bețe, 10 fân și 5 carne gătită",
+                "Urcă pe plută, în mare",
+            },
+            hint = "Privește pluta și apasă: ce îi trebuie și ai la tine se pune pe ea. Scânduri: Crafting > Refine (1 buștean = 2). Toporul de fier doboară un copac din 3 lovituri.",
             done = "",
         },
     };
@@ -251,6 +426,7 @@ public class StoryManager : MonoBehaviour
         InventoryItem.Consumed += OnConsumed;
         BookReader.Opened += OnBookOpened;
         Raft.Boarded += OnRaftBoarded;
+        Lang.Changed += RefreshPanel; // the goals in the other language at once
     }
 
     void OnDisable()
@@ -261,6 +437,7 @@ public class StoryManager : MonoBehaviour
         InventoryItem.Consumed -= OnConsumed;
         BookReader.Opened -= OnBookOpened;
         Raft.Boarded -= OnRaftBoarded;
+        Lang.Changed -= RefreshPanel;
     }
 
     void OnDestroy()
@@ -552,7 +729,7 @@ public class StoryManager : MonoBehaviour
         if (data == null) return;
         bool first = !data.riverFound;
         data.riverFound = true;
-        if (first) ShowToast("Fresh water! You can drink from the river and the lake, and from rain puddles. Never from the sea.", 8f);
+        if (first) ShowToast(Lang.T("Fresh water! You can drink from the river and the lake, and from rain puddles. Never from the sea.", "Apă dulce! Poți bea din râu și din lac, și din băltoacele de după ploaie. Niciodată din mare."), 8f);
     }
 
     void OnPicked(string item)
@@ -574,12 +751,12 @@ public class StoryManager : MonoBehaviour
         modal = true; // no checks meanwhile
         RefreshPanel();
         if (SoundManager.Instance != null) SoundManager.Instance.PlayCraft();
-        yield return Banner("LEVEL " + finished + " COMPLETE", level.done, 4.5f);
+        yield return Banner(Lang.T("LEVEL " + finished + " COMPLETE", "NIVELUL " + finished + " TERMINAT"), level.done, 4.5f);
         modal = false;
         if (data.level <= Levels.Length) yield return BeginLevel();
         else
         {
-            yield return Banner("TO BE CONTINUED...", "More levels are coming. Survive as long as you can!", 5f);
+            yield return Banner(Lang.T("TO BE CONTINUED...", "VA URMA..."), Lang.T("More levels are coming. Survive as long as you can!", "Vin și alte niveluri. Supraviețuiește cât poți de mult!"), 5f);
             RefreshPanel();
         }
     }
@@ -589,7 +766,7 @@ public class StoryManager : MonoBehaviour
         var level = Levels[data.level - 1];
         UpdateCave();
         if (level.story.Length > 0) yield return StoryText(level.story, false);
-        yield return Banner("LEVEL " + data.level, level.title, 3.5f);
+        yield return Banner(Lang.T("LEVEL ", "NIVELUL ") + data.level, level.title, 3.5f);
         RefreshPanel();
     }
 
@@ -618,11 +795,27 @@ public class StoryManager : MonoBehaviour
 
     // ---------------- the intro ---------------- //
 
+    // The shipwreck story is told only the first time on this device: once it was seen (or there is a saved game),
+    // a new game begins right away with Level 1.
+    const string IntroSeenKey = "SurvivalBD.IntroSeen";
+
+    static bool IntroSeenBefore()
+    {
+        if (PlayerPrefs.GetInt(IntroSeenKey, 0) == 1) return true;
+        for (int i = 0; i <= 12; i++) if (PlayerPrefs.HasKey("Slot" + i + "Description")) return true;
+        return false;
+    }
+
     IEnumerator Intro()
     {
-        yield return StoryText(IntroLines, true);
+        if (!IntroSeenBefore())
+        {
+            yield return StoryText(IntroLines, true);
+            PlayerPrefs.SetInt(IntroSeenKey, 1);
+            PlayerPrefs.Save();
+        }
         data.introSeen = true;
-        yield return Banner("LEVEL 1", Levels[0].title, 3.5f);
+        yield return Banner(Lang.T("LEVEL 1", "NIVELUL 1"), Levels[0].title, 3.5f);
         RefreshPanel();
     }
 
@@ -647,11 +840,11 @@ public class StoryManager : MonoBehaviour
         var text = UISkin.NewText("Line", root, "", 40, new Color(0.95f, 0.92f, 0.85f), TextAnchor.MiddleCenter, false);
         UISkin.Centered(text.rectTransform, new Vector2(0f, 40f), new Vector2(1300f, 400f));
         text.lineSpacing = 1.15f;
-        var help = UISkin.NewText("Help", root, GameInput.TouchControls ? "Tap to continue" : "Click or press Space to continue",
+        var help = UISkin.NewText("Help", root, GameInput.TouchControls ? Lang.T("Tap to continue", "Atinge ecranul ca să continui") : Lang.T("Click or press Space to continue", "Clic sau Space ca să continui"),
             24, new Color(1f, 1f, 1f, 0.45f), TextAnchor.MiddleCenter, false);
         UISkin.Place(help.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(900f, 40f));
         bool skip = false;
-        var skipButton = UISkin.NewButton("Skip", root, UISkin.Pill, new Color(1f, 1f, 1f, 0.18f), "Skip", 26, Color.white, () => skip = true);
+        var skipButton = UISkin.NewButton("Skip", root, UISkin.Pill, new Color(1f, 1f, 1f, 0.18f), Lang.T("Skip", "Sari peste"), 26, Color.white, () => skip = true);
         UISkin.Place((RectTransform)skipButton.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(160f, 64f));
         var tapArea = back.gameObject.AddComponent<Button>();
         tapArea.transition = Selectable.Transition.None;
@@ -777,8 +970,8 @@ public class StoryManager : MonoBehaviour
         float y = -16f;
         if (data.level > Levels.Length)
         {
-            panelTitle.text = "FREE PLAY";
-            panelHint.text = "All levels done. More levels are coming soon!";
+            panelTitle.text = Lang.T("FREE PLAY", "JOC LIBER");
+            panelHint.text = Lang.T("All levels done. More levels are coming soon!", "Toate nivelurile sunt gata. Vin curând altele!");
             foreach (var t in stepTexts) t.gameObject.SetActive(false);
             foreach (var i in stepIcons) i.gameObject.SetActive(false);
             UISkin.Place(panelTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y), new Vector2(width - 40f, 34f));
@@ -787,7 +980,7 @@ public class StoryManager : MonoBehaviour
             return;
         }
         var level = Levels[data.level - 1];
-        panelTitle.text = "LEVEL " + data.level + "  " + level.title;
+        panelTitle.text = Lang.T("LEVEL ", "NIVELUL ") + data.level + "  " + level.title;
         UISkin.Place(panelTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y), new Vector2(width - 40f, 34f));
         y -= phone ? 44f : 40f;
         int current = -1;
@@ -829,6 +1022,10 @@ public class StoryManager : MonoBehaviour
             || (MenuManager.Instance != null && MenuManager.Instance.isMenuOpen);
         bool show = data != null && data.introSeen && !modal && !windows;
         if (panel != null && panel.gameObject.activeSelf != show) panel.gameObject.SetActive(show);
+        // the "LEVEL N" banner and the messages wait behind the game's menu (they were drawn over Settings)
+        bool menu = MenuManager.Instance != null && MenuManager.Instance.isMenuOpen;
+        if (bannerGroup != null && bannerGroup.gameObject.activeSelf == menu) bannerGroup.gameObject.SetActive(!menu);
+        if (toastGroup != null && toastGroup.gameObject.activeSelf == menu) toastGroup.gameObject.SetActive(!menu);
     }
 
     IEnumerator Banner(string title, string subtitle, float seconds)

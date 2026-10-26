@@ -18,7 +18,7 @@ public static class CaveTool
     const string Dir = "Assets/Island/Cave";
     const float Step = 4f;
     // the player is a tall capsule (3.7 m): the tunnel is wide and high, so a phone player walks in without bumping
-    const float RadiusWide = 5.6f, RadiusHigh = 4.6f, FloorBelow = 1.6f;
+    const float RadiusWide = 5.6f, RadiusHigh = 9f, FloorBelow = 1.6f; // floor to roof ~10.6 m
 
     [MenuItem("Tools/Nature/2c. Make The Cave Wider")]
     static void WidenFromMenu()
@@ -224,30 +224,41 @@ public static class CaveTool
         float cx = data.size.x / hr, cz = data.size.z / hr;
         var holes = data.GetHoles(0, 0, hr, hr);
         int cut = 0;
-        for (int i = 0; i < Mathf.Min(path.Count, 10); i++)
-        {
-            Vector3 c = path[i];
-            float floor = c.y - FloorBelow, roof = c.y + RadiusHigh;
-            float scan = RadiusWide * 1.7f;
-            int x0 = Mathf.Max(0, Mathf.FloorToInt((c.x - scan - tp.x) / cx)), x1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.x + scan - tp.x) / cx));
-            int z0 = Mathf.Max(0, Mathf.FloorToInt((c.z - scan - tp.z) / cz)), z1 = Mathf.Min(hr - 1, Mathf.CeilToInt((c.z + scan - tp.z) / cz));
-            for (int z = z0; z <= z1; z++)
-                for (int x = x0; x <= x1; x++)
+        // Every hole cell whose ground is inside the tunnel's tube (its real size there, with the wider mouth), with
+        // a margin: no jagged bits of ground are left inside the tunnel. The tube's rock is drawn on both sides, so
+        // from outside it covers the edge of the hole.
+        int last = Mathf.Min(path.Count - 1, 12);
+        int count = path.Count;
+        float scan = RadiusWide * 2.2f;
+        float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+        for (int i = 0; i <= last; i++) { minX = Mathf.Min(minX, path[i].x); maxX = Mathf.Max(maxX, path[i].x); minZ = Mathf.Min(minZ, path[i].z); maxZ = Mathf.Max(maxZ, path[i].z); }
+        int x0 = Mathf.Max(0, Mathf.FloorToInt((minX - scan - tp.x) / cx)), x1 = Mathf.Min(hr - 1, Mathf.CeilToInt((maxX + scan - tp.x) / cx));
+        int z0 = Mathf.Max(0, Mathf.FloorToInt((minZ - scan - tp.z) / cz)), z1 = Mathf.Min(hr - 1, Mathf.CeilToInt((maxZ + scan - tp.z) / cz));
+        Vector2 a0 = new Vector2(path[0].x, path[0].z), b0 = new Vector2(path[1].x, path[1].z);
+        for (int z = z0; z <= z1; z++)
+            for (int x = x0; x <= x1; x++)
+            {
+                Vector3 w = new Vector3(tp.x + (x + 0.5f) * cx, 0f, tp.z + (z + 0.5f) * cz);
+                Vector2 q = new Vector2(w.x, w.z);
+                if (Vector2.Dot(q - a0, (b0 - a0).normalized) < -0.8f) continue; // not in front of the mouth
+                // the nearest point of the tunnel's middle line: its height and the tube's size there
+                float best = float.MaxValue, centreY = 0f, s = 1f;
+                for (int i = 0; i < last; i++)
                 {
-                    Vector3 w = new Vector3(tp.x + (x + 0.5f) * cx, 0f, tp.z + (z + 0.5f) * cz);
-                    // only inside the tunnel's shape: its width at the height of the ground there
-                    float h = Ground(terrain, w);
-                    float y = h - c.y;
-                    if (y < -FloorBelow + 0.3f || y > RadiusHigh + 0.4f) continue;
-                    // not in front of the mouth (the tunnel starts there)
-                    Vector2 a0 = new Vector2(path[0].x, path[0].z), b0 = new Vector2(path[1].x, path[1].z), q0 = new Vector2(w.x, w.z);
-                    if (Vector2.Dot(q0 - a0, b0 - a0) < 0f) continue;
-                    float k = Mathf.Clamp(y, -RadiusHigh * 0.99f, RadiusHigh * 0.99f) / RadiusHigh;
-                    float halfWidth = RadiusWide * Mathf.Sqrt(1f - k * k);
-                    if (DistanceToSegments(path, 0, Mathf.Min(path.Count - 1, 10), w) > halfWidth * 0.92f) continue;
-                    if (holes[z, x]) { holes[z, x] = false; cut++; }
+                    Vector2 a = new Vector2(path[i].x, path[i].z), b = new Vector2(path[i + 1].x, path[i + 1].z), ab = b - a;
+                    float t = ab.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector2.Dot(q - a, ab) / ab.sqrMagnitude) : 0f;
+                    float d = Vector2.Distance(a + ab * t, q);
+                    if (d < best) { best = d; centreY = Mathf.Lerp(path[i].y, path[i + 1].y, t); s = Mathf.Lerp(Scale(i, count), Scale(i + 1, count), t); }
                 }
-        }
+                float halfHigh = RadiusHigh * Mathf.Lerp(1f, 1.35f, s - 1f);
+                float y = Ground(terrain, w) - centreY;
+                if (y < -FloorBelow - 0.2f || y > halfHigh + 1f) continue;
+                float k = Mathf.Clamp(y, -halfHigh * 0.99f, halfHigh * 0.99f) / halfHigh;
+                float halfWidth = RadiusWide * s * Mathf.Sqrt(1f - k * k);
+                if (y < 0f) halfWidth = RadiusWide * s; // the flat floor goes all the way across
+                if (best > halfWidth * 1.03f + 0.35f) continue;
+                if (holes[z, x]) { holes[z, x] = false; cut++; }
+            }
         if (cut > 0)
         {
             Undo.RegisterCompleteObjectUndo(data, "Cave mouth");
@@ -274,8 +285,8 @@ public static class CaveTool
 
     static float Scale(int i, int count)
     {
-        if (i == 0) return 1.45f; // the mouth opens wider (its rock covers the edge of the hole in the terrain)
-        if (i == 1) return 1.12f;
+        if (i == 0) return 1.6f; // the mouth opens wider, like a funnel (its rock covers the edge of the hole in the terrain)
+        if (i == 1) return 1.25f;
         int hallStart = count - 7;
         if (i < hallStart) return 1f;
         float t = (float)(i - hallStart) / 6f;
@@ -292,26 +303,31 @@ public static class CaveTool
         float along = 0f;
         float seed = (float)rng.NextDouble() * 50f;
         int count = path.Count;
-        for (int i = 0; i < count; i++)
+        // ring -1: a collar of rock just outside the mouth, wider than it, that covers the edge of the hole in the
+        // ground around the way in (no sky seen through the gaps of the terrain's holes)
+        for (int r = -1; r < count; r++)
         {
-            if (i > 0) along += Vector3.Distance(path[i], path[i - 1]);
+            int i = Mathf.Max(0, r);
+            if (r > 0) along += Vector3.Distance(path[i], path[i - 1]);
+            Vector3 ringCentre = r < 0 ? path[0] - Along(path, 0) * 1.6f : path[i];
             Vector3 side = Side(path, i);
-            float s = Scale(i, count);
-            float daylight = Mathf.Clamp01(1f - (along - 4f) / 14f);
+            float s = r < 0 ? 1.95f : Scale(i, count);
+            float daylight = r < 0 ? 1f : Mathf.Clamp01(1f - (along - 4f) / 14f);
             for (int k = 0; k <= around; k++)
             {
                 float a = (float)k / around * Mathf.PI * 2f;
-                float n = Mathf.PerlinNoise(path[i].x * 0.21f + a * 1.7f + seed, path[i].z * 0.21f + path[i].y * 0.3f) - 0.5f;
-                float rough = k == 0 || k == around ? 0f : n * 0.55f;
+                float n = Mathf.PerlinNoise(ringCentre.x * 0.21f + a * 1.7f + seed, ringCentre.z * 0.21f + ringCentre.y * 0.3f) - 0.5f;
+                float rough = k == 0 || k == around ? 0f : n * (r < 0 ? 1.2f : 0.55f);
                 float x = Mathf.Cos(a) * (RadiusWide * s + rough);
                 float y = Mathf.Sin(a) * (RadiusHigh * Mathf.Lerp(1f, 1.35f, s - 1f) + rough * 0.8f);
                 float floor = -FloorBelow;
                 if (y < floor) y = floor + n * 0.08f; // a walkable floor
-                v.Add(path[i] + side * x + Vector3.up * y);
-                uv.Add(new Vector2((float)k / around * 5f, along / 3.5f));
+                v.Add(ringCentre + side * x + Vector3.up * y);
+                uv.Add(new Vector2((float)k / around * 5f, (r < 0 ? -1.6f : along) / 3.5f));
                 col.Add(new Color(daylight, 0f, 0f, 1f));
             }
         }
+        count += 1; // (the rings below count the collar too)
         for (int i = 0; i + 1 < count; i++)
             for (int k = 0; k < around; k++)
             {
@@ -322,7 +338,7 @@ public static class CaveTool
         // close the end
         int last = (count - 1) * (around + 1);
         int centre = v.Count;
-        v.Add(path[count - 1] + Along(path, count - 1) * 1.2f);
+        v.Add(path[path.Count - 1] + Along(path, path.Count - 1) * 1.2f);
         uv.Add(new Vector2(0.5f, along / 3.5f));
         col.Add(new Color(0f, 0f, 0f, 1f));
         for (int k = 0; k < around; k++) { tri.Add(last + k); tri.Add(centre); tri.Add(last + k + 1); }
@@ -471,6 +487,52 @@ public static class CaveTool
         EditorUtility.SetDirty(cave.gameObject);
     }
 
+    // The ground just in front of the mouth and under its first metres goes down to the tunnel's floor: a flat way
+    // in, with no jagged bits of ground sticking up where the floor of the tunnel begins. It is only lowered.
+    static void FlattenEntrance(Terrain terrain, List<Vector3> path)
+    {
+        var data = terrain.terrainData;
+        Vector3 tp = terrain.transform.position;
+        int res = data.heightmapResolution;
+        float sx = data.size.x / (res - 1), sz = data.size.z / (res - 1), sy = data.size.y;
+        var heights = data.GetHeights(0, 0, res, res);
+        Vector3 axis = path[2] - path[0]; axis.y = 0f;
+        float inLength = axis.magnitude;
+        axis.Normalize();
+        Vector3 side = new Vector3(axis.z, 0f, -axis.x);
+        float halfWidth = RadiusWide * Scale(0, path.Count) + 0.5f;
+        const float front = 7f, fade = 4f;
+        bool changed = false;
+        float reach = Mathf.Max(front, inLength) + halfWidth + fade + 2f;
+        int x0 = Mathf.Max(0, Mathf.FloorToInt((path[0].x - reach - tp.x) / sx)), x1 = Mathf.Min(res - 1, Mathf.CeilToInt((path[0].x + reach - tp.x) / sx));
+        int z0 = Mathf.Max(0, Mathf.FloorToInt((path[0].z - reach - tp.z) / sz)), z1 = Mathf.Min(res - 1, Mathf.CeilToInt((path[0].z + reach - tp.z) / sz));
+        for (int z = z0; z <= z1; z++)
+            for (int x = x0; x <= x1; x++)
+            {
+                Vector3 w = new Vector3(tp.x + x * sx, 0f, tp.z + z * sz);
+                Vector3 d = w - path[0]; d.y = 0f;
+                float along = Vector3.Dot(d, axis), across = Mathf.Abs(Vector3.Dot(d, side));
+                // inside the strip: from 7 m in front of the mouth to the third point of the tunnel
+                float outAlong = along < -front ? -front - along : along > inLength ? along - inLength : 0f;
+                float outAcross = Mathf.Max(0f, across - halfWidth);
+                float k = 1f - Mathf.Clamp01(Mathf.Max(outAlong, outAcross) / fade);
+                if (k <= 0f) continue;
+                float t = Mathf.Clamp01(along / Mathf.Max(0.1f, inLength));
+                float floor = Mathf.Lerp(path[0].y, path[2].y, t) - FloorBelow - 0.15f;
+                float h = heights[z, x] * sy + tp.y;
+                if (h <= floor) continue;
+                float target = Mathf.Lerp(h, floor, Mathf.SmoothStep(0f, 1f, k));
+                heights[z, x] = Mathf.Clamp01((target - tp.y) / sy);
+                changed = true;
+            }
+        if (changed)
+        {
+            Undo.RegisterCompleteObjectUndo(data, "Cave entrance");
+            data.SetHeights(0, 0, heights);
+            EditorUtility.SetDirty(data);
+        }
+    }
+
     // The tunnel made wider and higher (the player could not get in on the phone): the mountain above it, the mouth,
     // the tunnel's rock, the rocks at the mouth and the rockfall, the mushrooms, the ore and the stalactites again.
     // The monk's place at the end stays where it is.
@@ -478,6 +540,7 @@ public static class CaveTool
     {
         var terrain = Terrain.activeTerrain;
         RaiseCover(terrain, cave.path, 5);
+        FlattenEntrance(terrain, cave.path);
         FixMouth(cave);
         bool closed = cave.rockfall == null || cave.rockfall.activeSelf;
         if (cave.rockfall != null) Object.DestroyImmediate(cave.rockfall);

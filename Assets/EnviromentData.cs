@@ -39,6 +39,9 @@ public class EnviromentData
     // the rain puddles (fresh water for 2-3 days after the rain); null in older saves
     public List<PuddleData> puddles;
 
+    // the things the player dropped on the ground from the inventory; null in older saves
+    public List<DroppedItemData> dropped;
+
 
     public EnviromentData(List<string> _pickedupItems, List<TreeData> _treeData, List<string> _animals, List<StorageData> _storage)
     {

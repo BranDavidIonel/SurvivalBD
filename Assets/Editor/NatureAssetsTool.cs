@@ -397,7 +397,14 @@ public static class NatureAssetsTool
         model.transform.position = Vector3.zero;
         var picture = RenderModel(model, 256, 256, Quaternion.Euler(22f, 35f, 0f), false);
         Object.DestroyImmediate(model);
-        File.WriteAllBytes(target, picture.EncodeToPNG());
+        // A model with a cave material (the monk's books) comes out dark or empty here: then the icon that is
+        // there already (the prayer book's was drawn by hand) is kept.
+        int seen = 0;
+        foreach (var c in picture.GetPixels32()) if (c.a > 25 && c.r + c.g + c.b > 30) seen++;
+        if (seen < 256 * 256 / 50 && File.Exists(target))
+            Debug.LogWarning("Icon of " + def.item + ": the picture came out (almost) empty, the old icon is kept");
+        else
+            File.WriteAllBytes(target, picture.EncodeToPNG());
         Object.DestroyImmediate(picture);
         AssetDatabase.ImportAsset(target);
         return ImportSprite(target);

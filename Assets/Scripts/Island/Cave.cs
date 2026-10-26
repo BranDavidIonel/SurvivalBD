@@ -26,6 +26,7 @@ public class Cave : MonoBehaviour
     public float daylightReach = 12f;
     [Tooltip("Seconds in the dark (no burning torch) before the shadow takes the player")]
     public float secondsInTheDark = 6f;
+    float DarkSeconds => secondsInTheDark * GameSettings.ShadowTime; // (the difficulty in Settings)
 
     float darkTime;
     bool taken;
@@ -157,7 +158,7 @@ public class Cave : MonoBehaviour
         bool dark = PlayerInside && along > daylightReach && !TorchLight.Burning && !dead && !taken;
         darkTime = dark ? darkTime + Time.deltaTime : Mathf.Max(0f, darkTime - Time.deltaTime * 3f);
         ShowWarning(darkTime > 0.05f && !dead);
-        if (dark && darkTime >= secondsInTheDark) TakePlayer();
+        if (dark && darkTime >= DarkSeconds) TakePlayer();
         if (!PlayerInside) taken = false;
     }
 
@@ -165,7 +166,7 @@ public class Cave : MonoBehaviour
     {
         taken = true;
         var death = FindObjectOfType<PlayerDeath>();
-        if (death != null) death.SetNextDeathMessage("The shadow took you in the dark...");
+        if (death != null) death.SetNextDeathMessage(Lang.T("The shadow took you in the dark...", "Umbra te-a luat în întuneric..."));
         var cam = Camera.main;
         if (cam != null) AudioSource.PlayClipAtPoint(ShadowSounds.Scream, cam.transform.position, SoundManager.EffectsVolume);
         PlayerState.Instance.currentHealth = 0f; // PlayerDeath takes it from here
@@ -179,14 +180,17 @@ public class Cave : MonoBehaviour
         if (heartbeat != null)
         {
             if (show && !heartbeat.isPlaying) heartbeat.Play();
-            heartbeat.volume = show ? Mathf.Clamp01(darkTime / secondsInTheDark) * SoundManager.EffectsVolume : 0f;
+            heartbeat.volume = show ? Mathf.Clamp01(darkTime / DarkSeconds) * SoundManager.EffectsVolume : 0f;
             if (!show && heartbeat.isPlaying) heartbeat.Stop();
         }
         if (!show) return;
-        int left = Mathf.Max(0, Mathf.CeilToInt(secondsInTheDark - darkTime));
-        warning.text = TorchLight.HasTorch ? "Your torch is out! The shadow is here... " + left : "It is pitch dark! The shadow is here... " + left;
+        int left = Mathf.Max(0, Mathf.CeilToInt(DarkSeconds - darkTime));
+        warning.text = (TorchLight.HasTorch ? Lang.T("Your torch is out! The shadow is here... ", "Torța ți s-a stins! Umbra e aici... ") : Lang.T("It is pitch dark! The shadow is here... ", "E beznă! Umbra e aici... ")) + left;
+        if (hint != null) hint.text = Lang.T("Get out into the light, or hold a burning torch!", "Ieși la lumină sau ține o torță aprinsă în mână!");
         warning.color = new Color(1f, 0.35f, 0.25f, 0.6f + 0.4f * Mathf.PingPong(Time.time * 2f, 1f));
     }
+
+    Text hint;
 
     void BuildWarning()
     {
@@ -201,7 +205,7 @@ public class Cave : MonoBehaviour
         scaler.matchWidthOrHeight = 1f;
         warning = UISkin.NewText("Warning", warningCanvas.transform, "", 46, Color.red, TextAnchor.MiddleCenter);
         UISkin.Centered(warning.rectTransform, new Vector2(0f, 120f), new Vector2(1500f, 120f));
-        var hint = UISkin.NewText("Hint", warningCanvas.transform, "Get out into the light, or hold a burning torch!", 30, UISkin.TextColor, TextAnchor.MiddleCenter);
+        hint = UISkin.NewText("Hint", warningCanvas.transform, "", 30, UISkin.TextColor, TextAnchor.MiddleCenter);
         UISkin.Centered(hint.rectTransform, new Vector2(0f, 50f), new Vector2(1400f, 60f));
         heartbeat = warningCanvas.AddComponent<AudioSource>();
         heartbeat.clip = ShadowSounds.Heartbeat;

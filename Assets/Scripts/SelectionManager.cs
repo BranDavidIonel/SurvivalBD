@@ -103,7 +103,7 @@ public class SelectionManager : MonoBehaviour
 
             if(storageBox && storageBox.playerInRange && PlacementSystem.Instance.inPlacementMode == false)
             {
-                interaction_text.text = "Open";
+                interaction_text.text = Lang.T("Open", "Deschide");
                 interaction_Info_UI.SetActive(true);
 
                 selectedStorageBox = storageBox.gameObject;
@@ -154,7 +154,7 @@ public class SelectionManager : MonoBehaviour
                 if (animal.isDead)
                 {
                     //looting
-                    interaction_text.text = "Loot";
+                    interaction_text.text = Lang.T("Loot", "Ia");
                     interaction_Info_UI.SetActive(true);
 
                     centerDotImage.gameObject.SetActive(false);
@@ -280,7 +280,7 @@ public class SelectionManager : MonoBehaviour
         if (atFresh)
         {
             bool full = state != null && state.currentHydrationPercent >= state.maxHydrationPercent - 0.5f;
-            interaction_text.text = full ? "Fresh water (not thirsty)" : source == FreshWater.Source.Puddle ? "Drink rain water" : "Drink water";
+            interaction_text.text = full ? Lang.T("Fresh water (not thirsty)", "Apă dulce (nu ți-e sete)") : source == FreshWater.Source.Puddle ? Lang.T("Drink rain water", "Bea apă de ploaie") : Lang.T("Drink water", "Bea apă");
             interaction_Info_UI.SetActive(true);
             centerDotImage.gameObject.SetActive(false);
             handIcon.gameObject.SetActive(true);
@@ -291,7 +291,7 @@ public class SelectionManager : MonoBehaviour
         else if (grass)
         {
             // dry grass on the meadows: hay for the fire, picked anywhere
-            interaction_text.text = "Pick grass (hay)";
+            interaction_text.text = Lang.T("Pick grass (hay)", "Smulge iarbă (fân)");
             interaction_Info_UI.SetActive(true);
             centerDotImage.gameObject.SetActive(false);
             handIcon.gameObject.SetActive(true);
@@ -301,11 +301,11 @@ public class SelectionManager : MonoBehaviour
         }
         else if (atSea)
         {
-            interaction_text.text = "Sea water (salty)";
+            interaction_text.text = Lang.T("Sea water (salty)", "Apă de mare (sărată)");
             interaction_Info_UI.SetActive(true);
             waterShown = true;
             if (GameInput.PrimaryDown && InventorySystem.Instance != null)
-                InventorySystem.Instance.ShowMessage("Too salty to drink! Find the river that comes from the mountain");
+                InventorySystem.Instance.ShowMessage(Lang.T("Too salty to drink! Find the river that comes from the mountain", "Prea sărată ca s-o bei! Caută râul care vine din munte"));
         }
         else if (waterShown)
         {

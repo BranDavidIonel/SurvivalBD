@@ -103,7 +103,7 @@ public class NightShadow : MonoBehaviour
         transform.position = Vector3.zero;
         transform.rotation = Quaternion.identity;
         safeUntil = Time.time + safeSecondsAfterStartOrDeath;
-        timeLeft = Mathf.Max(1f, secondsUntilAttack);
+        timeLeft = Mathf.Max(1f, secondsUntilAttack * GameSettings.ShadowTime);
         figure = ShadowFigure.Build(transform);
         BuildSound();
         BuildUI();
@@ -134,7 +134,7 @@ public class NightShadow : MonoBehaviour
         if (cam == null) return;
 
         float dt = Time.deltaTime;
-        float total = Mathf.Max(1f, secondsUntilAttack);
+        float total = Mathf.Max(1f, secondsUntilAttack * GameSettings.ShadowTime);
         Vector3 playerPos = player.transform.position;
 
         bool dead = (death != null && death.IsDead) || PlayerState.Instance == null || PlayerState.Instance.currentHealth <= 0f;
@@ -239,8 +239,9 @@ public class NightShadow : MonoBehaviour
     {
         SetState(State.Retreating);
         messageUntil = Time.time + 3f;
-        message.text = prayed ? "The prayer drives the shadow away..." : fireNear ? "The fire drives the shadow away..."
-            : night ? "The shadow fades away..." : "The daylight drives the shadow away...";
+        message.text = prayed ? Lang.T("The prayer drives the shadow away...", "Rugăciunea alungă umbra...")
+            : fireNear ? (TorchLight.Burning ? Lang.T("The torch drives the shadow away...", "Torța alungă umbra...") : Lang.T("The fire drives the shadow away...", "Focul alungă umbra..."))
+            : night ? Lang.T("The shadow fades away...", "Umbra se risipește...") : Lang.T("The daylight drives the shadow away...", "Lumina zilei alungă umbra...");
         prayed = false;
     }
 
@@ -261,7 +262,7 @@ public class NightShadow : MonoBehaviour
 
     void Grab()
     {
-        if (death != null) death.SetNextDeathMessage("The shadow took you...");
+        if (death != null) death.SetNextDeathMessage(Lang.T("The shadow took you...", "Umbra te-a luat..."));
         if (PlayerState.Instance != null) PlayerState.Instance.currentHealth = 0f; // PlayerDeath takes it from here
         safeUntil = Time.time + safeSecondsAfterStartOrDeath;
         Vanish();
@@ -289,6 +290,8 @@ public class NightShadow : MonoBehaviour
     void CheckFires(Vector3 playerPos)
     {
         fireNear = fireFar = false;
+        // a burning torch in the hand is fire too: the shadow keeps away from it (outside the cave as in it)
+        if (TorchLight.Burning) { fireNear = true; return; }
         foreach (var fire in FindObjectsOfType<Campfire>())
         {
             if (!fire.IsBurning) continue;
@@ -566,8 +569,8 @@ public class NightShadow : MonoBehaviour
         {
             title.gameObject.SetActive(true);
             message.gameObject.SetActive(true);
-            title.text = fireFar ? "GET BACK TO YOUR FIRE!" : "LIGHT A FIRE!";
-            message.text = state == State.Attacking ? "..." : $"The shadow will take you in {Mathf.CeilToInt(timeLeft)}...";
+            title.text = fireFar ? Lang.T("GET BACK TO YOUR FIRE!", "ÎNTOARCE-TE LA FOC!") : Lang.T("LIGHT A FIRE!", "APRINDE UN FOC!");
+            message.text = state == State.Attacking ? "..." : Lang.T("The shadow will take you in ", "Umbra te ia în ") + Mathf.CeilToInt(timeLeft) + "...";
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(5f, 14f, Fear));
             title.color = Color.Lerp(new Color(1f, 0.2f, 0.15f), new Color(1f, 0.85f, 0.3f), pulse * 0.45f);
             message.color = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.5f), Fear);

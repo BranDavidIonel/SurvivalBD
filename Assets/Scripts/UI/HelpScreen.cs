@@ -75,6 +75,8 @@ public class HelpScreen : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape)) Close();
     }
 
+    Text helpTitle;
+
     void ShowTab(int index)
     {
         tab = index;
@@ -83,11 +85,31 @@ public class HelpScreen : MonoBehaviour
             var img = tabs[i].GetComponent<Image>();
             if (img != null) img.color = i == tab ? UISkin.SelectedGold : UISkin.ButtonBrown;
         }
+        // (in the language of the Settings)
+        if (helpTitle != null) helpTitle.text = Lang.T("HELP", "AJUTOR");
+        string[] names = { Lang.T("Controls", "Controale"), Lang.T("Levels", "Niveluri"), Lang.T("Tips", "Sfaturi") };
+        for (int i = 0; i < tabs.Length && i < names.Length; i++) { var label = tabs[i].GetComponentInChildren<Text>(); if (label != null) label.text = names[i]; }
         body.text = tab == 0 ? Controls() : tab == 1 ? Levels() : Tips();
     }
 
     static string Controls()
     {
+        if (Lang.Ro)
+            return
+                "<b><color=#FFD780>Pe PC</color></b>\n" +
+                "W A S D  mers          Mouse  privit          Space  sărit (în apă: sus)          Left Ctrl  jos, în apă\n" +
+                "Clic stânga  lovești cu unealta din mână / iei / deschizi / bei / așezi\n" +
+                "I  inventar          C  crafting          M  meniu (salvare, încărcare, setări)          H  acest ajutor\n" +
+                "1 - 6  bara rapidă: iei o unealtă în mână, mănânci, plantezi o sămânță, așezi un foc\n" +
+                "Clic dreapta pe un obiect  îl folosești / îl mănânci / îl pui în bara rapidă          X  anulezi așezarea\n" +
+                "Tab  eliberezi mouse-ul ca să apeși butoanele din dreapta sus\n" +
+                "Tragi un obiect afară din fereastră  îl arunci pe jos (te întreabă înainte)\n\n" +
+                "<b><color=#FFD780>Pe telefon</color></b>\n" +
+                "Joystick stânga  mers          Joystick dreapta sau glisare  privit\n" +
+                "Butonul mare  Attack / Take / Open / Place (se schimbă după ce privești)\n" +
+                "Jump (în apă: sus) și Down          Inventory, Crafting, Menu  în dreapta sus\n" +
+                "Dublu tap pe un obiect  îl folosești / îl mănânci          Tap pe un loc din bara rapidă  îl iei în mână\n" +
+                "Cancel  oprești așezarea";
         return
             "<b><color=#FFD780>On the PC</color></b>\n" +
             "W A S D  walk          Mouse  look          Space  jump (in water: up)          Left Ctrl  down in water\n" +
@@ -95,7 +117,8 @@ public class HelpScreen : MonoBehaviour
             "I  inventory          C  crafting          M  menu (save, load, settings)          H  this help\n" +
             "1 - 6  the quick bar: take a tool in your hand, eat, plant a seed, place a campfire\n" +
             "Right click on an item  use it / eat it / put it in the quick bar          X  cancel placing\n" +
-            "Tab  free the mouse to click the buttons at the top right\n\n" +
+            "Tab  free the mouse to click the buttons at the top right\n" +
+            "Drag an item out of the window  drop it on the ground (you are asked first)\n\n" +
             "<b><color=#FFD780>On the phone</color></b>\n" +
             "Left joystick  walk          Right joystick or swipe  look\n" +
             "The big button  Attack / Take / Open / Place (it changes with what you look at)\n" +
@@ -111,31 +134,44 @@ public class HelpScreen : MonoBehaviour
         for (int i = 1; i <= StoryManager.LevelCount; i++)
         {
             string color = i < current ? "#94ED78" : i == current ? "#FFD780" : "#B4AA9A";
-            sb.Append("<color=" + color + "><b>Level " + i + "  " + StoryManager.LevelTitle(i) + "</b>");
-            if (i < current) sb.Append("   (done)");
-            if (i == current) sb.Append("   (you are here)");
+            sb.Append("<color=" + color + "><b>" + Lang.T("Level ", "Nivelul ") + i + "  " + StoryManager.LevelTitle(i) + "</b>");
+            if (i < current) sb.Append(Lang.T("   (done)", "   (terminat)"));
+            if (i == current) sb.Append(Lang.T("   (you are here)", "   (ești aici)"));
             sb.Append("</color>\n");
             if (i == current)
             {
                 foreach (var step in StoryManager.LevelSteps(i)) sb.Append("      - " + step + "\n");
             }
         }
-        if (current > StoryManager.LevelCount) sb.Append("\n<color=#94ED78>You left the island. The end!</color>");
+        if (current > StoryManager.LevelCount) sb.Append("\n<color=#94ED78>" + Lang.T("You left the island. The end!", "Ai plecat de pe insulă. Sfârșit!") + "</color>");
         return sb.ToString();
     }
 
     static string Tips()
     {
+        if (Lang.Ro)
+            return
+                "<b>Apa</b>: bara de apă plină ține o zi. Bea din râu, din lac sau din băltoacele de după ploaie (2-3 zile). Niciodată din mare!\n" +
+                "<b>Hrana</b>: bara de hrană plină ține cam trei zile. Ciuperci, fructe de pădure, ierburi, carne gătită. Barele goale te omoară.\n" +
+                "<b>Focul</b>: un foc de tabără e din 6 pietre. Ca să-l aprinzi: lemne în foc și 1 fân (smulgi iarbă de pe pajiști).\n" +
+                "<b>Umbra</b>: vine noaptea când nu arde niciun foc lângă tine. Focul, torța aprinsă în mână și cartea de rugăciuni o alungă.\n" +
+                "<b>Peștera</b>: beznă totală. Intră doar cu o torță aprinsă în mână (6 ore fiecare). Ia una de rezervă.\n" +
+                "<b>Copacii</b>: semințele cad sub ei și cresc copaci noi după 2-3 zile. Culege semințe și plantează-le.\n" +
+                "<b>Iepurii</b>: masculii (albastru) și femelele (roz) fac pui. Un iepure vânat dă carne și blană.\n" +
+                "<b>Pluta</b> (ultimul nivel): stă pe plajă, lângă epavă. Adu-i ce îi trebuie în câte drumuri vrei,\n" +
+                "      plus 5 carne gătită: hrană pentru drum (vânezi iepuri și frigi carnea la foc).\n" +
+                "<b>Salvarea</b>: Menu > Save Game. <b>Limba și dificultatea</b>: Menu > Settings.";
         return
             "<b>Water</b>: a full water bar lasts one day. Drink from the river, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
             "<b>Food</b>: a full food bar lasts about three days. Mushrooms, berries, herbs, cooked meat. Empty bars kill you.\n" +
             "<b>Fire</b>: a campfire is 6 stones. To light it: wood in the fire and 1 hay (pick grass on the meadows).\n" +
-            "<b>The shadow</b>: it comes at night when no fire burns near you. The prayer book drives it away for a while.\n" +
+            "<b>The shadow</b>: it comes at night when no fire burns near you. A fire, a burning torch in your hand and the prayer book drive it away.\n" +
             "<b>The cave</b>: pitch dark. Go in only with a burning torch in your hand (6 hours each). Take a spare one.\n" +
             "<b>Trees</b>: seeds fall under them and grow into new trees after 2-3 days. Pick seeds and plant them.\n" +
             "<b>Rabbits</b>: males (blue) and females (pink) make babies. Hunting one gives meat and its hide.\n" +
-            "<b>The raft</b> (the last level): it lies on the beach by the wreck. Bring it what it needs in as many trips as you like.\n" +
-            "<b>Saving</b>: Menu > Save Game.";
+            "<b>The raft</b> (the last level): it lies on the beach by the wreck. Bring it what it needs in as many trips as you like,\n" +
+            "      and 5 cooked meat: food for the journey (hunt rabbits, cook the meat on a campfire).\n" +
+            "<b>Saving</b>: Menu > Save Game. <b>Language and difficulty</b>: Menu > Settings.";
     }
 
     void Build()
@@ -156,6 +192,7 @@ public class HelpScreen : MonoBehaviour
         var panel = UISkin.NewImage("Panel", root.transform, UISkin.White, new Color(0.11f, 0.09f, 0.07f, 0.985f), true);
         UISkin.Centered(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1600f, 900f));
         var title = UISkin.NewText("Title", panel.transform, "HELP", 46, UISkin.Gold, TextAnchor.MiddleCenter);
+        helpTitle = title;
         UISkin.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -20f), new Vector2(600f, 60f));
 
         string[] names = { "Controls", "Levels", "Tips" };

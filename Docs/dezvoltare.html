@@ -31,6 +31,11 @@
 
 <main>
 
+<div class="warn-box" style="margin-top:24px">
+  <b>Parola de admin: <code>1212</code></b>. În joc: <i>Menu › Settings</i> › rândul <b>Admin</b> › scrii parola › <b>Unlock</b> › <b>Admin settings</b> (panoul TEST).<br>
+  Ca s-o schimbi: <code>Assets/Scripts/Environment/DebugEnvironmentPanel.cs</code>, rândul <code>const string AdminPassword = "1212";</code>
+</div>
+
 <section id="scena">
   <h2>Ce e în scenă (GameScene)</h2>
   <p class="lead">Pădurile, plantele, iepurii, râul și peștera sunt obiecte obișnuite în scenă: le vezi în Hierarchy, le muți, ștergi sau dublezi cu mâna.</p>
@@ -70,7 +75,7 @@
 <section id="test">
   <h2>Testare rapidă</h2>
   <div class="card">
-    <p>În joc: <i>Menu › Settings › TEST</i>. Acolo poți schimba ora (răsărit, zi, apus, noapte), viteza timpului (x1…x300), viteza de mers, vremea și anotimpul. Pentru niveluri:</p>
+    <p>În joc: <i>Menu › Settings</i>, în rândul <b>Admin</b> scrii parola <b>1212</b> și apeși <b>Unlock</b> (apoi <b>Admin settings</b>). Panoul TEST rămâne deblocat până închizi jocul; jucătorii nu îl văd fără parolă. Acolo poți schimba ora (răsărit, zi, apus, noapte), viteza timpului (x1…x300), viteza de mers, vremea și anotimpul. Pentru niveluri:</p>
     <ul>
       <li><b>Next level</b> – termini nivelul curent și treci la următorul.</li>
       <li><b>Give items</b> – primești pietre, bețe, fân, un buștean și o ciupercă.</li>
@@ -108,7 +113,12 @@
     <tr><td><code>Scripts/PlayerState.cs</code></td><td>Viață, hrană, apă (1 zi apă, ~3 zile hrană)</td></tr>
     <tr><td><code>Scripts/CraftingSystem.cs</code></td><td>Rețetele (toporul, focul, torța, toporul de fier, frânghia…)</td></tr>
     <tr><td><code>Scripts/UI/PcControls.cs</code>, <code>HelpScreen.cs</code></td><td>Butoanele de pe PC și ecranul Help</td></tr>
-    <tr><td><code>SaveManager.cs</code></td><td>Salvarea: copaci, plante, iepuri, poveste, focuri, băltoace, pluta</td></tr>
+    <tr><td><code>Scripts/Environment/DebugEnvironmentPanel.cs</code>, <code>Scripts/UI/GameSettings.cs</code></td><td>Ecranul Settings: sunete, dificultate, parola de admin și panoul TEST</td></tr>
+    <tr><td><code>SaveManager.cs</code></td><td>Salvarea: copaci, plante, iepuri, poveste, focuri, băltoace, obiecte aruncate, pluta</td></tr>
+    <tr><td><code>Scripts/UI/Lang.cs</code></td><td>Limba (English / Română). Orice text nou se scrie <code>Lang.T("English", "Română")</code>; textele care stau mult pe ecran ascultă <code>Lang.Changed</code>. Alegerea se ține pe telefon (PlayerPrefs <code>SurvivalBD.Language</code>).</td></tr>
+    <tr><td><code>Scripts/Story/Prayers.cs</code></td><td>Cele 113 rugăciuni ortodoxe oficiale, în engleză și română (folosite de cartea de rugăciuni și de ecranul de încărcare). Surse: <i>Orthodox Daily Prayers</i> (St. Tikhon's, Project Gutenberg), Ceaslovul (doxologia.ro), crestinortodox.ro, Psalmii din Septuaginta (Brenton; bibliaortodoxa.ro), numerotarea ortodoxă (ex. Psalmul 144).</td></tr>
+    <tr><td><code>Scripts/UI/LoadingScreen.cs</code></td><td>Ecranul de încărcare: poza salvării pe fundal și o rugăciune scurtă cu roșu</td></tr>
+    <tr><td><code>Scripts/Items/DroppedItems.cs</code>, <code>TrashSlot.cs</code>, <code>DragDrop.cs</code></td><td>Aruncarea obiectelor pe jos (tras afară din fereastră) și coșul de gunoi, cu întrebare înainte</td></tr>
   </table></div>
 </section>
 

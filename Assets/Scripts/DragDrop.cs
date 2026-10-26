@@ -54,6 +54,33 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
 
 
 
+    // over one of the open windows (inventory, crafting, storage box, campfire) or the quick bar?
+    static bool OverAWindow(Vector2 screenPoint)
+    {
+        var windows = new System.Collections.Generic.List<GameObject>();
+        if (InventorySystem.Instance != null) windows.Add(InventorySystem.Instance.inventoryScreenUI);
+        var crafting = CraftingSystem.Instance;
+        if (crafting != null)
+        {
+            windows.Add(crafting.craftingScreenUI);
+            windows.Add(crafting.toolsScreenUI);
+            windows.Add(crafting.survivalScreenUI);
+            windows.Add(crafting.refineScreenUI);
+            windows.Add(crafting.constructionScreenUI);
+        }
+        if (StorageManager.Instance != null) windows.Add(StorageManager.Instance.StorageUI);
+        if (EquipSystem.Instance != null) windows.Add(EquipSystem.Instance.quickSlotsPanel);
+        foreach (var w in windows)
+        {
+            if (w == null || !w.activeInHierarchy) continue;
+            if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)w.transform, screenPoint, null)) return true;
+        }
+        if (EquipSystem.Instance != null)
+            foreach (var slot in EquipSystem.Instance.quickSlotsList)
+                if (slot != null && slot.activeInHierarchy && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)slot.transform, screenPoint, null)) return true;
+        return false;
+    }
+
     public void OnEndDrag(PointerEventData eventData)
     {
         // (a slot's OnDrop runs before this; if one took the item, its parent is that slot now)
@@ -70,6 +97,9 @@ public class DragDrop : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDrag
             {
                 transform.SetParent(startParent);
                 transform.position = startPosition;
+                // let go out of the windows (over the game itself): "drop it on the ground?" (it waits in its slot)
+                if (!onTrash && nearest == null && !OverAWindow(eventData.position) && TrashSlot.Instance != null)
+                    TrashSlot.Instance.AskDrop(gameObject);
             }
         }
         else if (transform.parent == startParent)

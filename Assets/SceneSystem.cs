@@ -32,7 +32,9 @@ public class SceneSystem : MonoBehaviour
                 PendingLoadSlot = slotNumber;
                 //SaveManager.Instance.LoadGame();
                 ActivateLoadingScreen();
-                StartCoroutine(DelayedLoading(slotNumber));
+                StartCoroutine(DelayedLoading(slotNumber)); // first: the save must load even if the picture fails
+                try { LoadingScreen.Show(slotNumber); } // the saved game's picture and a prayer over everything
+                catch (System.Exception e) { Debug.LogException(e); }
             }
         }
     }
@@ -44,6 +46,8 @@ public class SceneSystem : MonoBehaviour
         SaveManager.Instance.LoadGame(slotNumber);
         PendingLoadSlot = -1;
         DisableLoadingScreen();
+        try { LoadingScreen.HideWhenRead(); } // a few seconds more, to read the prayer
+        catch (System.Exception e) { Debug.LogException(e); }
 
     }
 
@@ -70,7 +74,8 @@ public class SceneSystem : MonoBehaviour
     #region || ------ Loading Section ------||
     private void ActivateLoadingScreen()
     {
-        loadingScreen.gameObject.SetActive(true);
+        // (the old blue picture with "Loading.." stays hidden: LoadingScreen shows the saved game instead)
+        loadingScreen.gameObject.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 

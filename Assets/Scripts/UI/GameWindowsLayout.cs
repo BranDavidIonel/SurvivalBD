@@ -203,7 +203,7 @@ public class GameWindowsLayout : MonoBehaviour
             {
                 trashImage.sprite = UISkin.Slot;
                 trashImage.type = Image.Type.Sliced;
-                trashImage.color = new Color(1f, 0.85f, 0.85f, 1f);
+                trashImage.color = new Color(0.78f, 0.42f, 0.36f, 1f); // a reddish tile: the can that throws away
             }
             var lid = trash.Find("backgroundTrash") as RectTransform;
             if (lid != null)

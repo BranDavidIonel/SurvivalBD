@@ -13,11 +13,13 @@ public class Raft : MonoBehaviour
     public static Raft Instance { get; private set; }
     public static event System.Action Boarded;
 
-    public static readonly string[] Needs = { "log", "plank", "rope", "stick", "hay" };
-    public static readonly string[] NeedNames = { "logs", "planks", "ropes", "sticks", "hay" };
-    public static readonly int[] Amounts = { 12, 8, 6, 16, 10 };
+    public static readonly string[] Needs = { "log", "plank", "rope", "stick", "hay", "Cooked Meat" }; // the meat: food for the journey
+    static readonly string[] NeedNamesEn = { "logs", "planks", "ropes", "sticks", "hay", "cooked meat" };
+    static readonly string[] NeedNamesRo = { "bușteni", "scânduri", "frânghii", "bețe", "fân", "carne gătită" };
+    public static string[] NeedNames => Lang.Ro ? NeedNamesRo : NeedNamesEn;
+    public static readonly int[] Amounts = { 12, 8, 6, 16, 10, 5 };
 
-    public int[] have = new int[5];
+    public int[] have = new int[6];
     public bool IsBoarded { get; private set; }
     public bool InWater { get; private set; }
     public bool IsComplete { get { for (int i = 0; i < Needs.Length; i++) if (have[i] < Amounts[i]) return false; return true; } }
@@ -59,7 +61,7 @@ public class Raft : MonoBehaviour
         var go = Instantiate(prefab, spot, Quaternion.LookRotation(seaward, Vector3.up));
         go.name = "Raft";
         var raft = go.GetComponent<Raft>();
-        if (saved != null && saved.Length == Needs.Length) raft.have = (int[])saved.Clone();
+        if (saved != null) for (int i = 0; i < Mathf.Min(saved.Length, Needs.Length); i++) raft.have[i] = saved[i]; // (an older save has no meat yet)
         raft.ShowParts();
         if (raft.IsComplete) raft.PutInWater(true);
         return raft;
@@ -70,10 +72,10 @@ public class Raft : MonoBehaviour
     {
         get
         {
-            if (InWater) return "Board the raft (leave the island)";
-            var sb = new System.Text.StringBuilder("Raft:");
+            if (InWater) return Lang.T("Board the raft (leave the island)", "Urcă pe plută (pleci de pe insulă)");
+            var sb = new System.Text.StringBuilder(Lang.T("Raft:", "Pluta:"));
             for (int i = 0; i < Needs.Length; i++) sb.Append((i == 3 ? "\n" : "  ") + NeedNames[i] + " " + have[i] + "/" + Amounts[i]);
-            sb.Append("\n(click: add what you carry)");
+            sb.Append(Lang.T("\n(click: add what you carry)", "\n(clic: pui ce ai la tine)"));
             return sb.ToString();
         }
     }
@@ -95,13 +97,13 @@ public class Raft : MonoBehaviour
         }
         if (added.Length == 0)
         {
-            var missing = new System.Text.StringBuilder("Still needed:");
+            var missing = new System.Text.StringBuilder(Lang.T("Still needed:", "Mai trebuie:"));
             for (int i = 0; i < Needs.Length; i++) if (have[i] < Amounts[i]) missing.Append(" " + (Amounts[i] - have[i]) + " " + NeedNames[i]);
             inventory.ShowMessage(missing.ToString());
             return;
         }
         if (SoundManager.Instance != null) SoundManager.Instance.PlayCraft();
-        inventory.ShowMessage("Raft: " + added);
+        inventory.ShowMessage(Lang.T("Raft: ", "Pluta: ") + added);
         ShowParts();
         if (IsComplete) PutInWater(false);
     }
@@ -143,7 +145,7 @@ public class Raft : MonoBehaviour
     IEnumerator Slide()
     {
         launching = true;
-        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage("The raft is finished! It slides into the sea...");
+        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("The raft is finished! It slides into the sea...", "Pluta e gata! Alunecă în mare..."));
         Vector3 from = transform.position, to = from + transform.forward * SlideDistance;
         for (float t = 0f; t < 1f; t += Time.deltaTime / 4f)
         {
@@ -222,7 +224,13 @@ public class Raft : MonoBehaviour
         var text = MakeText();
         float time = 0f, speed = 0f;
         Quaternion heading = Quaternion.LookRotation(away, Vector3.up);
-        string[] lines =
+        string[] lines = Lang.Ro ? new[]
+        {
+            "Am făcut o plută cu mâinile mele.",
+            "Insula se face tot mai mică în urma mea: plaja, pădurile, muntele cu crucea lui.",
+            "Rugăciunile Fratelui Ioan sunt cu mine. Umbra... poate rămâne pe insulă.",
+            "Sau poate a fost mereu o parte din mine. Dar nu mă mai tem de ea.",
+        } : new[]
         {
             "I built a raft with my own hands.",
             "The island gets smaller behind me: the beach, the forests, the mountain with its cross.",
@@ -301,9 +309,9 @@ public class Raft : MonoBehaviour
         endGroup.alpha = 0f;
         var dark = UISkin.NewImage("Dark", end, UISkin.White, new Color(0f, 0f, 0f, 0.55f), false);
         UISkin.Fill(dark.rectTransform);
-        var title = UISkin.NewText("Title", end, "THE END", 110, UISkin.Gold, TextAnchor.MiddleCenter);
+        var title = UISkin.NewText("Title", end, Lang.T("THE END", "SFÂRȘIT"), 110, UISkin.Gold, TextAnchor.MiddleCenter);
         UISkin.Centered(title.rectTransform, new Vector2(0f, 90f), new Vector2(1400f, 160f));
-        var credits = UISkin.NewText("Credits", end, "SurvivalBD\na game by Bran David Ionel\n\nThank you for playing!", 40, UISkin.TextColor, TextAnchor.UpperCenter);
+        var credits = UISkin.NewText("Credits", end, Lang.T("SurvivalBD\na game by Bran David Ionel\n\nThank you for playing!", "SurvivalBD\nun joc de Bran David Ionel\n\nMulțumim că ai jucat!"), 40, UISkin.TextColor, TextAnchor.UpperCenter);
         UISkin.Centered(credits.rectTransform, new Vector2(0f, -110f), new Vector2(1400f, 260f));
         return text;
     }

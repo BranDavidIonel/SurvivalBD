@@ -96,7 +96,7 @@ public class FreshWater : MonoBehaviour
         if (source == Source.None) return;
         if (state.currentHydrationPercent >= state.maxHydrationPercent - 0.5f)
         {
-            InventorySystem.Instance.ShowMessage("You are not thirsty");
+            InventorySystem.Instance.ShowMessage(Lang.T("You are not thirsty", "Nu ți-e sete"));
             return;
         }
         state.setHydration(Mathf.Min(state.maxHydrationPercent, state.currentHydrationPercent + waterPerDrink));
@@ -107,7 +107,7 @@ public class FreshWater : MonoBehaviour
         }
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlayAt(ProceduralAudio.Splash, at + Vector3.up * 0.3f, 0.5f, 1.25f, 20f, 2f);
-        InventorySystem.Instance.ShowMessage((source == Source.Puddle ? "Rain water" : "Fresh water") + "  +" + Mathf.RoundToInt(waterPerDrink) + " water");
+        InventorySystem.Instance.ShowMessage((source == Source.Puddle ? Lang.T("Rain water", "Apă de ploaie") : Lang.T("Fresh water", "Apă dulce")) + "  +" + Mathf.RoundToInt(waterPerDrink) + Lang.T(" water", " apă"));
         if (Drank != null) Drank();
     }
 

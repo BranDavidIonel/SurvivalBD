@@ -94,12 +94,12 @@ public class TorchLight : MonoBehaviour
     {
         if (fuel != null)
         {
-            fuel.hoursLeft -= Time.deltaTime * DayNightSystem.WeatherHoursPerSecond;
+            fuel.hoursLeft -= Time.deltaTime * DayNightSystem.WeatherHoursPerSecond * GameSettings.TorchBurn;
             if (fuel.hoursLeft <= 0f) { BurnOut(); return; }
             if (fuel.hoursLeft < 0.75f && !warned)
             {
                 warned = true;
-                if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage("Your torch is burning low!");
+                if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Your torch is burning low!", "Torța ta e pe terminate!"));
             }
         }
         if (torchLight != null)
@@ -113,7 +113,7 @@ public class TorchLight : MonoBehaviour
     // burnt out: the torch is gone from the hand and the quick bar
     void BurnOut()
     {
-        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage("Your torch burned out");
+        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Your torch burned out", "Torța ta s-a stins"));
         var equip = EquipSystem.Instance;
         if (equip != null)
         {

@@ -6,16 +6,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // ===================================================================================================
-//  TEST ONLY - remove before the release.
-//  "Test settings" in the in-game Settings screen (menu M > Settings), for trying out the time of day,
-//  the seasons, the weather and the snow without waiting:
-//   - Clock: time passes by itself or stops
-//   - Time speed: type any number (1 = normal, 10 = ten times faster) or use the quick buttons
-//   - Move speed: how fast the player walks and swims (x times the normal speed), typed or quick buttons
-//   - Time of day: slider, plus quick buttons for sunrise, noon (day), sunset and night
-//   - Season, Weather (Auto = changes by itself), Snow on the ground
-//  It is made in code when the game scene loads (EnvironmentBootstrap), so the scene is not changed.
-//  To remove it: delete this file and the DebugEnvironmentPanel.Attach() line in EnvironmentBootstrap.
+//  The in-game Settings screen (menu > Settings), made in code when the game scene loads (EnvironmentBootstrap):
+//   1. For the player: nature sounds, sound effects, all sounds (0-100), the difficulty (Easy / Normal / Hard,
+//      GameSettings), and an "Admin" password field.
+//   2. Behind the admin password (1212, unlocked until the game is closed), the TEST settings for trying things
+//      quickly: the clock and time speed, move speed, time of day, season, weather, snow, the story (next level,
+//      give items, any item from a list).
+//  To remove the TEST part: delete it from Build (the player's part stays).
 // ===================================================================================================
 public class DebugEnvironmentPanel : MonoBehaviour
 {
@@ -188,13 +185,223 @@ public class DebugEnvironmentPanel : MonoBehaviour
         row = NewRow(content, "Now");
         info = NewLabel(row, "", 1100f, 26f, InfoColor);
 
+        // back to the player's settings (the admin stays unlocked until the game is closed)
+        var close = NewButton(panel, "Close admin", 240f, ShowPlayerSettings);
+        var closeRect = (RectTransform)close.transform;
+        closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
+        closeRect.pivot = new Vector2(1f, 1f);
+        closeRect.anchoredPosition = new Vector2(-10f, -6f);
+        closeRect.sizeDelta = new Vector2(240f, 44f);
+        Destroy(close.GetComponent<LayoutElement>());
+
+        testPanel = panel;
+        BuildPlayerPanel();
         panel.gameObject.SetActive(true);
         Refresh();
+        ShowPlayerSettings();
+    }
+
+    // =============================================================================================
+    //  The player's settings (for everybody): the sounds, the difficulty, and the admin password.
+    //  The TEST settings above are shown only after the admin password, until the game is closed.
+    // =============================================================================================
+    const string AdminPassword = "1212";
+    public static bool AdminUnlocked { get; private set; }
+
+    RectTransform testPanel, playerPanel;
+    Slider natureSlider, effectsSlider, masterSlider;
+    TextMeshProUGUI natureValue, effectsValue, masterValue, difficultyInfo, adminInfo;
+    readonly List<KeyValuePair<Button, GameSettings.Level>> difficultyButtons = new List<KeyValuePair<Button, GameSettings.Level>>();
+    TMP_InputField passwordInput;
+    Button unlockButton, adminButton;
+    readonly List<KeyValuePair<Button, Lang.Language>> languageButtons = new List<KeyValuePair<Button, Lang.Language>>();
+    // the words of this panel in both languages (changed at once when the language is chosen)
+    readonly List<KeyValuePair<TMP_Text, string[]>> words = new List<KeyValuePair<TMP_Text, string[]>>();
+
+    void Say(TMP_Text text, string en, string ro)
+    {
+        if (text != null) words.Add(new KeyValuePair<TMP_Text, string[]>(text, new[] { en, ro }));
+    }
+
+    RectTransform NewRow(RectTransform content, string en, string ro)
+    {
+        var row = NewRow(content, en);
+        Say(row.GetComponentInChildren<TMP_Text>(true), en, ro);
+        return row;
+    }
+
+    Button NewButton(RectTransform row, string en, string ro, float width, UnityEngine.Events.UnityAction onClick)
+    {
+        var button = NewButton(row, en, width, onClick);
+        Say(button.GetComponentInChildren<TMP_Text>(true), en, ro);
+        return button;
+    }
+
+    void BuildPlayerPanel()
+    {
+        playerPanel = NewRect("Settings (player)", (RectTransform)transform);
+        playerPanel.anchorMin = playerPanel.anchorMax = new Vector2(0.5f, 0.5f);
+        playerPanel.sizeDelta = new Vector2(PanelWidth, 6f * RowHeight + 5f * 14f + 60f);
+        playerPanel.anchoredPosition = new Vector2(0f, PanelY + 10f);
+        var background = playerPanel.gameObject.AddComponent<Image>();
+        background.sprite = sprite;
+        background.type = sprite != null && sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        background.color = PanelColor;
+        var rows = NewRect("Rows", playerPanel);
+        rows.anchorMin = Vector2.zero;
+        rows.anchorMax = Vector2.one;
+        rows.offsetMin = new Vector2(40f, 30f);
+        rows.offsetMax = new Vector2(-40f, -30f);
+        var layout = rows.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.spacing = 14f;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        // the language of the story and the messages (Lang)
+        var row = NewRow(rows, "Language", "Limba");
+        foreach (var language in new[] { Lang.Language.English, Lang.Language.Romanian })
+        {
+            var chosen = language;
+            languageButtons.Add(new KeyValuePair<Button, Lang.Language>(NewButton(row, chosen == Lang.Language.English ? "English" : "Română", 220f, () =>
+            {
+                Lang.Current = chosen;
+                RefreshPlayerSettings();
+            }), language));
+        }
+
+        // the sounds (0-100, kept on the device like before: "Volume")
+        var volume = SoundSettings();
+        row = NewRow(rows, "Nature sounds", "Sunete din natură");
+        natureSlider = NewSlider(row, 0f, 100f, 760f, _ => SoundsChanged());
+        natureValue = NewLabel(row, "", 140f, LabelSize, Color.white);
+        row = NewRow(rows, "Sound effects", "Efecte sonore");
+        effectsSlider = NewSlider(row, 0f, 100f, 760f, _ => SoundsChanged());
+        effectsValue = NewLabel(row, "", 140f, LabelSize, Color.white);
+        row = NewRow(rows, "All sounds", "Toate sunetele");
+        masterSlider = NewSlider(row, 0f, 100f, 760f, _ => SoundsChanged());
+        masterValue = NewLabel(row, "", 140f, LabelSize, Color.white);
+        natureSlider.SetValueWithoutNotify(volume.music);
+        effectsSlider.SetValueWithoutNotify(volume.effects);
+        masterSlider.SetValueWithoutNotify(volume.master);
+
+        // the difficulty
+        row = NewRow(rows, "Difficulty", "Dificultate");
+        foreach (var level in new[] { GameSettings.Level.Easy, GameSettings.Level.Normal, GameSettings.Level.Hard })
+        {
+            var chosen = level;
+            difficultyButtons.Add(new KeyValuePair<Button, GameSettings.Level>(NewButton(row, level.ToString(), GameSettings.Name(level, true), 170f, () =>
+            {
+                GameSettings.Difficulty = chosen;
+                RefreshPlayerSettings();
+            }), level));
+        }
+        difficultyInfo = NewLabel(row, "", 600f, 24f, InfoColor);
+        difficultyInfo.enableWordWrapping = true;
+
+        // the admin: the TEST settings, only with the password
+        row = NewRow(rows, "Admin", "Admin");
+        passwordInput = NewInput(row, 260f, _ => TryUnlock());
+        passwordInput.contentType = TMP_InputField.ContentType.Pin;
+        passwordInput.inputType = TMP_InputField.InputType.Password;
+        passwordInput.asteriskChar = '*';
+        passwordInput.characterLimit = 8;
+        if (passwordInput.placeholder is TMP_Text hint) { hint.text = "password"; Say(hint, "password", "parola"); }
+        unlockButton = NewButton(row, "Unlock", "Deblochează", 170f, TryUnlock);
+        adminButton = NewButton(row, "Admin settings", "Setări admin", 300f, ShowAdmin);
+        adminInfo = NewLabel(row, "", 520f, 24f, InfoColor);
+        RefreshPlayerSettings();
+    }
+
+    static SaveManager.VolumeSettings SoundSettings()
+    {
+        SaveManager.VolumeSettings saved = null;
+        try { saved = JsonUtility.FromJson<SaveManager.VolumeSettings>(PlayerPrefs.GetString("Volume", "")); } catch (System.Exception) { }
+        if (saved != null) return saved;
+        return new SaveManager.VolumeSettings
+        {
+            music = Mathf.Round(SoundManager.AmbienceVolume * 100f),
+            effects = Mathf.Round(SoundManager.EffectsVolume * 100f),
+            master = Mathf.Round(AudioListener.volume * 100f),
+        };
+    }
+
+    // heard at once; written down (PlayerPrefs "Volume", like the main menu's sliders) when Settings closes
+    void SoundsChanged()
+    {
+        var volume = new SaveManager.VolumeSettings { music = Mathf.Round(natureSlider.value), effects = Mathf.Round(effectsSlider.value), master = Mathf.Round(masterSlider.value) };
+        SoundManager.AmbienceVolume = volume.music / 100f;
+        SoundManager.EffectsVolume = volume.effects / 100f;
+        AudioListener.volume = volume.master / 100f;
+        PlayerPrefs.SetString("Volume", JsonUtility.ToJson(volume));
+        soundsChanged = true;
+        RefreshPlayerSettings();
+    }
+    bool soundsChanged;
+
+    void OnDisable()
+    {
+        if (soundsChanged) { PlayerPrefs.Save(); soundsChanged = false; }
+        if (passwordInput != null) passwordInput.text = "";
+    }
+
+    void TryUnlock()
+    {
+        if (passwordInput == null || AdminUnlocked) return;
+        if (passwordInput.text == AdminPassword)
+        {
+            AdminUnlocked = true;
+            passwordInput.text = "";
+            ShowAdmin();
+        }
+        else if (passwordInput.text.Length > 0)
+        {
+            passwordInput.text = "";
+            adminInfo.text = WrongPassword;
+            adminInfo.color = new Color(1f, 0.45f, 0.35f);
+        }
+    }
+
+    void ShowAdmin()
+    {
+        if (!AdminUnlocked || testPanel == null) return;
+        playerPanel.gameObject.SetActive(false);
+        testPanel.gameObject.SetActive(true);
+        if (scroll != null) StartCoroutine(OpenAtTop());
+    }
+
+    void ShowPlayerSettings()
+    {
+        if (testPanel != null) testPanel.gameObject.SetActive(false);
+        if (playerPanel != null) playerPanel.gameObject.SetActive(true);
+        RefreshPlayerSettings();
+    }
+
+    static string WrongPassword => Lang.T("Wrong password", "Parolă greșită");
+
+    void RefreshPlayerSettings()
+    {
+        if (playerPanel == null) return;
+        natureValue.text = Mathf.RoundToInt(natureSlider.value).ToString();
+        effectsValue.text = Mathf.RoundToInt(effectsSlider.value).ToString();
+        masterValue.text = Mathf.RoundToInt(masterSlider.value).ToString();
+        foreach (var pair in words) if (pair.Key != null) pair.Key.text = Lang.T(pair.Value[0], pair.Value[1]);
+        foreach (var pair in languageButtons) Highlight(pair.Key, pair.Value == Lang.Current);
+        foreach (var pair in difficultyButtons) Highlight(pair.Key, pair.Value == GameSettings.Difficulty);
+        difficultyInfo.text = GameSettings.Describe(GameSettings.Difficulty);
+        passwordInput.gameObject.SetActive(!AdminUnlocked);
+        unlockButton.gameObject.SetActive(!AdminUnlocked);
+        adminButton.gameObject.SetActive(AdminUnlocked);
+        if (AdminUnlocked) { adminInfo.text = Lang.T("Unlocked until the game is closed", "Deblocat până închizi jocul"); adminInfo.color = InfoColor; }
+        else if (adminInfo.text != "Wrong password" && adminInfo.text != "Parolă greșită") adminInfo.text = "";
+        else adminInfo.text = WrongPassword;
     }
 
     void OnEnable()
     {
-        if (scroll != null) StartCoroutine(OpenAtTop());
+        if (testPanel != null && testPanel.gameObject.activeSelf && scroll != null) StartCoroutine(OpenAtTop());
+        if (playerPanel != null) { adminInfo.text = ""; ShowPlayerSettings(); }
         Refresh();
     }
 

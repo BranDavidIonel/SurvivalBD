@@ -43,7 +43,7 @@ public class PlayerDeath : MonoBehaviour
     IEnumerator Die()
     {
         IsDead = true;
-        if (messageText != null) messageText.text = string.IsNullOrEmpty(nextMessage) ? deathMessage : nextMessage;
+        if (messageText != null) messageText.text = string.IsNullOrEmpty(nextMessage) ? (deathMessage == "Game over!" ? Lang.T("Game over!", "Ai murit!") : deathMessage) : nextMessage;
         nextMessage = null;
         var movement = GetComponent<PlayerMovement>();
         var look = GetComponent<MouseMovement>();

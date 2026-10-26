@@ -223,6 +223,7 @@ public class SaveManager : MonoBehaviour
         if (RabbitPopulation.Instance != null) enviromentData.rabbits = RabbitPopulation.Instance.GetData();
         if (StoryManager.Instance != null) enviromentData.story = StoryManager.Instance.GetData();
         if (FreshWater.Instance != null) enviromentData.puddles = FreshWater.Instance.GetData();
+        enviromentData.dropped = DroppedItems.GetData();
         enviromentData.campfires = new List<CampfireData>();
         foreach (Transform placeable in EnviromentManager.Instance.placeables.transform)
         {
@@ -423,6 +424,7 @@ public class SaveManager : MonoBehaviour
         if (Vegetation.Instance != null) Vegetation.Instance.SetData(enviromentData.vegetation);
         if (StoryManager.Instance != null) StoryManager.Instance.SetData(enviromentData.story);
         if (FreshWater.Instance != null) FreshWater.Instance.SetData(enviromentData.puddles);
+        DroppedItems.SetData(enviromentData.dropped);
 
         // the campfires (before, a loaded game had none: they were never saved)
         if (enviromentData.campfires != null)

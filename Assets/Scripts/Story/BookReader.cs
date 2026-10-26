@@ -29,7 +29,8 @@ public class BookReader : MonoBehaviour
         public Page(string title, string text, bool cross = false) { this.title = title; this.text = text; this.cross = cross; }
     }
 
-    static readonly Page[] JournalPages =
+    static Page[] JournalPages => Lang.Ro ? JournalPagesRo : JournalPagesEn; // (the language of the Settings)
+    static readonly Page[] JournalPagesEn =
     {
         new Page("The journal of Brother Ioan", "In the year of our Lord 1894, the third day of the Great Fast.\n\nThe fishermen left me on this island, as I asked them. Here I will live in silence and prayer, far from the noise of the world."),
         new Page("The fortieth day", "The island is good to me. The river gives me water, the forest gives me mushrooms and berries, the oaks give me acorns.\n\nI keep a small fire and I pray the hours, as I did in the monastery."),
@@ -39,18 +40,14 @@ public class BookReader : MonoBehaviour
         new Page("The last page", "I am old and weak now. I go down into the mountain, to pray until the end.\n\nWhoever you are, you who read this: do not be afraid. Light a fire for your body and say the prayers for your soul. Take my book.\n\nLord, have mercy.\n                                        Brother Ioan"),
     };
 
-    static readonly Page[] Prayers =
+    static readonly Page[] JournalPagesRo =
     {
-        new Page("The Jesus Prayer", "Lord Jesus Christ, Son of God, have mercy on me, a sinner.\n\nLord Jesus Christ, Son of God, have mercy on me, a sinner.\n\nLord Jesus Christ, Son of God, have mercy on me, a sinner.", true),
-        new Page("The Trisagion", "Holy God, Holy Mighty, Holy Immortal, have mercy on us. (three times)\n\nGlory to the Father, and to the Son, and to the Holy Spirit, now and ever and unto ages of ages. Amen.", true),
-        new Page("To the Holy Spirit", "O Heavenly King, Comforter, the Spirit of Truth, who art everywhere present and fillest all things, Treasury of blessings and Giver of life: come and abide in us, and cleanse us from every stain, and save our souls, O Good One.", true),
-        new Page("The Lord's Prayer", "Our Father, who art in heaven, hallowed be Thy name. Thy kingdom come, Thy will be done, on earth as it is in heaven. Give us this day our daily bread, and forgive us our trespasses, as we forgive those who trespass against us. And lead us not into temptation, but deliver us from the evil one.", true),
-        new Page("Prayer of the Holy Cross", "Let God arise, let His enemies be scattered, and let those who hate Him flee from before His face. As smoke vanishes, so let them vanish; as wax melts before the fire, so let the demons perish from the presence of those who love God and sign themselves with the sign of the Cross.", true),
-        new Page("From Psalm 90", "He that dwelleth in the help of the Most High shall abide in the shelter of the God of heaven. He shall say unto the Lord: Thou art my helper and my refuge, my God, in Him will I hope.\n\nThou shalt not be afraid of the terror by night, nor of the arrow that flieth by day.", true),
-        new Page("To the Guardian Angel", "O Angel of God, my holy guardian, given to me from heaven: enlighten me this day, save me from all evil, guide me to every good deed, and set me on the path of salvation. Amen.", true),
-        new Page("Before sleep", "Into Thy hands, O Lord Jesus Christ my God, I commend my spirit. Do Thou bless me, have mercy on me, and grant me life eternal. Amen.\n\nSave me, O Lord, while I am awake, and guard me while I sleep.", true),
-        new Page("To the Mother of God", "It is truly right to bless thee, O Theotokos, ever-blessed and most pure, and the Mother of our God. More honourable than the Cherubim, and beyond compare more glorious than the Seraphim, who without stain gavest birth to God the Word: true Mother of God, we magnify thee.", true),
-        new Page("A short prayer", "Lord, have mercy.\nLord, have mercy.\nLord, have mercy.\n\nGlory to Thee, our God, glory to Thee.", true),
+        new Page("Jurnalul Fratelui Ioan", "În anul Domnului 1894, a treia zi a Postului Mare.\n\nPescarii m-au lăsat pe insula aceasta, așa cum i-am rugat. Aici voi trăi în liniște și rugăciune, departe de zgomotul lumii."),
+        new Page("A patruzecea zi", "Insula e bună cu mine. Râul îmi dă apă, pădurea îmi dă ciuperci și fructe, stejarii îmi dau ghinde.\n\nȚin un foc mic și citesc Ceasurile, ca la mănăstire."),
+        new Page("Noaptea", "Ceva umblă printre copaci noaptea. O umbră, înaltă și slabă, cu ochii ca două stele reci.\n\nVine când se stinge focul. Așteaptă la marginea luminii. Mi-e frică."),
+        new Page("Am înțeles", "Umbra n-a venit odată cu noaptea. A venit odată cu mine.\n\nE făcută din fricile mele, din păcatele mele, din tot întunericul pe care l-am adus aici în inima mea. Focul o ține departe de trup. Numai rugăciunea o ține departe de suflet."),
+        new Page("Fiecare om are una", "Când spun rugăciunile, nu se poate apropia de mine. Când le uit, se întoarce și așteaptă.\n\nFiecare om poartă o asemenea umbră. Cei mai mulți n-o văd niciodată. Pe insula aceasta, se vede."),
+        new Page("Ultima pagină", "Sunt bătrân și slab acum. Cobor în munte, să mă rog până la sfârșit.\n\nOricine ai fi, tu care citești: nu te teme. Aprinde un foc pentru trupul tău și spune rugăciunile pentru sufletul tău. Ia cartea mea.\n\nDoamne, miluiește.\n                                        Fratele Ioan"),
     };
 
     GameObject root;
@@ -92,7 +89,9 @@ public class BookReader : MonoBehaviour
         else
         {
             // a different prayer first each time
-            var list = new List<Page>(Prayers);
+            // the official prayers (Prayers.cs), in the language of the Settings
+            var list = new List<Page>();
+            foreach (var p in Prayers.All) list.Add(new Page(p.Title, p.Text, true));
             int first = Random.Range(0, list.Count);
             var ordered = new List<Page>();
             for (int i = 0; i < list.Count; i++) ordered.Add(list[(first + i) % list.Count]);
@@ -228,6 +227,13 @@ public class BookReader : MonoBehaviour
         text = UISkin.NewText("Text", page, "", 29, Ink, TextAnchor.UpperLeft, false);
         UISkin.Place(text.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -210f), new Vector2(w - 100f, h - 250f));
         text.lineSpacing = 1.12f;
+        // the long prayers (the Creed, St Basil...) get smaller letters, so they fit on the page
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 16;
+        text.resizeTextMaxSize = 29;
+        title.resizeTextForBestFit = true;
+        title.resizeTextMinSize = 20;
+        title.resizeTextMaxSize = 34;
         var shadow = text.GetComponent<UnityEngine.UI.Shadow>();
         if (shadow != null) shadow.enabled = false;
         var titleShadow = title.GetComponent<UnityEngine.UI.Shadow>();

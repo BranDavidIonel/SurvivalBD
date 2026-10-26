@@ -78,8 +78,9 @@ public class PlayerState : MonoBehaviour
 
         if (!dead && hours > 0f)
         {
-            if (isHydrationActivce) currentHydrationPercent -= maxHydrationPercent * hours / (24f * Mathf.Max(0.05f, waterDays));
-            currentCalories -= maxCalories * hours / (24f * Mathf.Max(0.05f, foodDays));
+            // (the difficulty in Settings: Easy slower, Hard faster)
+            if (isHydrationActivce) currentHydrationPercent -= maxHydrationPercent * hours * GameSettings.Hunger / (24f * Mathf.Max(0.05f, waterDays));
+            currentCalories -= maxCalories * hours * GameSettings.Hunger / (24f * Mathf.Max(0.05f, foodDays));
         }
         currentCalories = Mathf.Clamp(currentCalories, 0f, maxCalories);
         currentHydrationPercent = Mathf.Clamp(currentHydrationPercent, 0f, maxHydrationPercent);
@@ -89,19 +90,19 @@ public class PlayerState : MonoBehaviour
         bool thirsty = currentHydrationPercent <= 0f;
         if (!dead && (hungry || thirsty) && hours > 0f)
         {
-            float loss = maxHealth * hours / Mathf.Max(0.05f, starveHours) * ((hungry ? 1f : 0f) + (thirsty ? 1f : 0f));
+            float loss = maxHealth * hours * GameSettings.Hunger / Mathf.Max(0.05f, starveHours) * ((hungry ? 1f : 0f) + (thirsty ? 1f : 0f));
             currentHealth = Mathf.Max(0f, currentHealth - loss);
             warnTimer -= Time.deltaTime;
             if (warnTimer <= 0f && InventorySystem.Instance != null)
             {
                 warnTimer = 4f;
-                InventorySystem.Instance.ShowMessage(thirsty ? "You are dying of thirst! Drink at the river or the lake!" : "You are starving! Eat something!");
+                InventorySystem.Instance.ShowMessage(thirsty ? Lang.T("You are dying of thirst! Drink at the river or the lake!", "Mori de sete! Bea apă din râu sau din lac!") : Lang.T("You are starving! Eat something!", "Mori de foame! Mănâncă ceva!"));
             }
             if (currentHealth <= 0f)
             {
                 var death = playerBody.GetComponent<PlayerDeath>();
                 if (death == null) death = FindObjectOfType<PlayerDeath>();
-                if (death != null) death.SetNextDeathMessage(thirsty ? "You died of thirst..." : "You died of hunger...");
+                if (death != null) death.SetNextDeathMessage(thirsty ? Lang.T("You died of thirst...", "Ai murit de sete...") : Lang.T("You died of hunger...", "Ai murit de foame..."));
             }
         }
 
