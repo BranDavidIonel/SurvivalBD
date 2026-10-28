@@ -49,7 +49,7 @@ public static class Translations
         { "Craft", "Fă" }, { "Inventory full", "Inventar plin" }, { "<  Back", "<  Înapoi" }, { "Back", "Înapoi" },
         { "Storage", "Ladă" }, { "Storage Box ", "Ladă" }, { "Cook", "Gătește" }, { "Fuel", "Lemne" },
         { "Menu", "Meniu" }, { "Help", "Ajutor" }, { "Map", "Hartă" }, { "Settings", "Setări" },
-        { "Save Game", "Salvează jocul" }, { "Load Game", "Încarcă jocul" }, { "New Game", "Joc nou" },
+        { "Save Game", "Salvează" }, { "Load Game", "Încarcă" }, { "New Game", "Joc nou" },
         { "Quit", "Ieșire" }, { "Exit", "Ieșire" }, { "Yes", "Da" }, { "No", "Nu" }, { "yes", "da" }, { "no", "nu" },
         { "Cancel", "Anulează" }, { "Attack", "Lovește" }, { "Take", "Ia" }, { "Open", "Deschide" }, { "Close", "Închide" },
         { "Place", "Așază" }, { "Jump", "Sari" }, { "Up", "Sus" }, { "Down", "Jos" }, { "Left", "Stânga" }, { "Right", "Dreapta" },
@@ -206,12 +206,24 @@ public class SceneTexts : MonoBehaviour
             if (!Translations.Has(now)) { if (original != null) english.Remove(c); return; }
             english[c] = now;
             string ro = Translations.ToRo(now);
-            if (ro != now) set(ro);
+            if (ro != now) { set(ro); FitOnOneLine(c as TMP_Text, now, ro); }
         }
         else if (original != null)
         {
             if (now == Translations.ToRo(original)) set(original); // back to English
             english.Remove(c);
         }
+    }
+
+    // The big yellow words of the menus (a title, a button) were made for the English words: a longer Romanian one
+    // wrapped onto a second line and ran into the word under it. It now gets smaller instead, on one line.
+    static void FitOnOneLine(TMP_Text t, string en, string ro)
+    {
+        if (t == null || en.Contains("\n") || ro.Contains("\n") || ro.Length <= en.Length || ro.Length > 40) return;
+        if (t.enableAutoSizing) return;
+        t.fontSizeMax = t.fontSize;
+        t.fontSizeMin = Mathf.Max(8f, t.fontSize * 0.55f);
+        t.enableWordWrapping = false;
+        t.enableAutoSizing = true;
     }
 }

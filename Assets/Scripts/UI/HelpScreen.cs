@@ -102,7 +102,8 @@ public class HelpScreen : MonoBehaviour
                 "I  inventar          C  meșteșuguri          M  meniu (salvare, încărcare, setări)          H  acest ajutor          N  harta\n" +
                 "1 - 6  bara rapidă: iei o unealtă în mână, mănânci, plantezi o sămânță, așezi un foc\n" +
                 "Clic dreapta pe un obiect  îl folosești / îl mănânci / îl pui în bara rapidă          X  anulezi așezarea\n" +
-                "Tab  eliberezi mouse-ul ca să apeși butoanele din dreapta sus\n" +
+                "Butoanele de sus: Inventar, Meșteșuguri, Meniu (dreapta), Ajutor, Hartă (stânga)\n" +
+                "Tab sau Esc  eliberezi mouse-ul ca să apeși pe ele          Clic în joc  privești iar cu mouse-ul\n" +
                 "Tragi un obiect afară din fereastră  îl arunci pe jos (te întreabă înainte)\n\n" +
                 "<b><color=#FFD780>Pe telefon</color></b>\n" +
                 "Joystick stânga  mers          Joystick dreapta sau glisare  privit\n" +
@@ -117,7 +118,8 @@ public class HelpScreen : MonoBehaviour
             "I  inventory          C  crafting          M  menu (save, load, settings)          H  this help          N  map\n" +
             "1 - 6  the quick bar: take a tool in your hand, eat, plant a seed, place a campfire\n" +
             "Right click on an item  use it / eat it / put it in the quick bar          X  cancel placing\n" +
-            "Tab  free the mouse to click the buttons at the top right\n" +
+            "The buttons at the top: Inventory, Crafting, Menu (right), Help, Map (left)\n" +
+            "Tab or Esc  free the mouse to click them          Click on the game  look with the mouse again\n" +
             "Drag an item out of the window  drop it on the ground (you are asked first)\n\n" +
             "<b><color=#FFD780>On the phone</color></b>\n" +
             "Left joystick  walk          Right joystick or swipe  look\n" +
@@ -162,7 +164,7 @@ public class HelpScreen : MonoBehaviour
                 "      cu toporul îl omori. Dă-i drumul în țarc și <b>închide ușa</b>: o ușă lăsată deschisă îi lasă pe toți să fugă!\n" +
                 "<b>Harta</b>: Meniu > Hartă (N pe PC). Săgeata roșie ești tu, cercul auriu e ținta. Coloanele de lumină arată drumul.\n" +
                 "<b>Pluta</b> (ultimul nivel): unde pârâul cel nou se varsă în mare. Adu-i ce îi trebuie în câte drumuri vrei.\n" +
-                "<b>Salvarea</b>: Meniu > Salvează jocul. <b>Limba și dificultatea</b>: Meniu > Setări.";
+                "<b>Salvarea</b>: Meniu > Salvează. <b>Limba și dificultatea</b>: Meniu > Setări.";
         return
             "<b>Water</b>: a full water bar lasts one day. Drink from the river, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
             "<b>Food</b>: a full food bar lasts about three days. Mushrooms, berries, herbs, cooked meat. Empty bars kill you.\n" +
@@ -191,7 +193,7 @@ public class HelpScreen : MonoBehaviour
         scaler.matchWidthOrHeight = 1f;
         root.AddComponent<GraphicRaycaster>();
 
-        var dark = UISkin.NewImage("Dark", root.transform, UISkin.White, new Color(0f, 0f, 0f, 0.75f), true);
+        var dark = UISkin.NewImage("Dark", root.transform, UISkin.White, new Color(0f, 0f, 0f, 0.95f), true); // (linear colours: it needs a high alpha to hide the game behind)
         UISkin.Fill(dark.rectTransform);
         var panel = UISkin.NewImage("Panel", root.transform, UISkin.White, new Color(0.11f, 0.09f, 0.07f, 0.985f), true);
         UISkin.Centered(panel.rectTransform, new Vector2(0f, 0f), new Vector2(1600f, 900f));

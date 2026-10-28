@@ -52,7 +52,12 @@ public static class UISkin
         {
             if (white == null)
             {
-                var t = Texture2D.whiteTexture;
+                // (an own texture, sure to be fully opaque, so dark screens behind windows really darken)
+                var t = new Texture2D(4, 4, TextureFormat.RGBA32, false) { name = "UISkin white" };
+                var pixels = new Color32[16];
+                for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color32(255, 255, 255, 255);
+                t.SetPixels32(pixels);
+                t.Apply(false, true);
                 white = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
             }
             return white;

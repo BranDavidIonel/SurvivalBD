@@ -64,12 +64,17 @@ public class MobileControls : MonoBehaviour
         SetUpScene();
     }
 
+    // (PcControls calls this when the editor switches from the PC Game view to the phone simulator while playing)
+    public static void EnsureInThisScene() => SetUpScene();
+
     static void SetUpScene()
     {
+        // the menus were laid out in pixels for a 1080 px high screen: on a PC monitor of another size too
+        // (a laptop, a 1440p screen, the editor's Game view) they must grow and shrink with the screen
+        MakeCanvasesScaleWithScreen();
         if (!GameInput.TouchControls) return;
 
         ApplyPhoneSettings();
-        MakeCanvasesScaleWithScreen();
 
         // only in the scene with the player (not in the main menu)
         if (FindObjectOfType<PlayerMovement>() == null) return;
@@ -113,8 +118,12 @@ public class MobileControls : MonoBehaviour
 
     // ---------------- runtime ---------------- //
 
+    public static MobileControls Instance { get; private set; }
+    GameObject controlsCanvasObject;
+
     void Awake()
     {
+        Instance = this;
         GameInput.ResetTouch();
         playerDeath = FindObjectOfType<PlayerDeath>();
 
@@ -159,6 +168,7 @@ public class MobileControls : MonoBehaviour
 
     void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         GameInput.ResetTouch();
     }
 
@@ -186,6 +196,19 @@ public class MobileControls : MonoBehaviour
 
     void Update()
     {
+        // In the editor the phone simulator can be switched to the PC Game view while playing: then the phone
+        // controls hide (PcControls shows the PC buttons) and the mouse is the PC's again.
+        bool touch = GameInput.TouchControls;
+        SetActive(controlsCanvasObject, touch);
+        if (!touch)
+        {
+            SetActive(lookCanvasObject, false);
+            GameInput.touchMove = Vector2.zero;
+            GameInput.touchLookDegrees = Vector2.zero;
+            GameInput.BeginTouchFrame(); // (the PC buttons press through GameInput too)
+            return;
+        }
+
         KeepCursorFree(); // runs before the EventSystem, so this frame's drags are not dropped
         GameInput.BeginTouchFrame();
 
@@ -232,6 +255,7 @@ public class MobileControls : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!GameInput.TouchControls) return;
         // again after the game scripts, which lock the cursor when a menu closes
         KeepCursorFree();
         FitJoysticksAroundQuickBar();
@@ -284,6 +308,7 @@ public class MobileControls : MonoBehaviour
         // Canvas 2 (above the game UI): joysticks and buttons.
         var controlsCanvas = CreateCanvas("MobileControlsCanvas", 10);
         controlsCanvas.transform.SetParent(transform, false);
+        controlsCanvasObject = controlsCanvas;
         var root = controlsCanvas.transform;
 
         gameplayGroup = CreateRect("Gameplay", root, Vector2.zero, Vector2.one).gameObject;

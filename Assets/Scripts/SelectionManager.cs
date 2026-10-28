@@ -477,7 +477,9 @@ public class SelectionManager : MonoBehaviour
     {
         handIcon.enabled = true;
         centerDotImage.enabled = true;
-        interaction_Info_UI.SetActive(true);
+        // (hidden until the next frame shows what is looked at: turned on here it showed "default text" in the middle
+        // of the screen after a window closed while looking at nothing)
+        interaction_Info_UI.SetActive(false);
     }
 
 

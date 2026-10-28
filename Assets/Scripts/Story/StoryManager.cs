@@ -592,6 +592,13 @@ public class StoryManager : MonoBehaviour
 
     void Update()
     {
+        // the goals panel and the banners hide under the full-screen pages (the map, the help, a book): they showed
+        // through them and mixed with their words
+        if (hudCanvas != null)
+        {
+            bool page = MapScreen.IsOpen || HelpScreen.IsOpen || BookReader.IsOpen;
+            if (hudCanvas.enabled == page) hudCanvas.enabled = !page;
+        }
         if (data == null)
         {
             if (loading && (waitForLoad -= Time.unscaledDeltaTime) <= 0f) SetData(null);
@@ -1187,7 +1194,7 @@ public class StoryManager : MonoBehaviour
         background.type = Image.Type.Sliced;
         background.color = new Color(0.06f, 0.05f, 0.04f, 0.72f);
         background.raycastTarget = false;
-        UISkin.Place(panel, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, phone ? -136f : -108f), new Vector2(phone ? 560f : 500f, 200f));
+        UISkin.Place(panel, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-24f, phone ? -136f : -120f), new Vector2(phone ? 560f : 500f, 200f));
         panelTitle = UISkin.NewText("Title", panel, "", phone ? 26 : 23, UISkin.Gold, TextAnchor.UpperLeft);
         panelHint = UISkin.NewText("Hint", panel, "", phone ? 19 : 17, UISkin.TextDim, TextAnchor.UpperLeft, false);
         panel.gameObject.SetActive(false);
