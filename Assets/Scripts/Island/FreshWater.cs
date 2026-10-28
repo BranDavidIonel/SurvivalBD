@@ -73,6 +73,9 @@ public class FreshWater : MonoBehaviour
                 if (d.magnitude < river.lakeRadius + drinkReach && Forest.GroundY(p) < river.lakeCentre.y + 1.2f) return Source.Lake;
             }
         }
+        // the stream of the miracle (level 9: the cross on the other mountain)
+        var stream = MiracleStream.Instance;
+        if (stream != null && stream.Flowing && stream.DistanceToWater(p) < drinkReach) return Source.River;
         return NearPuddle(p) != null ? Source.Puddle : Source.None;
     }
 
@@ -97,6 +100,8 @@ public class FreshWater : MonoBehaviour
         if (state.currentHydrationPercent >= state.maxHydrationPercent - 0.5f)
         {
             InventorySystem.Instance.ShowMessage(Lang.T("You are not thirsty", "Nu ți-e sete"));
+            // (a sip still counts for the story: with the admin's Immortal the water bar is always full)
+            if (Drank != null) Drank();
             return;
         }
         state.setHydration(Mathf.Min(state.maxHydrationPercent, state.currentHydrationPercent + waterPerDrink));

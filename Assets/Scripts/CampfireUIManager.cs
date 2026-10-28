@@ -88,7 +88,7 @@ public class CampfireUIManager : MonoBehaviour
         if (lightFireButton != null)
         {
             lightFireButton.interactable = fuelOk && fits && canLight;
-            lightFireLabel.text = full ? "Fire is full" : fire.IsBurning ? "Add Fuel" : "Light Fire";
+            lightFireLabel.text = full ? Lang.T("Fire is full", "Focul e plin") : fire.IsBurning ? Lang.T("Add Fuel", "Pune lemne") : Lang.T("Light Fire", "Aprinde focul");
         }
 
         // status of the fire
@@ -98,12 +98,12 @@ public class CampfireUIManager : MonoBehaviour
             {
                 float seconds = fire.RealSecondsLeft;
                 string real = float.IsInfinity(seconds) ? "" : " (" + Mathf.CeilToInt(seconds) + " s)";
-                fireStatus.text = "Fire: burning, " + FormatGameMinutes(fire.fuelMinutes) + " left" + real;
+                fireStatus.text = Lang.T("Fire: burning, ", "Focul: arde, încă ") + FormatGameMinutes(fire.fuelMinutes) + Lang.T(" left", "") + real;
                 fireStatus.color = FireColor;
             }
             else
             {
-                fireStatus.text = "Fire: out";
+                fireStatus.text = Lang.T("Fire: out", "Focul: stins");
                 fireStatus.color = OutColor;
             }
             fuelBar.fillAmount = Mathf.Clamp01(fire.fuelMinutes / Mathf.Max(1f, fire.maxFuelMinutes));
@@ -111,25 +111,25 @@ public class CampfireUIManager : MonoBehaviour
             var w = WeatherSystem.Instance;
             if (full)
             {
-                fireNote.text = "The fire is full: it can't take more wood now";
+                fireNote.text = Lang.T("The fire is full: it can't take more wood now", "Focul e plin: nu mai încap lemne acum");
             }
             else if (speed > 1.05f && w != null)
             {
-                string why = w.Rain > 0.1f ? "Rain" : w.Snow > 0.1f ? "Snow" : "Wind";
-                fireNote.text = why + ": the wood burns " + speed.ToString("0.0") + "x faster";
+                string why = w.Rain > 0.1f ? Lang.T("Rain", "Ploaia") : w.Snow > 0.1f ? Lang.T("Snow", "Ninsoarea") : Lang.T("Wind", "Vântul");
+                fireNote.text = why + Lang.T(": the wood burns ", ": lemnele ard de ") + speed.ToString("0.0") + Lang.T("x faster", "x mai repede");
             }
             else
             {
-                fireNote.text = fire.IsBurning ? "" : !hasHay ? "To light it you need wood and 1 hay (pick dry grass)" : "Put wood in the fuel slot (+1 hay to light it)";
+                fireNote.text = fire.IsBurning ? "" : !hasHay ? Lang.T("To light it you need wood and 1 hay (pick dry grass)", "Ca să-l aprinzi îți trebuie lemne și 1 fân (smulge iarbă uscată)") : Lang.T("Put wood in the fuel slot (+1 hay to light it)", "Pune lemne în locul pentru lemne (+1 fân ca să-l aprinzi)");
             }
         }
 
         if (fuelLabel != null)
         {
-            if (fuel == null) fuelLabel.text = "Fuel (wood)";
-            else if (fuelOk && !fits) fuelLabel.text = "Room left: " + FormatGameMinutes(Mathf.Max(0f, fire.maxFuelMinutes - fire.fuelMinutes));
-            else if (fuelOk) fuelLabel.text = fuel.thisName + ": +" + FormatGameMinutes(cookingData.BurnMinutes(fuel));
-            else fuelLabel.text = "This does not burn";
+            if (fuel == null) fuelLabel.text = Lang.T("Fuel (wood)", "Lemne");
+            else if (fuelOk && !fits) fuelLabel.text = Lang.T("Room left: ", "Mai încap: ") + FormatGameMinutes(Mathf.Max(0f, fire.maxFuelMinutes - fire.fuelMinutes));
+            else if (fuelOk) fuelLabel.text = Translations.Name(fuel.thisName) + ": +" + FormatGameMinutes(cookingData.BurnMinutes(fuel));
+            else fuelLabel.text = Lang.T("This does not burn", "Asta nu arde");
         }
 
         if (foodLabel != null)
@@ -138,10 +138,10 @@ public class CampfireUIManager : MonoBehaviour
             {
                 float total = Mathf.Max(0.01f, fire.foodBeingCooked != null ? fire.foodBeingCooked.timeToCook : 1f);
                 int percent = Mathf.Clamp(Mathf.RoundToInt((1f - fire.cookingTimer / total) * 100f), 0, 99);
-                foodLabel.text = fire.IsBurning ? "Cooking " + percent + "%" : "Fire is out: cooking stopped";
+                foodLabel.text = fire.IsBurning ? Lang.T("Cooking ", "Se gătește ") + percent + "%" : Lang.T("Fire is out: cooking stopped", "Focul s-a stins: gătitul s-a oprit");
             }
-            else if (food != null && !foodOk) foodLabel.text = "This cannot be cooked";
-            else foodLabel.text = "Food";
+            else if (food != null && !foodOk) foodLabel.text = Lang.T("This cannot be cooked", "Asta nu se gătește");
+            else foodLabel.text = Lang.T("Food", "Mâncare");
         }
     }
 
@@ -180,7 +180,7 @@ public class CampfireUIManager : MonoBehaviour
     {
         if (InventorySystem.Instance.CountItem(HayItem) <= 0)
         {
-            InventorySystem.Instance.ShowMessage("You need hay to light the fire (pick dry grass)");
+            InventorySystem.Instance.ShowMessage(Lang.T("You need hay to light the fire (pick dry grass)", "Îți trebuie fân ca să aprinzi focul (smulge iarbă uscată)"));
             return false;
         }
         InventorySystem.Instance.RemoveItem(HayItem, 1);
@@ -304,7 +304,7 @@ public class CampfireUIManager : MonoBehaviour
         var lightRect = (RectTransform)copy.transform;
         lightRect.anchoredPosition = new Vector2(width / 2f + 6f, at.y);
         lightFireLabel = copy.GetComponentInChildren<Text>(true);
-        if (lightFireLabel != null) lightFireLabel.text = "Light Fire";
+        if (lightFireLabel != null) lightFireLabel.text = Lang.T("Light Fire", "Aprinde focul");
         if (cookText != null) cookText.fontSize = Mathf.Max(cookText.fontSize, 16);
         if (lightFireLabel != null) lightFireLabel.fontSize = Mathf.Max(lightFireLabel.fontSize, 16);
 

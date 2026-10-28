@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SurvivalBD – the game</title>
+<link rel="icon" href="images/app-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <img src="images/app-icon.png" alt="The game's icon: the island">
+    <div>
+      <h1>SurvivalBD</h1>
+      <p>A survival game on a deserted island. Shipwrecked, alone, with a shadow that comes at night. You make a fire, find water and food, go down into the mountain's cave, keep Brother Ioan's canon and, at the end, build a raft to sail home.</p>
+      <div class="by">A game by Bran David Ionel · Unity 2021.3 · phone (Android) and PC (Windows)</div>
+    </div>
+  </div>
+</header>
+
+<nav class="top"><div class="inner">
+  <span class="langs"><a href="index.html" onclick="this.href='index.html'+location.hash">RO</a><a class="on" href="index-en.html">EN</a></span>
+  <a href="#poveste">The story</a>
+  <a href="#niveluri">The levels</a>
+  <a href="#supravietuire">Survival</a>
+  <a href="#umbra">The shadow</a>
+  <a href="#insula">The island</a>
+  <a href="#retete">Recipes</a>
+  <a href="#hrana">Food and plants</a>
+  <a href="#controale">Controls</a>
+  <a href="developer-en.html">For the developer →</a>
+</div></nav>
+
+<main>
+
+<section id="poveste">
+  <h2>The story</h2>
+  <p class="lead">The game begins on the beach, next to the wreck of the ship. On a black screen the story appears line by line (it can be skipped with <b>Skip</b>). It is shown only the first time on a device: after that, or if there are saved games already, a new game starts right away with level 1.</p>
+  <div class="quote">
+    <p>The storm came out of nowhere.</p>
+    <p>For three nights the waves threw our ship around, until it broke apart on the rocks.</p>
+    <p>I remember the cold water... the screams... and then nothing.</p>
+    <p>When I opened my eyes, I was lying on the sand. Alone.</p>
+    <p>The ship is gone. The others are gone. I have nothing but my hands.</p>
+    <p>Night will come. First of all, I need a fire.</p>
+  </div>
+  <p>The player starts <b>with empty hands</b>, at 7 in the morning. A <b>shadow</b> lives on the island: a tall black figure with white eyes that comes at night when no fire burns nearby. In the mountain's cave is the place where <b>Brother Ioan</b> died, a monk who lived on the island long ago and fought the same shadow. He left a journal, a prayer book and a canon. The prayer drives the shadow away.</p>
+  <p>The whole game is in English or in Romanian (Settings, or the two buttons at the top right of the main menu): the story, the goals, the messages, the items, the windows and the buttons.</p>
+</section>
+
+<section id="niveluri">
+  <h2>The levels</h2>
+  <p class="lead">The goals of the current level are in the panel at the top right. A goal that is ticked stays ticked. At the end of each level "LEVEL N COMPLETE" appears and the story goes on. Level 10 (the raft) always stays the last one: new levels go before it.</p>
+
+  <div class="level"><div class="num">1</div><div>
+    <div class="en">Fă un foc</div>
+    <h3>Make a fire</h3>
+    <ol>
+      <li>Gather 6 stones (on the beach and in the grass).</li>
+      <li>Make a campfire: <i>Crafting › Survival › Campfire</i> (6 stones).</li>
+      <li>Place the fire (from the quick bar or the inventory).</li>
+      <li>Find wood (branches / sticks) and hay (pull dry grass on the meadows).</li>
+      <li>Light the fire: wood in the fire + 1 hay.</li>
+    </ol>
+    <div class="tip">"The fire crackles. Its warmth gives me hope."</div>
+  </div></div>
+
+  <div class="level"><div class="num">2</div><div>
+    <div class="en">Apă dulce</div>
+    <h3>Fresh water</h3>
+    <ol>
+      <li>Find the river that comes down from the mountain, or the lake it flows into.</li>
+      <li>Drink: look down at the water and <i>Drink water</i> appears.</li>
+    </ol>
+    <div class="tip">The sea is salty: <b>never</b> drink from it. After rain the puddles are drinking water too (2–3 days).</div>
+  </div></div>
+
+  <div class="level"><div class="num">3</div><div>
+    <div class="en">Ceva de mâncare</div>
+    <h3>Something to eat</h3>
+    <ol>
+      <li>Pick 2 mushrooms in the forest, in the shade of the trees.</li>
+      <li>Eat them (in the inventory: double tap on the phone / right click on the PC).</li>
+    </ol>
+    <div class="tip">Porcini are the best. Berries and herbs help a little too.</div>
+  </div></div>
+
+  <div class="level"><div class="num">4</div><div>
+    <div class="en">Prima noapte</div>
+    <h3>The first night</h3>
+    <p>The story tells that something strange is on the island: a dark shape watched from between the trees and kept away from the fire. Much more wood is needed.</p>
+    <ol>
+      <li>Gather firewood: 3 logs or 8 sticks.</li>
+      <li>Have the fire burning when night falls.</li>
+      <li>Stay by the fire until morning.</li>
+    </ol>
+    <div class="tip">The stone axe: 1 stone + 2 sticks. Logs burn the longest.</div>
+  </div></div>
+
+  <div class="level"><div class="num">5</div><div>
+    <div class="en">Muntele</div>
+    <h3>The mountain</h3>
+    <p>At night the ground shook, and at dawn stones were heard falling on the mountain. The cave, closed until now by rocks, opens.</p>
+    <ol>
+      <li>Explore the mountain.</li>
+      <li>Find what the fallen rocks opened (the mouth of the cave).</li>
+    </ol>
+    <div class="tip">Inside it is pitch dark: no going in without light. A column of light shows the cave's mouth.</div>
+  </div></div>
+
+  <div class="level"><div class="num">6</div><div>
+    <div class="en">În întuneric</div>
+    <h3>Into the dark</h3>
+    <ol>
+      <li>Make a torch: <i>Crafting › Tools › Torch</i> (1 stick + 2 hay).</li>
+      <li>Hold the torch in your hand (it lights up).</li>
+      <li>Go down to the end of the cave.</li>
+      <li>Read Brother Ioan's old journal.</li>
+      <li>Take the prayer book.</li>
+    </ol>
+    <div class="tip"><span class="tag warn">Danger</span> A torch burns about 6 game hours in the hand. If you are in the cave without light (or the torch goes out), the shadow takes you after a few seconds. Take a spare torch.</div>
+  </div></div>
+
+  <div class="level"><div class="num">7</div><div>
+    <div class="en">Rugăciunea</div>
+    <h3>The prayer</h3>
+    <ol>
+      <li>Wait for the night.</li>
+      <li>When the shadow comes, open the prayer book.</li>
+    </ol>
+    <div class="tip">The book has 113 official Orthodox prayers (in English or Romanian, as chosen in the Settings) and drives the shadow away for a few hours. From now on you have three defences: the fire, a burning torch in your hand and the prayer.</div>
+  </div></div>
+
+  <div class="level"><div class="num">8</div><div>
+    <div class="en">Fierul</div>
+    <h3>Iron</h3>
+    <ol>
+      <li>Find 10 iron ore in the cave (with the torch!). There are about 50 in the tunnel.</li>
+      <li>Have a log.</li>
+      <li>Make the iron axe: <i>Crafting › Tools › Iron Axe</i> (10 ore + 1 log).</li>
+    </ol>
+    <div class="tip">With the iron axe any tree falls in 3 blows (with the stone axe the big trees take up to 8).</div>
+  </div></div>
+
+  <div class="level"><div class="num">9</div><div>
+    <div class="en">Canonul fratelui Ioan</div>
+    <h3>Brother Ioan's canon</h3>
+    <p>Among Brother Ioan's pages you find a canon written in his own hand: "Do not spoil what is beautiful on this island. Care for the creatures and they will multiply; plant trees for those who come after you."</p>
+    <p style="font-size:1.25em;text-align:center"><b>"You must make paradise out of everything you have."</b></p>
+    <p>"And when your work is done, raise a cross on the other mountain." He kept it, and God kept him alive on the island; with His help you keep it too.</p>
+    <ol>
+      <li>Catch a male and a female rabbit alive: <i>Crafting › Survival › Snare</i> (1 stick + 5 hemp). Set the snare near rabbits; a grown rabbit that walks into it is caught. <b>With empty hands</b> you take it alive into the inventory, <b>with the axe</b> you kill it.</li>
+      <li>Build a pen: foundation, walls, a <b>door wall</b> and a <b>roof</b> (<i>Crafting › Construction</i>).</li>
+      <li>Go into the pen, let them go (drag out of the inventory, or double tap / right click) and <b>shut the door</b>. Wait until there are <b>5 rabbits in the pen</b> (a pair has 2–5 babies about a day later, so 2–3 days).</li>
+      <li>Plant 10 trees (pine cones, acorns, beechnuts, birch catkins).</li>
+      <li>Make the cross: <i>Crafting › Construction › Cross</i> (5 planks).</li>
+      <li><b>Last</b>: raise the cross on the top of the other mountain (the small one in the north-east; see <i>Menu › Map</i> and the column of light).</li>
+    </ol>
+    <div class="tip">The miracle: water springs from the rock under the cross and a new stream runs down to the sea on the north coast. You can drink from it. Now you understand where the other river came from: Brother Ioan raised a cross there too. He was a saint, and you feel that you are protected as well.</div>
+    <div class="tip">Mind the door: if you leave it open, the rabbits in the pen go out one after another. A killed baby gives nothing; half grown it gives only a little meat; grown rabbits give meat and hide.</div>
+    <div class="tip">Winter: one game day after the miracle, winter comes and snow falls over the whole island. Keep a fire burning at night.</div>
+  </div></div>
+
+  <div class="level final"><div class="num">10</div><div>
+    <div class="en">Pluta · the last level</div>
+    <h3>The raft</h3>
+    <p>The raft, only started, lies on the beach <b>where the new stream flows into the sea</b> (the north coast). A blue column of light shows the place, and the gold ring on the map (<i>Menu › Map</i>). Look at it and click: everything it needs that you carry goes onto it. Make as many trips as you like.</p>
+    <ol>
+      <li>Pick 18 hemp (most of it grows around the lake).</li>
+      <li>Make 6 ropes: <i>Crafting › Refine › Rope</i> (3 hemp each).</li>
+      <li>Go to the raft, at the mouth of the new stream.</li>
+      <li>Bring it 12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay, <b>5 cooked meat</b>, <b>3 rabbit hides</b> and <b>2 live rabbits</b> (from the pen: set a snare inside it, or from the snares).</li>
+      <li>Done, the raft slides into the sea. Board it.</li>
+    </ol>
+    <div class="tip">The end: the raft sails towards the sunset, the island gets smaller behind it, the last lines of the story appear, then "THE END – SurvivalBD, a game by Bran David Ionel – Thank you for playing!" and the game goes back to the main menu.</div>
+    <div class="grid" style="margin-top:12px">
+      <figure><img src="images/raft.jpg" alt="The finished raft in the sea by the beach"><figcaption>The raft finished, in the sea. Look at it: "Board the raft".</figcaption></figure>
+      <figure><img src="images/the-end.jpg" alt="The end: the island far away and the words THE END"><figcaption>The end of the game.</figcaption></figure>
+    </div>
+  </div></div>
+</section>
+
+<section id="supravietuire">
+  <h2>Survival</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Time</h3>
+      <p>A game day lasts <b>6 real minutes</b> (one game hour = 15 seconds). There are seasons, rain, fog and snow; in winter snow covers the ground and some plants.</p>
+    </div>
+    <div class="card">
+      <h3>Water <span class="tag sea">1 day</span></h3>
+      <p>A full water bar lasts one game day. Drink from the <b>river</b>, the <b>lake</b>, the <b>new stream</b> of the canon and the <b>puddles</b> after rain (they dry up after 2–3 days). The sea: <i>Sea water (salty)</i>, it can't be drunk.</p>
+    </div>
+    <div class="card">
+      <h3>Food <span class="tag forest">~3 days</span></h3>
+      <p>A full food bar lasts about 3 game days. Walking and chopping wood use it up faster. Mushrooms, berries, herbs and meat fill it.</p>
+    </div>
+    <div class="card">
+      <h3>Health</h3>
+      <p>When water or food reach zero, health goes down until death (with warnings first). Mushrooms and herbs give health too. The bars at the top of the screen are big and show the numbers: Health, Food, Water.</p>
+    </div>
+    <div class="card">
+      <h3>Fire</h3>
+      <p>A campfire = 6 stones. To light it put wood in it (sticks, logs, planks) and use 1 hay. The wood burns away; logs last the longest.</p>
+    </div>
+    <div class="card">
+      <h3>Settings</h3>
+      <p><b>Language</b>: English or Romanian, from the main menu (the buttons at the top right) or <i>Menu › Settings</i>. It changes the whole game: the story, the levels, the journal, the prayers, the messages, the items, the windows, the buttons and the end.</p>
+      <p><i>Menu › Settings</i>: the volume of the nature sounds, of the effects and the main volume, and the <b>difficulty</b>: <b>Easy</b> (food and water last longer, torches burn longer, the shadow is slower), <b>Normal</b> or <b>Hard</b> (hunger and thirst come faster, torches go out sooner, the shadow is quick).</p>
+    </div>
+    <div class="card">
+      <h3>Saving</h3>
+      <p><i>Menu › Save Game</i>: 10 save slots, each with a picture. The save keeps the level, the trees, the picked plants, the rabbits, the fires, the puddles, the things dropped on the ground, the buildings (with their doors), the snares and the raft.</p>
+      <p>While loading, the save's picture is shown with a random Orthodox prayer written in red (at least 6 seconds, so you can read it).</p>
+    </div>
+    <div class="card">
+      <h3>Dropping things</h3>
+      <p>Drag an item out of the inventory <b>outside the window</b>: the game asks whether to drop it. Yes: it falls in front of you and you can take it again any time. On the <b>trash can</b> the item is gone for good (it asks here too). A live rabbit dropped is let go: it runs away, unless it is in a closed pen.</p>
+    </div>
+    <div class="card">
+      <h3>The map</h3>
+      <p><i>Menu › Map</i> (key <kbd>N</kbd> on the PC): a picture of the island from above with a red arrow for you (the way you look) and a gold ring on the place of the current goal (the cave, the other mountain, the raft...).</p>
+    </div>
+  </div>
+</section>
+
+<section id="umbra">
+  <h2>The shadow</h2>
+  <div class="card">
+    <p><span class="tag night">night</span> When it is dark and no fire burns within 20 m, after a few seconds the shadow appears some 40 m away and comes towards you. You have about 20 seconds: light a fire or open the prayer book. If it catches you, you die and the game goes back to the main menu.</p>
+    <p><span class="tag night">the cave</span> The cave is pitch dark and the shadow lives there. Without a burning torch in your hand, more than a few metres from the entrance: a warning, heartbeats, then "The shadow took you in the dark...".</p>
+    <p><span class="tag forest">defence</span> The fire (while it burns), a <b>burning torch in your hand</b> (anywhere, not only in the cave) and the prayer book (it drives the shadow away for a few hours each time you open it at night).</p>
+  </div>
+</section>
+
+<section id="insula">
+  <h2>The island</h2>
+  <p class="lead">An oval island about 2 km wide, with a mountain in the middle and a lake in its crater.</p>
+  <p>The mountains have real rock on their steep slopes (patches, layers of stone and relief), with a little grass left on the gentler parts high up. On the top of the big mountain stands Brother Ioan's old cross, of dark wood. The map (<i>Menu › Map</i>, key N) is a picture of the island from above, with your arrow and the level's goal.</p>
+  <figure>
+    <img src="images/island-air.png" alt="The island from the air">
+    <figcaption>The island from the air: the beach, the forests, the mountain with the lake.</figcaption>
+  </figure>
+  <div class="grid">
+    <div class="card">
+      <h3>The beach and the wreck</h3>
+      <p>Where the game begins. Pieces of the ship, planks and driftwood, stones.</p>
+    </div>
+    <div class="card">
+      <h3>The forests</h3>
+      <p>Four kinds of trees: <b>pine</b>, <b>birch</b>, <b>oak</b> and <b>beech</b>. Under the trees the ground is dark, without grass, with ferns and bushes, mushrooms, fallen branches, logs and old stumps.</p>
+    </div>
+    <div class="card">
+      <h3>The trees grow by themselves</h3>
+      <p>The trees drop their seeds (cones, acorns, beechnuts, catkins). Fallen seeds sprout after 2–3 game days and become new trees. You can pick them and plant them yourself. A felled tree leaves logs, branches (few from pines, more from the others) and a stump.</p>
+    </div>
+    <div class="card">
+      <h3>The meadows</h3>
+      <p>Lots of grass: <i>Pick grass (hay)</i> gives hay (the same spot can be picked again after a day). Flowers, chicory, heather, berry bushes.</p>
+    </div>
+    <div class="card">
+      <h3>The river, the lake and the new stream</h3>
+      <p>The river starts high on the big mountain (under Brother Ioan's cross) and flows into the crater lake. After the canon a new stream runs from the other mountain to the north coast. You can drink from all of them. Hemp grows thickest around the lake.</p>
+    </div>
+    <div class="card">
+      <h3>The mountain and the cave</h3>
+      <p>The cave goes down a long way into the mountain: stalactites, stalagmites, mushrooms (some of them glow), iron ore. At the end: an Orthodox cross, the monk's bones, candles, the journal and the prayer book.</p>
+    </div>
+    <div class="card">
+      <h3>The rabbits</h3>
+      <p>More than 100 rabbits all over the island. Above each one is written <i>Male</i> (blue) or <i>Female</i> (pink); the babies grow up in a day and a half. A male and a female near each other have 2–5 babies. Hunted with the axe they leave meat and a hide; caught in a snare they can be taken alive and kept in a pen.</p>
+    </div>
+  </div>
+  <figure>
+    <img src="images/island-map.png" alt="The map of the island from above">
+    <figcaption>The map from above: the forests, the meadows, the river and the crater lake.</figcaption>
+  </figure>
+</section>
+
+<section id="retete">
+  <h2>Recipes (Crafting)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>What you make</th><th>From</th><th>Where</th><th>What it is for</th></tr>
+    <tr><td><b>Stone Axe</b></td><td>1 stone + 2 sticks</td><td>Tools</td><td>Chop trees, hunt rabbits</td></tr>
+    <tr><td><b>Torch</b></td><td>1 stick + 2 hay</td><td>Tools</td><td>Light in the cave, ~6 game hours in the hand</td></tr>
+    <tr><td><b>Iron Axe</b></td><td>10 iron ore + 1 log</td><td>Tools</td><td>Any tree in 3 blows</td></tr>
+    <tr><td><b>Campfire</b></td><td>6 stones</td><td>Survival</td><td>Warmth, cooking, defence against the shadow</td></tr>
+    <tr><td><b>Storage Box</b></td><td>2 planks</td><td>Survival</td><td>Keep things</td></tr>
+    <tr><td><b>Snare</b></td><td>1 stick + 5 hemp</td><td>Survival</td><td>Catch grown rabbits alive (empty hands take them, the axe kills them)</td></tr>
+    <tr><td><b>Planks</b></td><td>1 log → 2 planks</td><td>Refine</td><td>Building, the raft</td></tr>
+    <tr><td><b>Rope</b></td><td>3 hemp</td><td>Refine</td><td>The raft, the door wall</td></tr>
+    <tr><td><b>Foundation / Wall</b></td><td>4 / 2 planks</td><td>Construction</td><td>Shelter, a pen</td></tr>
+    <tr><td><b>Door Wall</b></td><td>3 planks + 1 rope</td><td>Construction</td><td>The pen's door: click to open / shut it</td></tr>
+    <tr><td><b>Window Wall</b></td><td>2 planks + 2 sticks</td><td>Construction</td><td>Light; nothing gets through it</td></tr>
+    <tr><td><b>Roof</b></td><td>3 planks + 4 hay</td><td>Construction</td><td>On top of a foundation's walls</td></tr>
+    <tr><td><b>Cross</b></td><td>5 planks</td><td>Construction</td><td>The canon: on the top of the other mountain, last</td></tr>
+    <tr><td><b>The raft</b> (on the beach, not in the menu)</td><td>12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay, 5 cooked meat, 3 rabbit hides, 2 live rabbits</td><td>at the mouth of the new stream (north)</td><td>Leaving the island (the end)</td></tr>
+  </table></div>
+  <p>On each Crafting card the requirements are red until you have enough, then green.</p>
+  <figure><img src="images/tools.jpg" alt="The Crafting window, Tools page: the stone axe, the torch, the iron axe"><figcaption>Crafting › Tools: the stone axe, the torch and the iron axe.</figcaption></figure>
+</section>
+
+<section id="hrana">
+  <h2>Food and plants</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Item</th><th>Where it is found</th><th>Effect</th></tr>
+    <tr><td>Porcini</td><td>in the forests</td><td>+15 health, +250 food</td></tr>
+    <tr><td>Field Mushroom</td><td>in the forests</td><td>+10 health, +150 food</td></tr>
+    <tr><td>Red Mushroom</td><td>in the forests</td><td>+8 health, +120 food</td></tr>
+    <tr><td>Berries</td><td>bushes at the edge of the forests</td><td>+3 health, +120 food, +6 water</td></tr>
+    <tr><td>Chicory</td><td>meadows</td><td>+8 health, +4 water</td></tr>
+    <tr><td>Heather</td><td>meadows, slopes</td><td>+6 health, +20 food</td></tr>
+    <tr><td>Rabbit meat</td><td>hunted rabbits (small babies give nothing)</td><td>food (cook it on a campfire)</td></tr>
+    <tr><td>Hay</td><td>the grass of the meadows</td><td>lighting the fire, torches, roofs, the raft</td></tr>
+    <tr><td>Hemp</td><td><b>around the lake</b> (most of it), the mountain's slopes, the river banks</td><td>ropes, snares</td></tr>
+    <tr><td>Pine cone, birch catkin, acorn, beechnut</td><td>under the trees</td><td>plant them: they become new trees</td></tr>
+    <tr><td>Iron Ore</td><td>in the cave's tunnel</td><td>the iron axe</td></tr>
+  </table></div>
+  <p>Picked plants grow back after a while (the ore and the books do not).</p>
+</section>
+
+<section id="controale">
+  <h2>Controls</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>PC (Windows)</h3>
+      <table>
+        <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>walk</td></tr>
+        <tr><td>mouse</td><td>look</td></tr>
+        <tr><td><kbd>Space</kbd> / <kbd>Left Ctrl</kbd></td><td>jump (in water: up / down)</td></tr>
+        <tr><td>left click</td><td>hit, take, open, drink, place</td></tr>
+        <tr><td>right click on an item</td><td>use / eat</td></tr>
+        <tr><td><kbd>1</kbd>–<kbd>6</kbd></td><td>the quick bar</td></tr>
+        <tr><td><kbd>I</kbd> <kbd>C</kbd> <kbd>M</kbd> <kbd>H</kbd> <kbd>N</kbd></td><td>inventory, crafting, menu, help, map</td></tr>
+        <tr><td><kbd>Tab</kbd></td><td>free the mouse for the buttons</td></tr>
+        <tr><td><kbd>X</kbd></td><td>cancel placing</td></tr>
+      </table>
+      <p>On the PC there are also buttons at the top right: <b>Inventory [I]</b>, <b>Crafting [C]</b>, <b>Menu [M]</b>, <b>Help [H]</b>, <b>Map [N]</b>, so the keys don't have to be remembered.</p>
+    </div>
+    <div class="card">
+      <h3>Phone</h3>
+      <table>
+        <tr><td>left joystick</td><td>walk</td></tr>
+        <tr><td>right joystick / swipe</td><td>look</td></tr>
+        <tr><td>the big button</td><td>Attack / Take / Open / Close / Place (it changes with what you look at)</td></tr>
+        <tr><td>Jump / Down</td><td>jump, in water up/down</td></tr>
+        <tr><td>double tap an item</td><td>use / eat</td></tr>
+        <tr><td>tap a quick slot</td><td>take it in your hand</td></tr>
+        <tr><td>top right</td><td>Inventory, Crafting, Menu (in the menu: Help, Map)</td></tr>
+      </table>
+    </div>
+  </div>
+  <p>The game's menu has a <b>Help</b> button with three pages: <i>Controls</i>, <i>Levels</i> (where you are now) and <i>Tips</i>.</p>
+  <div class="grid">
+    <figure><img src="images/pc-buttons.jpg" alt="The game on the PC, with the buttons at the top right"><figcaption>On the PC: the buttons at the top right and the level's goals.</figcaption></figure>
+    <figure><img src="images/help.jpg" alt="The Help screen, Tips page"><figcaption>The Help screen (key H).</figcaption></figure>
+  </div>
+</section>
+
+</main>
+
+<footer>SurvivalBD · a game by Bran David Ionel · documentation made in the project (the <code>Docs</code> folder)</footer>
+</body>
+</html>

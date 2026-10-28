@@ -3,6 +3,8 @@ using UnityEngine;
 // One rabbit (added in code by RabbitPopulation to every rabbit): male or female, its age (babies are small and grow
 // up), mating, and how it moves: it nibbles the grass, hops around, walks to a partner, hops away when hit.
 // It replaces the old AI_Movement (which used the animation's own motion and could stray).
+// Walls stop it (a rabbit pen) and it hops up onto the foundations; an empty snare nearby may draw it in (RabbitSnare);
+// an open pen door lets it out (PenDoor).
 public class RabbitLife : MonoBehaviour
 {
     public RabbitInfo.Sex sex;
@@ -12,6 +14,8 @@ public class RabbitLife : MonoBehaviour
 
     public Animal animal;
     public RabbitLife mate;             // the partner it walks to
+    public RabbitSnare caughtIn;        // the snare that holds it
+    public RabbitSnare lure;            // the snare it walks to
 
     Animator animator;
     Vector3 adultScale;
@@ -22,12 +26,19 @@ public class RabbitLife : MonoBehaviour
     float fleeTimer;
     float lastHit = -100f;
     float appliedGrowth = -1f;
+    Vector3[] path;                     // going out through an open door
+    int pathIndex;
+    float pathSpeed;
+    float struggleTimer;
+    float struggleYaw;
 
     public bool Alive => animal != null && !animal.isDead;
     public bool IsAdult => ageHours >= RabbitPopulation.AdultHours;
+    public float Growth => Mathf.Clamp01(ageHours / RabbitPopulation.AdultHours);
     public bool Expecting => pregnantHours >= 0f;
-    public bool ReadyToMate => Alive && IsAdult && restHours <= 0f && !Expecting;
+    public bool ReadyToMate => Alive && IsAdult && restHours <= 0f && !Expecting && caughtIn == null;
     public bool Active { get; private set; } = true;
+    public bool IsLeaving => path != null && pathIndex < path.Length;
 
     public void Setup(RabbitInfo.Sex sex, float ageHours, Vector3 adultScale)
     {
@@ -67,7 +78,7 @@ public class RabbitLife : MonoBehaviour
     // babies are small, they reach the full size when they are grown up
     public void ApplyGrowth()
     {
-        float g = Mathf.Clamp01(ageHours / RabbitPopulation.AdultHours);
+        float g = Growth;
         if (Mathf.Abs(g - appliedGrowth) < 0.02f) return;
         appliedGrowth = g;
         transform.localScale = adultScale * Mathf.Lerp(0.45f, 1f, g);
@@ -85,9 +96,11 @@ public class RabbitLife : MonoBehaviour
     {
         get
         {
-            string s = sex == RabbitInfo.Sex.Male ? "Male" : "Female";
-            if (!IsAdult) return "Baby " + s.ToLowerInvariant();
-            if (Expecting) return s + " (expecting)";
+            bool ro = Lang.Ro;
+            string s = sex == RabbitInfo.Sex.Male ? (ro ? "Mascul" : "Male") : (ro ? "Femelă" : "Female");
+            if (caughtIn != null) return s + (ro ? " - în laț" : " - in a snare");
+            if (!IsAdult) return ro ? "Pui " + s.ToLowerInvariant() : "Baby " + s.ToLowerInvariant();
+            if (Expecting) return s + (ro ? " (are pui)" : " (expecting)");
             return s;
         }
     }
@@ -105,10 +118,47 @@ public class RabbitLife : MonoBehaviour
         lastHit = Time.time;
     }
 
+    // a snare caught it: it stays in the loop
+    public void OnCaught(RabbitSnare snare)
+    {
+        caughtIn = snare;
+        lure = null;
+        path = null;
+        if (mate != null && mate.mate == this) mate.mate = null;
+        mate = null;
+        moving = false;
+        Vector3 at = snare.Loop;
+        at.y = Buildings.GroundAt(at);
+        transform.position = at;
+        struggleYaw = snare.transform.eulerAngles.y + 90f;
+        transform.rotation = Quaternion.Euler(0f, struggleYaw, 0f);
+    }
+
+    // out through an open pen door: these points one after another
+    public void FollowPath(Vector3[] points, float pathSpeed)
+    {
+        if (caughtIn != null || points == null || points.Length == 0) return;
+        path = points;
+        pathIndex = 0;
+        this.pathSpeed = pathSpeed;
+        lure = null;
+    }
+
+    // let go from the hands: it hops away from the player
+    public void RunFrom(Vector3 player, float distance)
+    {
+        Vector3 away = transform.position - player; away.y = 0f;
+        if (away.sqrMagnitude < 0.01f) away = transform.forward;
+        target = transform.position + away.normalized * distance;
+        speed = 4.2f;
+        moving = true;
+        fleeTimer = 1.6f;
+    }
+
     void SnapToGround()
     {
         Vector3 p = transform.position;
-        p.y = Forest.GroundY(p);
+        p.y = Buildings.GroundAt(p);
         transform.position = p;
     }
 
@@ -143,6 +193,12 @@ public class RabbitLife : MonoBehaviour
             return;
         }
 
+        if (caughtIn != null)
+        {
+            Struggle();
+            return;
+        }
+
         // hit: a short hop away from the player (it stays close enough to be followed)
         if (Time.time - lastHit < 0.1f && fleeTimer <= 0f)
         {
@@ -152,12 +208,20 @@ public class RabbitLife : MonoBehaviour
             target = here + away * 5f;
             speed = 4f;
             moving = true;
+            path = null;
         }
         if (fleeTimer > 0f) fleeTimer -= Time.deltaTime;
 
-        // walking to its partner
-        if (fleeTimer <= 0f && mate != null && mate.Alive)
+        if (fleeTimer <= 0f && IsLeaving)
         {
+            // going out through the open door
+            target = path[pathIndex];
+            speed = pathSpeed;
+            moving = true;
+        }
+        else if (fleeTimer <= 0f && mate != null && mate.Alive)
+        {
+            // walking to its partner
             Vector3 toMate = mate.transform.position - here; toMate.y = 0f;
             if (toMate.sqrMagnitude > 1.1f * 1.1f)
             {
@@ -170,6 +234,13 @@ public class RabbitLife : MonoBehaviour
                 Stop();
             }
         }
+        else if (fleeTimer <= 0f && lure != null)
+        {
+            // to the snare (the loop)
+            target = lure.Loop;
+            speed = 2.2f;
+            moving = true;
+        }
         else if (!moving)
         {
             waitTimer -= Time.deltaTime;
@@ -179,6 +250,18 @@ public class RabbitLife : MonoBehaviour
         if (moving) Move(here);
     }
 
+    // in the snare: it tugs and twists, now and then
+    void Struggle()
+    {
+        struggleTimer -= Time.deltaTime;
+        if (struggleTimer > 0f) return;
+        bool tug = Random.value < 0.55f;
+        struggleTimer = tug ? Random.Range(0.25f, 0.6f) : Random.Range(0.8f, 2.2f);
+        float yaw = caughtIn != null ? caughtIn.transform.eulerAngles.y + 90f : struggleYaw;
+        transform.rotation = Quaternion.Euler(0f, yaw + (tug ? Random.Range(-35f, 35f) : 0f), 0f);
+        if (animator != null && animator.isActiveAndEnabled) animator.SetBool("isRunning", tug);
+    }
+
     void PickWanderTarget(Vector3 here)
     {
         for (int i = 0; i < 4; i++)
@@ -186,7 +269,7 @@ public class RabbitLife : MonoBehaviour
             float a = Random.Range(0f, Mathf.PI * 2f);
             float d = Random.Range(3f, IsAdult ? 12f : 5f);
             Vector3 p = here + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
-            if (!IsGoodGround(p)) continue;
+            if (!IsGoodGround(p) || Buildings.Blocks(here, p)) continue; // (in a pen: somewhere inside)
             target = p;
             speed = IsAdult ? Random.Range(1.4f, 2.2f) : 1.1f;
             moving = true;
@@ -201,20 +284,33 @@ public class RabbitLife : MonoBehaviour
         float dist = to.magnitude;
         if (dist < 0.3f)
         {
+            if (path != null)
+            {
+                // the next point of the way out
+                pathIndex++;
+                if (pathIndex >= path.Length) { path = null; Stop(); waitTimer = Random.Range(1f, 3f); }
+                return;
+            }
             Stop();
             waitTimer = Random.Range(2f, 7f); // nibbling the grass
             return;
         }
         Vector3 dir = to / dist;
         Vector3 next = here + dir * Mathf.Min(dist, speed * Time.deltaTime);
-        if (!IsGoodGround(next))
+        float nextY = Buildings.GroundAt(next);
+        // water, the sea, a wall (or a shut door), or a step too high (the side of a foundation on a slope)
+        if (!IsGoodGround(next) || nextY - here.y > 1.1f || Buildings.Blocks(here, next + dir * 0.35f))
         {
             Stop();
             waitTimer = Random.Range(0.5f, 2f);
             fleeTimer = 0f;
+            path = null;
+            if (lure != null) { lure.lured = null; lure = null; }
+            // a wall between it and its partner: they give up
+            if (mate != null) { if (mate.mate == this) mate.mate = null; mate = null; }
             return;
         }
-        next.y = Forest.GroundY(next);
+        next.y = nextY;
         transform.position = next;
         var look = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, look, 360f * Time.deltaTime);

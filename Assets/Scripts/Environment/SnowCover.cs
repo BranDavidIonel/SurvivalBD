@@ -36,6 +36,7 @@ public class SnowCover : MonoBehaviour
         Shader.SetGlobalFloat(WetnessId, 0f);
 
         terrain = Terrain.activeTerrain;
+        TerrainLook.Apply(terrain); // rock on the steep mountain slopes
         var terrainShader = Resources.Load<Shader>("Environment/SB_TerrainSnow");
         if (terrain != null && terrainShader != null && terrainShader.isSupported)
         {

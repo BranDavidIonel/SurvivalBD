@@ -6,7 +6,7 @@ using UnityEngine;
 //  - every rabbit is male or female (RabbitInfo in the scene); a label above the near ones says which
 //    ("Male" blue, "Female" pink, "Baby ...", "Female (expecting)")
 //  - a grown male and a grown female that are both ready walk to each other; when they meet the female expects
-//    babies, and after about a game day 1-3 little rabbits are born next to her; they grow up in about 1.5 days
+//    babies, and after about a game day 2-5 little rabbits are born next to her; they grow up in about 1.5 days
 //  - not more than maxRabbits (phone speed); far from the player rabbits stand still and are not drawn
 //  - hunting works by distance (the axe reaches a rabbit within ~4 m) and the meat and hide fall on the ground
 // The save keeps every living rabbit (EnviromentData.rabbits).
@@ -25,7 +25,8 @@ public class RabbitPopulation : MonoBehaviour
     [Tooltip("A ready rabbit looks for a partner this far")]
     public float findMateDistance = 30f;
     public Vector2 pregnancyHours = new Vector2(20f, 30f);
-    public Vector2Int babies = new Vector2Int(1, 3);
+    [Tooltip("Babies in one litter (a pair in a pen: about 5 rabbits in 2-3 days)")]
+    public Vector2Int babies = new Vector2Int(2, 5);
     public float maleRestHours = 8f;
     public float femaleRestHours = 16f;
     [Tooltip("The Male / Female label shows on rabbits this close")]
@@ -46,6 +47,12 @@ public class RabbitPopulation : MonoBehaviour
 
     public int Count { get { int n = 0; foreach (var r in rabbits) if (r != null && r.Alive) n++; return n; } }
     public Vector3 PlayerPosition => player != null ? player.position : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+    public IReadOnlyList<RabbitLife> Rabbits => rabbits;
+
+    // a rabbit was taken alive from a snare (the story counts them)
+    public static event System.Action<RabbitInfo.Sex> TakenAlive;
+    // a baby was born (where)
+    public static event System.Action<Vector3> BabyBorn;
 
     void Awake() => Instance = this;
 
@@ -58,6 +65,7 @@ public class RabbitPopulation : MonoBehaviour
     {
         if (started) return;
         started = true;
+        if (GetComponent<SnarePlacing>() == null) gameObject.AddComponent<SnarePlacing>(); // setting snares
         var movement = FindObjectOfType<PlayerMovement>();
         if (movement != null) player = movement.transform;
 
@@ -137,7 +145,11 @@ public class RabbitPopulation : MonoBehaviour
         if (tick < 1f) return;
         float hours = DayNightSystem.GameHoursPerSecond * tick;
         tick = 0f;
-        if (hours > 0f) Live(hours);
+        if (hours > 0f)
+        {
+            Live(hours);
+            RabbitSnare.Tick(hours); // rabbits come to the snares
+        }
     }
 
     // far rabbits stand still and are not drawn (phone speed)
@@ -183,8 +195,13 @@ public class RabbitPopulation : MonoBehaviour
                     {
                         Vector2 off = Random.insideUnitCircle * 1.5f;
                         Vector3 at = r.transform.position + new Vector3(off.x, 0f, off.y);
-                        at.y = Forest.GroundY(at);
-                        if (Spawn(at, Random.Range(0f, 360f), Random.value < 0.5f ? RabbitInfo.Sex.Male : RabbitInfo.Sex.Female, 0f) != null) alive++;
+                        if (Buildings.Blocks(r.transform.position, at)) at = r.transform.position; // not on the other side of a wall
+                        at.y = Buildings.GroundAt(at);
+                        if (Spawn(at, Random.Range(0f, 360f), Random.value < 0.5f ? RabbitInfo.Sex.Male : RabbitInfo.Sex.Female, 0f) != null)
+                        {
+                            alive++;
+                            if (BabyBorn != null) BabyBorn(at);
+                        }
                     }
                 }
             }
@@ -208,7 +225,8 @@ public class RabbitPopulation : MonoBehaviour
                 {
                     if (male == null || male.sex != RabbitInfo.Sex.Male || !male.ReadyToMate || male.mate != null) continue;
                     float d = (male.transform.position - female.transform.position).sqrMagnitude;
-                    if (d < bestDistance) { bestDistance = d; best = male; }
+                    // (a wall between them: they can't meet)
+                    if (d < bestDistance && !Buildings.Blocks(female.transform.position, male.transform.position)) { bestDistance = d; best = male; }
                 }
                 if (best == null) continue;
                 female.mate = best;
@@ -226,6 +244,72 @@ public class RabbitPopulation : MonoBehaviour
                 partner.mate = null;
             }
         }
+    }
+
+    // ---------------- live rabbits: from a snare into the inventory, and let go again ---------------- //
+
+    public const string LiveMale = "rabbitmale", LiveFemale = "rabbitfemale";
+    public static bool IsLiveRabbit(string item) => item == LiveMale || item == LiveFemale;
+
+    // a rabbit in a snare, taken with empty hands
+    public bool TakeAlive(RabbitLife r)
+    {
+        var inventory = InventorySystem.Instance;
+        if (r == null || !r.Alive || inventory == null) return false;
+        if (!inventory.CheckSlotsAvailable(1)) { inventory.ShowMessage(Lang.T("Inventory is full", "Inventarul e plin")); return false; }
+        if (!inventory.AddToIventory(r.sex == RabbitInfo.Sex.Female ? LiveFemale : LiveMale)) return false;
+        var snare = r.caughtIn;
+        r.caughtIn = null;
+        if (snare != null) snare.Release();
+        rabbits.Remove(r);
+        r.gameObject.SetActive(false);
+        Destroy(r.gameObject);
+        if (TakenAlive != null) TakenAlive(r.sex);
+        return true;
+    }
+
+    // The live rabbit leaves the inventory (dropped, or used) and is let go in front of the player: outside it runs
+    // away; in a pen with the door shut it stays there.
+    public static void ReleaseFromInventory(GameObject inventoryItem)
+    {
+        if (inventoryItem == null) return;
+        string item = InventorySystem.CleanName(inventoryItem.name);
+        var equip = EquipSystem.Instance;
+        if (equip != null && equip.selectedItem == inventoryItem)
+        {
+            if (equip.selectedItemModel != null) Destroy(equip.selectedItemModel);
+            equip.selectedItemModel = null;
+            equip.selectedItem = null;
+            equip.selectedNumber = -1;
+        }
+        inventoryItem.transform.SetParent(null, false); // the slot is empty right away
+        Destroy(inventoryItem);
+        if (InventorySystem.Instance != null) InventorySystem.Instance.RecalculateList();
+        if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
+        QuickBarUI.Changed();
+        if (Instance != null) Instance.ReleaseInFront(item == LiveFemale ? RabbitInfo.Sex.Female : RabbitInfo.Sex.Male);
+    }
+
+    void ReleaseInFront(RabbitInfo.Sex sex)
+    {
+        if (!started) Start();
+        Vector3 from = PlayerPosition;
+        var cam = Camera.main;
+        Vector3 forward = cam != null ? cam.transform.forward : Vector3.forward;
+        forward.y = 0f;
+        forward = forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
+        Vector3 at = from + forward * 1.6f;
+        if (Buildings.Blocks(from, at)) at = from + forward * 0.4f; // a wall right in front: at the feet
+        at.y = Buildings.GroundAt(at);
+        var life = Spawn(at, Quaternion.LookRotation(forward).eulerAngles.y, sex, AdultHours + 12f);
+        if (life == null) return;
+        life.restHours = 2f; // ready to make babies soon
+        life.RunFrom(from, 5f);
+        UpdateActive();
+        if (InventorySystem.Instance != null)
+            InventorySystem.Instance.ShowMessage(Buildings.IsEnclosed(at)
+                ? Lang.T("The rabbit is in the pen. Shut the door!", "Iepurele e în țarc. Închide ușa!")
+                : Lang.T("The rabbit runs away!", "Iepurele fuge!"));
     }
 
     // ---------------- labels: Male / Female above the near rabbits ---------------- //

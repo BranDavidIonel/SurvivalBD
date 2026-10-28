@@ -41,7 +41,8 @@ public class DebugEnvironmentPanel : MonoBehaviour
     TMP_InputField speedInput, moveInput;
     PlayerMovement player;
     float normalMoveSpeed = -1f;   // the player's own speed, before any test change
-    TextMeshProUGUI speedInfo, moveInfo, timeValue, snowValue, info;
+    TextMeshProUGUI speedInfo, moveInfo, timeValue, snowValue, info, immortalInfo;
+    Button immortalButton;
     Slider timeSlider, snowSlider;
 
     // Puts the panel into the in-game Settings screen (called by EnvironmentBootstrap).
@@ -174,6 +175,11 @@ public class DebugEnvironmentPanel : MonoBehaviour
         row = NewRow(content, "Story");
         NewButton(row, "Next level", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.SkipLevel(); });
         NewButton(row, "Give items", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.GiveTestItems(); });
+
+        // 8a. the player can't die: health, food and water stay full (kept on the device until turned off)
+        row = NewRow(content, "Immortal");
+        immortalButton = NewButton(row, "Immortal", 220f, () => { GameSettings.Immortal = !GameSettings.Immortal; Refresh(); });
+        immortalInfo = NewLabel(row, "", 760f, 26f, InfoColor);
 
         // 8c. any item of the game straight into the inventory: pick it in the list, then Give
         row = NewRow(content, "Give item");
@@ -433,6 +439,11 @@ public class DebugEnvironmentPanel : MonoBehaviour
         if (clock == null || timeSlider == null) return;
 
         foreach (var b in clockButtons) Highlight(b.Key, b.Value == clock.autoTime);
+        if (immortalButton != null)
+        {
+            Highlight(immortalButton, GameSettings.Immortal);
+            immortalInfo.text = GameSettings.Immortal ? "ON: no damage, no hunger, no thirst (click to turn off)" : "OFF (click: never lose health, food or water)";
+        }
         if (!speedInput.isFocused) speedInput.SetTextWithoutNotify(clock.timeSpeed.ToString("0.##", CultureInfo.InvariantCulture));
         if (FindPlayer())
         {
@@ -615,6 +626,8 @@ public class DebugEnvironmentPanel : MonoBehaviour
         { "Raw Meat", "Raw Meat" }, { "Cooked Meat", "Cooked Meat" }, { "Rabbit Hide", "Rabbit Hide" },
         { "pinecone", "Pine Cone" }, { "acorn", "Acorn" }, { "beechnut", "Beechnut" }, { "birchseed", "Birch Catkin" },
         { "journal", "Old Journal" }, { "prayerbook", "Prayer Book" },
+        { "snare", "Snare" }, { "rabbitmale", "Rabbit (male, alive)" }, { "rabbitfemale", "Rabbit (female, alive)" },
+        { "doorwall", "Door Wall" }, { "windowwall", "Window Wall" }, { "roof", "Roof" }, { "cross", "Cross" },
     };
 
     void GiveItem(int index, int amount)

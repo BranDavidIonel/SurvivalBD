@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SurvivalBD – for the developer</title>
+<link rel="icon" href="images/app-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <img src="images/app-icon.png" alt="The game's icon">
+    <div>
+      <h1>For the developer</h1>
+      <p>How the scene is organised, what the tools of the <b>Tools</b> menu do, how to test quickly and how to add a new level.</p>
+      <div class="by"><a href="index-en.html" style="color:#fff">← Back to the game's description</a></div>
+    </div>
+  </div>
+</header>
+
+<nav class="top"><div class="inner">
+  <span class="langs"><a href="dezvoltare.html" onclick="this.href='dezvoltare.html'+location.hash">RO</a><a class="on" href="developer-en.html">EN</a></span>
+  <a href="#scena">The scene</a>
+  <a href="#unelte">The Tools menu</a>
+  <a href="#test">Quick testing</a>
+  <a href="#nivel-nou">A new level</a>
+  <a href="#scripturi">Scripts</a>
+  <a href="#atentie">Good to know</a>
+</div></nav>
+
+<main>
+
+<div class="warn-box" style="margin-top:24px">
+  <b>The admin password: <code>1212</code></b>. In the game: <i>Menu › Settings</i> › the <b>Admin</b> row › type the password › <b>Unlock</b> › <b>Admin settings</b> (the TEST panel).<br>
+  To change it: <code>Assets/Scripts/Environment/DebugEnvironmentPanel.cs</code>, the line <code>const string AdminPassword = "1212";</code>
+</div>
+
+<section id="scena">
+  <h2>What is in the scene (GameScene)</h2>
+  <p class="lead">The forests, the plants, the rabbits, the river and the cave are ordinary objects in the scene: you see them in the Hierarchy and move, delete or duplicate them by hand.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Object</th><th>What it is</th><th>Can be edited</th></tr>
+    <tr><td><code>Enviroment</code></td><td>The parent of nature (careful: it is not at 0,0,0)</td><td>—</td></tr>
+    <tr><td>Groups <code>Fir_forest…</code>, <code>Birch_forest…</code>, oak and beech forests</td><td>The trees. When the game starts they become living trees (they can be felled, they grow, they drop seeds)</td><td>move / delete / duplicate trees; the paint menu redoes the ground under them</td></tr>
+    <tr><td>Plant groups (<code>NatureGroup</code>)</td><td>Mushrooms, bushes, flowers, branches, stones, fallen trunks, the hemp (<code>Hemp</code> groups)</td><td>yes, each plant has a <code>ScenePlant</code> (the item it gives, how many, how soon it grows back)</td></tr>
+    <tr><td>Rabbit groups</td><td>The starting rabbits (male / female decided at start)</td><td>delete as many as you like</td></tr>
+    <tr><td><code>River</code></td><td>The river's points, its width, the lake (centre + radius)</td><td>yes; then <i>Tools › Nature › 2</i> redoes the bed</td></tr>
+    <tr><td><code>Cave</code></td><td>The tunnel's path, the entrance with rocks, the ore, the stalactites, the monk's place</td><td>yes (its children)</td></tr>
+    <tr><td><code>StoryStart</code></td><td>Where a new game begins and which way it faces</td><td>yes</td></tr>
+    <tr><td>The wreck</td><td>The pieces of the ship on the beach</td><td>yes</td></tr>
+    <tr><td><code>BigCroosModel</code></td><td>Brother Ioan's old cross on the top of the big mountain (where the river begins), dark wood (<code>Materials/OldCrossWood.mat</code>)</td><td>yes</td></tr>
+  </table></div>
+  <p>Made in code when the game runs (not in the scene): the living forest (<code>Forest (made in code)</code>; far away the trees are pictures, close by they are models: 110 m on the phone, 170 m on the PC), the story, the rabbits, the miracle stream of the canon (its way to the sea is found on the terrain), the raft of level 10 (at the mouth of the new stream) and the pieces of the pen (door wall, window wall, roof).</p>
+</section>
+
+<section id="unelte">
+  <h2>The Tools menu</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Menu</th><th>What it does</th></tr>
+    <tr><td><b>Tools › Nature › 1. Make Prefabs, Items And Icons</b></td><td>Makes the tree and plant prefabs, the inventory items with icons, the stone axe, the torch, the hemp, the ore, the raft's model (<code>Resources/RaftModel</code>), the monk's books and the far-away pictures of the trees.</td></tr>
+    <tr><td><b>Tools › Nature › 2. Make River (From The Mountain To The Lake)</b></td><td>Finds the river's way from the top to the lake, digs the bed, paints its bottom, clears the grass out of the water.</td></tr>
+    <tr><td><b>Tools › Nature › 2b. Make Cave In The Mountain</b></td><td>Makes the cave: a long tunnel going down, the entrance with rocks, stalactites and stalagmites, mushrooms, 50 iron ores, the monk's place.</td></tr>
+    <tr><td><b>Tools › Nature › 3. Fill The Island</b></td><td>Fills the island: forests by region, plants, rabbits, the wreck and the starting place.</td></tr>
+    <tr><td><b>Tools › Nature › 4. Make Snare, Rabbit, Pen And Cross Items</b></td><td>The canon's items with icons: the snare, the live rabbits (male / female), the door wall, the window wall, the roof, the cross.</td></tr>
+    <tr><td><b>Tools › Nature › Add 50 More Rabbits</b></td><td>50 more rabbits, scattered.</td></tr>
+    <tr><td><b>Tools › Nature › Add Hemp Near The Mountain</b></td><td>Puts hemp (48 plants in patches) on the slopes at the foot of the mountain (removes any other hemp).</td></tr>
+    <tr><td><b>Tools › Nature › Add Hemp (Lake, Mountain, River)</b></td><td>Hemp everywhere: ~150 around the lake (most of it), 48 by the mountain, a few patches on the river banks. Groups in <code>Enviroment/Vegetation</code>.</td></tr>
+    <tr><td><b>Tools › Nature › Make The Map Picture (From Above)</b></td><td>A camera high above the island takes its picture straight down (trees, mountains, lake, sea) for the in-game map: <code>Resources/UI/IslandMap.png</code>. Run it again after changing the island.</td></tr>
+    <tr><td><b>Tools › Nature › Paint The Ground Under The Trees Again</b></td><td>After moving or adding forests: dark ground under the crowns, no grass, ferns and bushes.</td></tr>
+    <tr><td><b>Tools › Nature › Remake The Pictures Of The Trees</b></td><td>Redoes the far-away pictures of the trees.</td></tr>
+    <tr><td><b>Tools › Nature › Make Game Icon (The Island)</b></td><td>Photographs the island and uses it as the icon for Android and the PC.</td></tr>
+    <tr><td><b>Tools › Nature › Remove What The Island Tool Made</b></td><td>Removes everything step 3 put in.</td></tr>
+    <tr><td><b>Tools › Mobile › …</b></td><td>Android settings, build the APK, build on the connected phone, the fix for the shiny terrain on Android.</td></tr>
+  </table></div>
+  <div class="warn-box">The tools change the scene. Save the scene after them; if you don't like the result, you can undo it with git.</div>
+</section>
+
+<section id="test">
+  <h2>Quick testing</h2>
+  <div class="card">
+    <p>In the game: <i>Menu › Settings</i>, in the <b>Admin</b> row type the password <b>1212</b> and press <b>Unlock</b> (then <b>Admin settings</b>). The TEST panel stays unlocked until you close the game; players don't see it without the password. There you can change the hour (sunrise, day, sunset, night), the speed of time (x1…x300), the walking speed, the weather and the season. For the levels:</p>
+    <ul>
+      <li><b>Next level</b> – finishes the current level and goes to the next one.</li>
+      <li><b>Give items</b> – gives stones, sticks, hay, a log and a mushroom.</li>
+      <li><b>Give item</b> – any item of the game (from the list), 1 or 5 at a time.</li>
+      <li><b>Immortal</b> – you never lose health, food or water and nothing kills you (kept until you turn it off).</li>
+    </ul>
+    <p>A new game always starts with an empty inventory (whatever is put in the scene for tests is removed).</p>
+    <p>All 10 levels were played through by an automatic test (doing what a player does for each goal) on 2026-10-28.</p>
+  </div>
+</section>
+
+<section id="nivel-nou">
+  <h2>How to add a new level</h2>
+  <div class="card">
+    <ol>
+      <li>In <code>Assets/Scripts/Story/StoryManager.cs</code>, in the <code>LevelsEn</code> list (and the same in <code>LevelsRo</code>, in Romanian), add a <code>new Level { … }</code> <b>before</b> the level "THE RAFT" (the raft stays last, now level 10). It has: the title, the story lines, the steps, a hint and the closing text.</li>
+      <li>In the <code>Status()</code> function each level has a <code>case</code> with its number, which says which steps are done. Add a <code>case</code> for the new level and move the numbers of the levels after it up by 1 (the raft uses <code>Levels.Length</code>, so it moves by itself).</li>
+      <li>If the level needs to remember something (like "read the journal"), add a field to <code>StoryData.cs</code>; it is saved automatically.</li>
+      <li>The Help screen reads the levels straight from <code>StoryManager</code>, it doesn't need changing.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="scripturi">
+  <h2>Important scripts</h2>
+  <div class="table-wrap"><table>
+    <tr><th>File</th><th>What it does</th></tr>
+    <tr><td><code>Scripts/Story/StoryManager.cs</code></td><td>The story, the levels, the goals panel, the start on the beach, the winter after the canon</td></tr>
+    <tr><td><code>Scripts/Story/Raft.cs</code></td><td>The raft: its building site on the beach, the materials, going into the sea, the end of the game</td></tr>
+    <tr><td><code>Scripts/Story/BookReader.cs</code></td><td>Brother Ioan's journal and the prayer book (it drives the shadow away)</td></tr>
+    <tr><td><code>Scripts/Story/CanonCross.cs</code>, <code>Scripts/Island/MiracleStream.cs</code></td><td>The canon's cross and the miracle stream (its way found on the terrain from the other mountain to the sea; you can drink from it)</td></tr>
+    <tr><td><code>Scripts/Trees/Forest.cs</code>, <code>TreeSpecies.cs</code></td><td>The living trees: felling, seeds, growing, far-away pictures, saving</td></tr>
+    <tr><td><code>Scripts/Vegetation/Vegetation.cs</code>, <code>ScenePlant.cs</code>, <code>GrassPicking.cs</code></td><td>The plants that are picked and grow back, the hay from the grass</td></tr>
+    <tr><td><code>Scripts/Animals/RabbitPopulation.cs</code>, <code>RabbitLife.cs</code></td><td>The rabbits: sex, babies (2–5), growing up, running away, loot (babies give nothing), taken alive / let go, stopped by walls</td></tr>
+    <tr><td><code>Scripts/Animals/RabbitSnare.cs</code>, <code>SnarePlacing.cs</code></td><td>The snare: the model, catching, the struggling rabbit, saving; setting the snare and the cross on the ground</td></tr>
+    <tr><td><code>Scripts/BuildSystem/Buildings.cs</code>, <code>PenDoor.cs</code></td><td>The door wall, the window wall, the roof (made in code), saving the buildings, the door that opens and lets the rabbits out</td></tr>
+    <tr><td><code>Scripts/UI/MapScreen.cs</code></td><td>The map (Menu › Map, N): the picture from above, the player's arrow, the level's goal</td></tr>
+    <tr><td><code>Scripts/UI/StatusBarsLayout.cs</code></td><td>The big health / food / water bars (the clock hides while a window is open)</td></tr>
+    <tr><td><code>Scripts/Environment/TerrainLook.cs</code>, <code>Resources/Environment/SB_TerrainSnowCommon.cginc</code></td><td>The mountains: rock on the steep slopes (laid on from the side, not stretched), patches and layers of stone; only the shader, the terrain itself is not changed</td></tr>
+    <tr><td><code>Scripts/Island/River.cs</code>, <code>FreshWater.cs</code></td><td>The river, the lake, the puddles, the new stream: where you can drink</td></tr>
+    <tr><td><code>Scripts/Island/Cave.cs</code></td><td>The cave: open from level 5, the dark that kills without a torch</td></tr>
+    <tr><td><code>Scripts/Items/TorchLight.cs</code></td><td>The torch: the light, the flame, how long it still burns</td></tr>
+    <tr><td><code>Scripts/Environment/NightShadow.cs</code></td><td>The night shadow</td></tr>
+    <tr><td><code>Scripts/PlayerState.cs</code></td><td>Health, food, water (1 day of water, ~3 days of food)</td></tr>
+    <tr><td><code>Scripts/CraftingSystem.cs</code></td><td>The recipes (axe, fire, torch, iron axe, rope, snare, door wall, window wall, roof, cross…)</td></tr>
+    <tr><td><code>Scripts/UI/PcControls.cs</code>, <code>HelpScreen.cs</code></td><td>The PC buttons and the Help screen</td></tr>
+    <tr><td><code>Scripts/Environment/DebugEnvironmentPanel.cs</code>, <code>Scripts/UI/GameSettings.cs</code></td><td>The Settings screen: sounds, difficulty, the admin password and the TEST panel (with <b>Immortal</b>)</td></tr>
+    <tr><td><code>SaveManager.cs</code></td><td>Saving: trees, plants, rabbits, story, fires, puddles, dropped things, the raft, the buildings (with their doors), the snares</td></tr>
+    <tr><td><code>Scripts/UI/Lang.cs</code>, <code>Scripts/UI/Translations.cs</code></td><td>The language (English / Romanian). New text is written <code>Lang.T("English", "Română")</code>; texts that stay long on screen listen to <code>Lang.Changed</code>. <code>Translations.cs</code> holds the Romanian names of the items, plants and buttons, the item descriptions, and translates the scene's words by itself. The choice is kept on the device (PlayerPrefs <code>SurvivalBD.Language</code>).</td></tr>
+    <tr><td><code>Scripts/Story/Prayers.cs</code></td><td>The 113 official Orthodox prayers, in English and Romanian (used by the prayer book and the loading screen). Sources: <i>Orthodox Daily Prayers</i> (St. Tikhon's, Project Gutenberg), the Horologion (doxologia.ro), crestinortodox.ro, the Psalms of the Septuagint (Brenton; bibliaortodoxa.ro), Orthodox numbering (e.g. Psalm 144).</td></tr>
+    <tr><td><code>Scripts/UI/LoadingScreen.cs</code></td><td>The loading screen: the save's picture in the background and a short prayer in red</td></tr>
+    <tr><td><code>Scripts/Items/DroppedItems.cs</code>, <code>TrashSlot.cs</code>, <code>DragDrop.cs</code></td><td>Dropping things on the ground (dragged out of the window) and the trash can, with a question first</td></tr>
+  </table></div>
+</section>
+
+<section id="atentie">
+  <h2>Good to know</h2>
+  <div class="card">
+    <ul>
+      <li>The <code>.meta</code> files are ignored by git: if you move the project to another computer, the scene's references are lost. Copy the whole folder, not only what is in git.</li>
+      <li>The scene is about 46 MB (many nature objects).</li>
+      <li>On Android the terrain textures must be ETC2 RGB (no alpha), otherwise the ground under the forests looks shiny / greenish.</li>
+      <li>The <code>Enviroment</code> object is not at the world's origin: new objects put under it need positions in world coordinates.</li>
+      <li>The game's icon: <code>Assets/ART/Icons/AppIcon.png</code> (and the Android version, with a separate background).</li>
+      <li>In the editor (not playing) the terrain uses Unity's own shader: the rock of the mountains shows only when the game runs.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>SurvivalBD · a game by Bran David Ionel</footer>
+</body>
+</html>

@@ -42,6 +42,13 @@ public class EnviromentData
     // the things the player dropped on the ground from the inventory; null in older saves
     public List<DroppedItemData> dropped;
 
+    // what was built (foundations, walls, door walls with their doors open or shut, windows, roofs); version 0 in
+    // older saves (before, buildings were not saved at all)
+    public BuildingSaveData buildings;
+
+    // the rabbit snares and the rabbits caught in them; null in older saves
+    public List<SnareData> snares;
+
 
     public EnviromentData(List<string> _pickedupItems, List<TreeData> _treeData, List<string> _animals, List<StorageData> _storage)
     {

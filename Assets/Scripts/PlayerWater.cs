@@ -250,7 +250,7 @@ public class PlayerWater : MonoBehaviour
         if (breathText != null)
         {
             var seconds = Mathf.CeilToInt(currentBreath);
-            breathText.text = $"Air to breathe {seconds / 60}:{seconds % 60:00}";
+            breathText.text = Lang.T("Air to breathe ", "Aer ") + (seconds / 60) + ":" + (seconds % 60).ToString("00");
         }
     }
 

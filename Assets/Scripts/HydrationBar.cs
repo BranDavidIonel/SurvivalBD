@@ -23,7 +23,7 @@ public class HydrationBar : MonoBehaviour
         maxHydration = playerState.GetComponent<PlayerState>().maxHydrationPercent;
         float fillValue = currenHydration / maxHydration;//0 or 1 , betwen 0.9 etc
         slider.value = fillValue;
-        hydrationCounter.text = currenHydration + "%";
+        hydrationCounter.text = Lang.T("Water  ", "Apă  ") + Mathf.CeilToInt(currenHydration) + "%";
 
     }
 }

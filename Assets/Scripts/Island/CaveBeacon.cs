@@ -16,6 +16,21 @@ public class CaveBeacon : MonoBehaviour
     [Tooltip("How bright it is")]
     public float brightness = 2.4f;
 
+    // the same light over another place (the top of the other mountain, the raft): where, and when it shines
+    public bool atSpot;
+    public Vector3 spot;
+    public System.Func<bool> showWhen;
+
+    public static CaveBeacon Make(string name, Vector3 at, Color color, System.Func<bool> show)
+    {
+        var beacon = new GameObject(name).AddComponent<CaveBeacon>();
+        beacon.atSpot = true;
+        beacon.spot = at;
+        beacon.color = color;
+        beacon.showWhen = show;
+        return beacon;
+    }
+
     GameObject root;
     Material soft, core, halo;
     Transform haloQuad;
@@ -30,13 +45,22 @@ public class CaveBeacon : MonoBehaviour
 
     void Build()
     {
-        if (cave == null || cave.path.Count < 2) return;
-        Vector3 into = cave.path[1] - cave.path[0]; into.y = 0f;
-        into = into.sqrMagnitude > 0.0001f ? into.normalized : Vector3.forward;
-        // just in front of the mouth, standing on the ground
-        Vector3 at = cave.path[0] - into * 3f;
-        at.y = Forest.GroundY(at) - 0.5f;
-        transform.position = at;
+        if (atSpot)
+        {
+            Vector3 here = spot;
+            here.y = Forest.GroundY(here) - 0.5f;
+            transform.position = here;
+        }
+        else
+        {
+            if (cave == null || cave.path.Count < 2) return;
+            Vector3 into = cave.path[1] - cave.path[0]; into.y = 0f;
+            into = into.sqrMagnitude > 0.0001f ? into.normalized : Vector3.forward;
+            // just in front of the mouth, standing on the ground
+            Vector3 at = cave.path[0] - into * 3f;
+            at.y = Forest.GroundY(at) - 0.5f;
+            transform.position = at;
+        }
 
         root = new GameObject("Light");
         root.transform.SetParent(transform, false);
@@ -124,7 +148,7 @@ public class CaveBeacon : MonoBehaviour
         if (root == null) return;
         var story = StoryManager.Instance;
         int level = story != null ? story.CurrentLevel : 0;
-        bool show = cave != null && cave.IsOpen && (level == 5 || level == 6);
+        bool show = showWhen != null ? showWhen() : cave != null && cave.IsOpen && (level == 5 || level == 6);
         if (root.activeSelf != show) root.SetActive(show);
     }
 

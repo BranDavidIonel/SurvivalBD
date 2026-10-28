@@ -8,6 +8,25 @@ public static class GameSettings
 {
     public enum Level { Easy = 0, Normal = 1, Hard = 2 }
 
+    // ADMIN (Settings > Admin settings, password): the player never loses health, food or water and never dies.
+    // Kept on the device until it is turned off again.
+    const string ImmortalKey = "SurvivalBD.Immortal";
+    static int immortal = -1;
+    public static bool Immortal
+    {
+        get
+        {
+            if (immortal < 0) immortal = PlayerPrefs.GetInt(ImmortalKey, 0);
+            return immortal == 1;
+        }
+        set
+        {
+            immortal = value ? 1 : 0;
+            PlayerPrefs.SetInt(ImmortalKey, immortal);
+            PlayerPrefs.Save();
+        }
+    }
+
     const string Key = "SurvivalBD.Difficulty";
     static int loaded = -1;
 

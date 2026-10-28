@@ -45,6 +45,12 @@ public class SelectionManager : MonoBehaviour
     // the living animal the crosshair is on (in reach): the axe's swing hits it
     Animal aimedAnimal;
 
+    // the pen door the crosshair is on (the phone's button says Open / Close)
+    public PenDoor selectedDoor;
+
+    // a rabbit killed before it is half grown gives nothing; half grown: only a little meat
+    const float BabyNothing = 0.5f;
+
     // EquipableItem: a swing of the tool in the hand has started
     public void OnSwing()
     {
@@ -127,7 +133,7 @@ public class SelectionManager : MonoBehaviour
 
             if (campfire && campfire.playerInRange && PlacementSystem.Instance.inPlacementMode == false)
             {
-                interaction_text.text = campfire.InteractionText;
+                interaction_text.text = Translations.Name(campfire.InteractionText);
                 interaction_Info_UI.SetActive(true);
 
                 selectedCampfire = campfire.gameObject;
@@ -151,10 +157,13 @@ public class SelectionManager : MonoBehaviour
             Animal animal = selectionTransform.GetComponent<Animal>();
             if (animal && animal.playerInRange)
             {
+                var rabbit = animal.GetComponent<RabbitLife>();
                 if (animal.isDead)
                 {
-                    //looting
-                    interaction_text.text = Lang.T("Loot", "Ia");
+                    //looting (a baby rabbit is too small: nothing to take)
+                    interaction_text.text = rabbit != null && rabbit.Growth < BabyNothing
+                        ? Lang.T("Too small: nothing to take", "Prea mic: nu ai ce lua")
+                        : Lang.T("Loot", "Ia");
                     interaction_Info_UI.SetActive(true);
 
                     centerDotImage.gameObject.SetActive(false);
@@ -169,11 +178,27 @@ public class SelectionManager : MonoBehaviour
                     }                    
 
                 }
+                else if (rabbit != null && rabbit.caughtIn != null && !EquipSystem.Instance.IsHoldingWeapon())
+                {
+                    // a rabbit in a snare, empty hands: take it alive
+                    onTargetSelectItem = true;
+                    interaction_Info_UI.SetActive(true);
+                    interaction_text.text = rabbit.sex == RabbitInfo.Sex.Female
+                        ? Lang.T("Take the rabbit alive (female)", "Ia iepurele viu (femelă)")
+                        : Lang.T("Take the rabbit alive (male)", "Ia iepurele viu (mascul)");
+                    centerDotImage.gameObject.SetActive(false);
+                    handIcon.gameObject.SetActive(true);
+                    handIsVisible = true;
+                    if (GameInput.PrimaryDown && RabbitPopulation.Instance != null) RabbitPopulation.Instance.TakeAlive(rabbit);
+                }
                 else
                 {
                     onTargetSelectItem = true;
                     interaction_Info_UI.SetActive(true);
-                    interaction_text.text = animal.animalName;
+                    interaction_text.text = Translations.Name(animal.animalName);
+                    // in a snare, with the axe in the hand: hit it, or put the axe away to take it alive
+                    if (rabbit != null && rabbit.caughtIn != null)
+                        interaction_text.text += Lang.T("\nin a snare (empty hands: take it alive)", "\nîn cursă (cu mâinile goale: îl iei viu)");
 
                     centerDotImage.gameObject.SetActive(true);
                     handIcon.gameObject.SetActive(false);
@@ -183,7 +208,7 @@ public class SelectionManager : MonoBehaviour
                     // the blow itself is given by the swing (OnSwing): the swing and this check used to run in
                     // either order, and when the swing came first the blow was lost
                     aimedAnimal = animal;
-                }               
+                }
             }
 
             if(!interactableObject && !animal)
@@ -195,7 +220,24 @@ public class SelectionManager : MonoBehaviour
                 handIcon.gameObject.SetActive(false);
             }
 
-            if(!interactableObject && !animal && !choppableTree && !storageBox && !campfire)
+            // the door of a pen: open / shut it
+            selectedDoor = null;
+            var door = PenDoor.FromCollider(hit.collider);
+            if (door != null && hit.distance < 7f && !interactableObject && !animal)
+            {
+                selectedDoor = door;
+                interaction_text.text = door.IsOpen ? Lang.T("Close the door", "Închide ușa") : Lang.T("Open the door", "Deschide ușa");
+                interaction_Info_UI.SetActive(true);
+                centerDotImage.gameObject.SetActive(false);
+                handIcon.gameObject.SetActive(true);
+                handIsVisible = true;
+                if (GameInput.PrimaryDown)
+                {
+                    var body = PlayerState.Instance != null && PlayerState.Instance.playerBody != null ? PlayerState.Instance.playerBody.transform.position : ray.origin;
+                    door.Toggle(body);
+                }
+            }
+            else if(!interactableObject && !animal && !choppableTree && !storageBox && !campfire)
             {
                 interaction_text.text = "";
                 interaction_Info_UI.SetActive(false);
@@ -206,6 +248,7 @@ public class SelectionManager : MonoBehaviour
         {
             // looking at the sky: no tree is targeted any more (a swing used to chop the last tree looked at)
             ClearSelectedTree();
+            selectedDoor = null;
         }
 
         if (!UpdateRaft(ray)) UpdateDrinking(ray);
@@ -266,7 +309,7 @@ public class SelectionManager : MonoBehaviour
 
     void UpdateDrinking(Ray ray)
     {
-        bool busy = onTargetSelectItem || selectedStorageBox != null || selectedCampfire != null || selectedTree != null;
+        bool busy = onTargetSelectItem || selectedStorageBox != null || selectedCampfire != null || selectedTree != null || selectedDoor != null;
         var state = PlayerState.Instance;
         bool lookingDown = ray.direction.y < -0.15f;
         Vector3 at = state != null && state.playerBody != null ? state.playerBody.transform.position : ray.origin;
@@ -334,6 +377,25 @@ public class SelectionManager : MonoBehaviour
 
     private void Loot(Lootable lootable)
     {
+        // a baby rabbit gives nothing (only its body goes away); a half grown one only a little meat
+        var young = lootable.GetComponent<RabbitLife>();
+        float growth = young != null ? young.Growth : 1f;
+        if (growth < BabyNothing)
+        {
+            InventorySystem.Instance.ShowMessage(Lang.T("Too small: nothing to take. Let them grow!", "Prea mic: nu ai ce lua. Lasă-i să crească!"));
+            var baby = lootable.GetComponent<Animal>();
+            if (baby != null && baby.bloodPuddle != null) baby.bloodPuddle.transform.SetParent(lootable.transform.parent);
+            Destroy(lootable.gameObject);
+            return;
+        }
+        if (growth < 1f && lootable.wasLootCalculated == false)
+        {
+            var meat = new List<LootRecieved>();
+            foreach (LootPossibility loot in lootable.possibleLoot)
+                if (loot.item != null && loot.item.name.Contains("Meat")) { meat.Add(new LootRecieved { item = loot.item, amount = 1 }); break; }
+            lootable.finalLoot = meat;
+            lootable.wasLootCalculated = true;
+        }
         if(lootable.wasLootCalculated == false)
         {
             List<LootRecieved> revievedLoot = new List<LootRecieved>();

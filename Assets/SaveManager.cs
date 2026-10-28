@@ -224,6 +224,8 @@ public class SaveManager : MonoBehaviour
         if (StoryManager.Instance != null) enviromentData.story = StoryManager.Instance.GetData();
         if (FreshWater.Instance != null) enviromentData.puddles = FreshWater.Instance.GetData();
         enviromentData.dropped = DroppedItems.GetData();
+        enviromentData.buildings = Buildings.GetData();
+        enviromentData.snares = RabbitSnare.GetData();
         enviromentData.campfires = new List<CampfireData>();
         foreach (Transform placeable in EnviromentManager.Instance.placeables.transform)
         {
@@ -444,7 +446,11 @@ public class SaveManager : MonoBehaviour
 
         // the rabbits: a newer save has all of them (RabbitPopulation); an old one only their names
         bool rabbitsSaved = enviromentData.rabbits != null && enviromentData.rabbits.version >= 1;
+        // the buildings first (the rabbits of a pen stand on its floor), then the rabbits, then the snares (they take
+        // their caught rabbits back)
+        Buildings.SetData(enviromentData.buildings);
         if (RabbitPopulation.Instance != null) RabbitPopulation.Instance.SetData(enviromentData.rabbits);
+        RabbitSnare.SetData(enviromentData.snares);
 
         // destroy animals that should not exist 
         List<string> allAnimals = new List<string>();

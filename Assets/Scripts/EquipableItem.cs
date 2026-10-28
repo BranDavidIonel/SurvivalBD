@@ -24,6 +24,7 @@ public class EquipableItem : MonoBehaviour
             !ConstructionManager.Instance.inConstructionMode &&
             !OtherWindowOpen() &&
             !SeedPlanting.Active && // planting a seed: the click plants it
+            !SnarePlacing.Active && // setting a snare: the click sets it
 
             !windowOpenLastFrame // the click that closed a window (its X button) is not a swing
             )

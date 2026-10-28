@@ -23,7 +23,7 @@ public class CaloriesBar : MonoBehaviour
         maxCalories = playerState.GetComponent<PlayerState>().maxCalories;
         float fillValue = currenCalories / maxCalories;//0 or 1 , betwen 0.9 etc
         slider.value = fillValue;
-        caloriesCounter.text = currenCalories + "/" + maxCalories;
+        caloriesCounter.text = Lang.T("Food  ", "Hrană  ") + Mathf.CeilToInt(currenCalories) + " / " + Mathf.RoundToInt(maxCalories);
 
     }
 }

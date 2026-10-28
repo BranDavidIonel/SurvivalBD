@@ -208,6 +208,20 @@ public class CraftingSystem : MonoBehaviour
         RopeBLP = NewBlueprint("RopeBLP", "rope", "hemp", 3, "", 0);
         CloneCard(refineScreenUI.transform, "Plank", "Rope", RopeBLP, out RopeReq1, out RopeReq2, out craftRopeBTN);
 
+        // Snare (Survival): a stick pushed into the ground holds a loop of hemp cord (rabbits caught alive)
+        SnareBLP = NewBlueprint("SnareBLP", "snare", "stick", 1, "hemp", 5);
+        CloneCardInto(survivalScreenUI.transform, "Snare", SnareBLP, out SnareReq1, out SnareReq2, out craftSnareBTN);
+        // the rabbit pen (Construction): a wall with a door (rope hinges), a wall with a window, a thatched roof
+        DoorWallBLP = NewBlueprint("DoorWallBLP", "doorwall", "plank", 3, "rope", 1);
+        CloneCardInto(constructionScreenUI.transform, "DoorWall", DoorWallBLP, out DoorWallReq1, out DoorWallReq2, out craftDoorWallBTN);
+        WindowWallBLP = NewBlueprint("WindowWallBLP", "windowwall", "plank", 2, "stick", 2);
+        CloneCardInto(constructionScreenUI.transform, "WindowWall", WindowWallBLP, out WindowWallReq1, out WindowWallReq2, out craftWindowWallBTN);
+        RoofBLP = NewBlueprint("RoofBLP", "roof", "plank", 3, "hay", 4);
+        CloneCardInto(constructionScreenUI.transform, "Roof", RoofBLP, out RoofReq1, out RoofReq2, out craftRoofBTN);
+        // the cross of Brother Ioan's canon (level 9): 5 planks
+        CrossBLP = NewBlueprint("CrossBLP", "cross", "plank", 5, "", 0);
+        CloneCardInto(constructionScreenUI.transform, "Cross", CrossBLP, out CrossReq1, out CrossReq2, out craftCrossBTN);
+
         // the axe card shows the stone axe's picture
         var axeIcon = toolsScreenUI.transform.Find("Axe/Image");
         var axeItem = Resources.Load<GameObject>("Axe");
@@ -221,9 +235,32 @@ public class CraftingSystem : MonoBehaviour
 
     // ---------------- recipes added in code (their cards are copies of the scene's cards) ---------------- //
 
-    public Blueprint IronAxeBLP, RopeBLP;
-    Text IronAxeReq1, IronAxeReq2, RopeReq1, RopeReq2;
-    Button craftIronAxeBTN, craftRopeBTN;
+    public Blueprint IronAxeBLP, RopeBLP, SnareBLP, DoorWallBLP, WindowWallBLP, RoofBLP, CrossBLP;
+    Text IronAxeReq1, IronAxeReq2, RopeReq1, RopeReq2, SnareReq1, SnareReq2;
+    Text DoorWallReq1, DoorWallReq2, WindowWallReq1, WindowWallReq2, RoofReq1, RoofReq2, CrossReq1, CrossReq2;
+    Button craftIronAxeBTN, craftRopeBTN, craftSnareBTN, craftDoorWallBTN, craftWindowWallBTN, craftRoofBTN, craftCrossBTN;
+
+    // a new card on any screen: a copy of the axe card (it has two requirement lines)
+    void CloneCardInto(Transform screen, string name, Blueprint blueprint, out Text req1, out Text req2, out Button button)
+    {
+        req1 = req2 = null;
+        button = null;
+        var source = toolsScreenUI.transform.Find("Axe");
+        if (source == null || screen.Find(name) != null) return;
+        var card = Instantiate(source.gameObject, screen);
+        card.name = name;
+        req1 = card.transform.Find("req1").GetComponent<Text>();
+        var r2 = card.transform.Find("req2");
+        if (r2 != null)
+        {
+            r2.gameObject.SetActive(blueprint.numeOfRequirements >= 2);
+            req2 = r2.GetComponent<Text>();
+        }
+        button = card.transform.Find("Button").GetComponent<Button>();
+        button.onClick = new Button.ButtonClickedEvent();
+        button.onClick.AddListener(delegate { CraftAnyItem(blueprint); });
+        SetCardIcon(card.transform, blueprint.itemName);
+    }
 
     static Blueprint NewBlueprint(string name, string item, string req1, int amount1, string req2, int amount2)
     {
@@ -421,6 +458,11 @@ public class CraftingSystem : MonoBehaviour
         if (TorchReq1 != null) RefreshCard(TorchBLP, TorchReq1, TorchReq2, craftTorchBTN);
         if (IronAxeReq1 != null) RefreshCard(IronAxeBLP, IronAxeReq1, IronAxeReq2, craftIronAxeBTN);
         if (RopeReq1 != null) RefreshCard(RopeBLP, RopeReq1, RopeReq2, craftRopeBTN);
+        if (SnareReq1 != null) RefreshCard(SnareBLP, SnareReq1, SnareReq2, craftSnareBTN);
+        if (DoorWallReq1 != null) RefreshCard(DoorWallBLP, DoorWallReq1, DoorWallReq2, craftDoorWallBTN);
+        if (WindowWallReq1 != null) RefreshCard(WindowWallBLP, WindowWallReq1, WindowWallReq2, craftWindowWallBTN);
+        if (RoofReq1 != null) RefreshCard(RoofBLP, RoofReq1, RoofReq2, craftRoofBTN);
+        if (CrossReq1 != null) RefreshCard(CrossBLP, CrossReq1, CrossReq2, craftCrossBTN);
     }
 
     // "Stone  2 / 3" in red until there is enough, then green; the Craft button greys out when it can't craft
@@ -440,7 +482,7 @@ public class CraftingSystem : MonoBehaviour
         {
             bool enough = inventory.CountItem(blueprint.Req1) >= blueprint.Req1amount
                 && (blueprint.numeOfRequirements < 2 || inventory.CountItem(blueprint.Req2) >= blueprint.Req2amount);
-            label.text = can || !enough ? "Craft" : "Inventory full";
+            label.text = can || !enough ? Lang.T("Craft", "Fă") : Lang.T("Inventory full", "Inventar plin");
             label.color = can ? Color.white : new Color(1f, 1f, 1f, 0.55f);
         }
     }
@@ -451,7 +493,7 @@ public class CraftingSystem : MonoBehaviour
     static void SetRequirement(Text text, string item, int have, int need)
     {
         if (text == null) return;
-        text.text = DisplayName(item) + "  " + Mathf.Min(have, 99) + " / " + need;
+        text.text = Translations.Name(DisplayName(item)) + "  " + Mathf.Min(have, 99) + " / " + need;
         text.color = have >= need ? EnoughColor : MissingColor;
     }
 

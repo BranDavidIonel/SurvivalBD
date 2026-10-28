@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The raft of the last level (Resources/RaftModel, made by Tools > Nature). When Level 9 begins it lies on the beach
-// by the wreck, only started. The player brings the materials in as many trips as needed (look at it and click:
+// The raft of the last level (Resources/RaftModel, made by Tools > Nature). When Level 10 begins it lies on the beach
+// where the new stream of the miracle flows into the sea (or by the wreck), only started. The player brings the materials in as many trips as needed (look at it and click:
 // everything needed that the player carries goes onto it) and it grows: logs, beams, ropes, the mast, the sail.
 // Finished, it slides into the sea and floats on the waves. Board it and the game ends: the raft sails away, the
 // island gets smaller behind it, the end is told, then back to the main menu.
@@ -13,13 +13,33 @@ public class Raft : MonoBehaviour
     public static Raft Instance { get; private set; }
     public static event System.Action Boarded;
 
-    public static readonly string[] Needs = { "log", "plank", "rope", "stick", "hay", "Cooked Meat" }; // the meat: food for the journey
-    static readonly string[] NeedNamesEn = { "logs", "planks", "ropes", "sticks", "hay", "cooked meat" };
-    static readonly string[] NeedNamesRo = { "bușteni", "scânduri", "frânghii", "bețe", "fân", "carne gătită" };
+    // the meat: food for the journey; the hides: against the cold nights at sea; two live rabbits (male or female)
+    public const string LiveRabbits = "liverabbit";
+    public static readonly string[] Needs = { "log", "plank", "rope", "stick", "hay", "Cooked Meat", "Rabbit Hide", LiveRabbits };
+    static readonly string[] NeedNamesEn = { "logs", "planks", "ropes", "sticks", "hay", "cooked meat", "rabbit hides", "live rabbits" };
+    static readonly string[] NeedNamesRo = { "bușteni", "scânduri", "frânghii", "bețe", "fân", "carne gătită", "blănuri de iepure", "iepuri vii" };
     public static string[] NeedNames => Lang.Ro ? NeedNamesRo : NeedNamesEn;
-    public static readonly int[] Amounts = { 12, 8, 6, 16, 10, 5 };
+    public static readonly int[] Amounts = { 12, 8, 6, 16, 10, 5, 3, 2 };
 
-    public int[] have = new int[6];
+    public int[] have = new int[8];
+
+    // how many of a need the player carries (live rabbits: males and females)
+    static int Carried(int need)
+    {
+        var inventory = InventorySystem.Instance;
+        if (inventory == null) return 0;
+        if (Needs[need] == LiveRabbits) return inventory.CountItem(RabbitPopulation.LiveMale) + inventory.CountItem(RabbitPopulation.LiveFemale);
+        return inventory.CountItem(Needs[need]);
+    }
+
+    static void Take(int need, int amount)
+    {
+        var inventory = InventorySystem.Instance;
+        if (Needs[need] != LiveRabbits) { inventory.RemoveItem(Needs[need], amount); return; }
+        int males = Mathf.Min(amount, inventory.CountItem(RabbitPopulation.LiveMale));
+        if (males > 0) inventory.RemoveItem(RabbitPopulation.LiveMale, males);
+        if (amount - males > 0) inventory.RemoveItem(RabbitPopulation.LiveFemale, amount - males);
+    }
     public bool IsBoarded { get; private set; }
     public bool InWater { get; private set; }
     public bool IsComplete { get { for (int i = 0; i < Needs.Length; i++) if (have[i] < Amounts[i]) return false; return true; } }
@@ -32,6 +52,8 @@ public class Raft : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        // the prefab keeps the list it was saved with (fewer needs than now: no hides or rabbits yet)
+        if (have == null || have.Length < Needs.Length) System.Array.Resize(ref have, Needs.Length);
         phase = Random.Range(0f, 10f);
     }
 
@@ -40,7 +62,7 @@ public class Raft : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
-    // Level 9: the raft (only started) on the beach by the wreck, where the story began
+    // Level 10: the raft (only started) on the beach where the new stream meets the sea
     public static Raft MakeSite(int[] saved)
     {
         if (Instance != null) return Instance;
@@ -48,15 +70,30 @@ public class Raft : MonoBehaviour
         var ocean = Ocean.Instance;
         var start = FindObjectOfType<StoryStart>();
         if (prefab == null || ocean == null) return null;
-        Vector3 from = start != null ? start.transform.position : (PlayerState.Instance != null ? PlayerState.Instance.playerBody.transform.position : ocean.transform.position);
-        Vector3 seaward = from - ocean.transform.position; seaward.y = 0f; seaward.Normalize();
+        Vector3 from, seaward;
+        float aside;
+        var stream = MiracleStream.Instance;
+        if (stream != null && stream.Flowing)
+        {
+            // where the new stream of the miracle flows into the sea (a little beside it, on the beach)
+            seaward = stream.SeaDirection;
+            from = stream.Mouth - seaward * 14f;
+            aside = 9f;
+        }
+        else
+        {
+            // (no stream: on the beach by the wreck, where the story began)
+            from = start != null ? start.transform.position : (PlayerState.Instance != null ? PlayerState.Instance.playerBody.transform.position : ocean.transform.position);
+            seaward = from - ocean.transform.position; seaward.y = 0f; seaward.Normalize();
+            aside = 6f;
+        }
+        from += Vector3.Cross(Vector3.up, seaward) * aside;
         Vector3 spot = from;
         for (float d = 0f; d < 80f; d += 1f)
         {
             Vector3 q = from + seaward * d;
             if (Forest.GroundY(q) < ocean.Level + 0.15f) { spot = q - seaward * 4.5f; break; }
         }
-        spot += Vector3.Cross(Vector3.up, seaward) * 6f; // a little beside the wreck
         spot.y = Forest.GroundY(spot);
         var go = Instantiate(prefab, spot, Quaternion.LookRotation(seaward, Vector3.up));
         go.name = "Raft";
@@ -64,6 +101,8 @@ public class Raft : MonoBehaviour
         if (saved != null) for (int i = 0; i < Mathf.Min(saved.Length, Needs.Length); i++) raft.have[i] = saved[i]; // (an older save has no meat yet)
         raft.ShowParts();
         if (raft.IsComplete) raft.PutInWater(true);
+        // a light over it until it is in the sea (seen from far away: where to go)
+        CaveBeacon.Make("Raft beacon (made in code)", spot, new Color(0.62f, 0.86f, 1f, 1f), () => Instance != null && !Instance.InWater && !Instance.IsBoarded);
         return raft;
     }
 
@@ -74,7 +113,7 @@ public class Raft : MonoBehaviour
         {
             if (InWater) return Lang.T("Board the raft (leave the island)", "Urcă pe plută (pleci de pe insulă)");
             var sb = new System.Text.StringBuilder(Lang.T("Raft:", "Pluta:"));
-            for (int i = 0; i < Needs.Length; i++) sb.Append((i == 3 ? "\n" : "  ") + NeedNames[i] + " " + have[i] + "/" + Amounts[i]);
+            for (int i = 0; i < Needs.Length; i++) sb.Append((i == 3 || i == 6 ? "\n" : "  ") + NeedNames[i] + " " + have[i] + "/" + Amounts[i]);
             sb.Append(Lang.T("\n(click: add what you carry)", "\n(clic: pui ce ai la tine)"));
             return sb.ToString();
         }
@@ -89,9 +128,9 @@ public class Raft : MonoBehaviour
         var added = new System.Text.StringBuilder();
         for (int i = 0; i < Needs.Length; i++)
         {
-            int take = Mathf.Min(Amounts[i] - have[i], inventory.CountItem(Needs[i]));
+            int take = Mathf.Min(Amounts[i] - have[i], Carried(i));
             if (take <= 0) continue;
-            inventory.RemoveItem(Needs[i], take);
+            Take(i, take);
             have[i] += take;
             added.Append((added.Length > 0 ? ", " : "") + "+" + take + " " + NeedNames[i]);
         }

@@ -197,7 +197,7 @@ public class MobileControls : MonoBehaviour
         bool dead = playerDeath != null && playerDeath.IsDead;
         bool building = ConstructionManager.Instance != null && ConstructionManager.Instance.inConstructionMode;
         bool placing = (PlacementSystem.Instance != null && PlacementSystem.Instance.inPlacementMode && PlacementSystem.Instance.IsHoldingItem)
-            || SeedPlanting.Active; // planting a seed: "Place" and "Cancel"
+            || SeedPlanting.Active || SnarePlacing.Active; // planting a seed, setting a snare: "Place" and "Cancel"
         bool swimming = PlayerWater.Instance != null && PlayerWater.Instance.IsSwimming;
 
         bool playing = !inventoryOpen && !craftingOpen && !storageOpen && !campfireOpen && !menuOpen && !dead;
@@ -210,8 +210,8 @@ public class MobileControls : MonoBehaviour
         SetActive(craftingButton, !menuOpen && !dead && !storageOpen && !campfireOpen && !building && !placing);
         SetActive(menuButton, !dead && !storageOpen && !campfireOpen);
 
-        jumpButton.SetLabel(swimming ? "Up" : "Jump");
-        primaryButton.SetLabel(PrimaryLabel(building, placing));
+        jumpButton.SetLabel(Translations.Name(swimming ? "Up" : "Jump"));
+        primaryButton.SetLabel(Translations.Name(PrimaryLabel(building, placing)));
 
         // --- movement and camera --- //
         if (playing)
@@ -257,6 +257,7 @@ public class MobileControls : MonoBehaviour
         if (selection != null && selection.enabled)
         {
             if (selection.selectedStorageBox != null || selection.selectedCampfire != null) return "Open";
+            if (selection.selectedDoor != null) return selection.selectedDoor.IsOpen ? "Close" : "Open";
             if (selection.handIsVisible) return "Take";
         }
         return "Attack";

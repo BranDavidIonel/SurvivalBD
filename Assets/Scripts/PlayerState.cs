@@ -106,11 +106,16 @@ public class PlayerState : MonoBehaviour
             }
         }
 
-        //testing health bar
-        if (Input.GetKeyDown(KeyCode.N))
-        {
-            currentHealth -= 10;
-        }
+        // ADMIN: immortal
+        if (GameSettings.Immortal) KeepFull();
+    }
+
+    // full health, food and water (the admin's "Immortal")
+    public void KeepFull()
+    {
+        currentHealth = maxHealth;
+        currentCalories = maxCalories;
+        currentHydrationPercent = maxHydrationPercent;
     }
     public void setHealth(float newHealth)
     {

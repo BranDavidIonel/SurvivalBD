@@ -334,15 +334,15 @@ public class SaveSlotList : MonoBehaviour
 
         if (saved)
         {
-            row.title.text = "Saved Game " + row.slot;
+            row.title.text = Lang.T("Saved Game ", "Joc salvat ") + row.slot;
             row.title.color = Color.white;
             row.date.text = saves.GetSlotDate(row.slot);
         }
         else
         {
-            row.title.text = "Slot " + row.slot;
+            row.title.text = Lang.T("Slot ", "Locul ") + row.slot;
             row.title.color = EmptyColor;
-            row.date.text = "Empty";
+            row.date.text = Lang.T("Empty", "Gol");
         }
         row.date.color = saved ? DateColor : EmptyColor;
 
@@ -363,7 +363,7 @@ public class SaveSlotList : MonoBehaviour
             row.picture.color = new Color(0.07f, 0.065f, 0.06f, 1f);
             row.picture.uvRect = new Rect(0f, 0f, 1f, 1f);
             // an old save (from before the pictures) / an empty slot ("+" = a new save can go here)
-            row.pictureLabel.text = saved ? "No picture" : (mode == Mode.Save ? "+" : "");
+            row.pictureLabel.text = saved ? Lang.T("No picture", "Fără poză") : (mode == Mode.Save ? "+" : "");
             row.pictureLabel.fontSize = saved ? 26f : 64f;
         }
     }

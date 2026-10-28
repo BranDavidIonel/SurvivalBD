@@ -118,6 +118,7 @@ public class GameWindowsLayout : MonoBehaviour
         Try(BuildCampfire, "campfire");
         Try(BuildPickupPopup, "pickup message");
         Try(() => gameObject.AddComponent<QuickBarUI>().Build(phone, canvasRect), "quick bar");
+        Try(() => StatusBarsLayout.Apply(phone), "health / food / water bars");
 
         LateUpdate();
     }
@@ -331,9 +332,10 @@ public class GameWindowsLayout : MonoBehaviour
         }
 
         LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe" }, new[] { "Stone Axe", "Torch", "Iron Axe" });
-        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox" }, new[] { "Campfire", "Storage Box" });
+        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare" }, new[] { "Campfire", "Storage Box", "Snare" });
         LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" });
-        LayoutCards(craftingScreens[4], new[] { "Foundation", "Wall" }, new[] { "Foundation", "Wall" });
+        LayoutCards(craftingScreens[4], new[] { "Foundation", "Wall", "DoorWall", "WindowWall", "Roof", "Cross" },
+            new[] { "Foundation", "Wall", "Door Wall", "Window Wall", "Roof", "Cross" });
 
         crafting.RefreshNeededItems();
     }
@@ -341,20 +343,27 @@ public class GameWindowsLayout : MonoBehaviour
     void LayoutCards(RectTransform screen, string[] names, string[] titles)
     {
         int n = names.Length;
-        float cardWidth = Mathf.Min(phone ? 300f : 240f, (craftingSize.x - 2f * pad - (n - 1) * gap) / n);
+        // more than 3 cards (Construction): two rows of smaller cards
+        int rows = n > 3 ? 2 : 1;
+        int perRow = (n + rows - 1) / rows;
+        bool compact = rows > 1;
+        float cardWidth = Mathf.Min(phone ? 300f : 240f, (craftingSize.x - 2f * pad - (perRow - 1) * gap) / perRow);
         float areaTop = craftingSize.y * 0.5f - titleHeight - 6f;
         float areaBottom = -craftingSize.y * 0.5f + pad;
-        float cardHeight = areaTop - areaBottom;
-        float rowWidth = n * cardWidth + (n - 1) * gap;
-        float iconSize = phone ? 120f : 92f;
-        float nameHeight = textFont * 1.6f;
-        float reqHeight = smallFont * 1.6f;
+        float cardHeight = (areaTop - areaBottom - (rows - 1) * gap) / rows;
+        float iconSize = compact ? (phone ? 58f : 44f) : (phone ? 120f : 92f);
+        float nameHeight = textFont * (compact ? 1.3f : 1.6f);
+        float reqHeight = smallFont * (compact ? 1.3f : 1.6f);
 
         for (int i = 0; i < n; i++)
         {
             var card = screen.Find(names[i]) as RectTransform;
             if (card == null) continue;
-            UISkin.Centered(card, new Vector2(-rowWidth * 0.5f + cardWidth * 0.5f + i * (cardWidth + gap), (areaTop + areaBottom) * 0.5f),
+            int row = i / perRow, column = i % perRow;
+            int inRow = Mathf.Min(perRow, n - row * perRow);
+            float rowWidth = inRow * cardWidth + (inRow - 1) * gap;
+            float centreY = areaTop - cardHeight * 0.5f - row * (cardHeight + gap);
+            UISkin.Centered(card, new Vector2(-rowWidth * 0.5f + cardWidth * 0.5f + column * (cardWidth + gap), centreY),
                 new Vector2(cardWidth, cardHeight));
             var image = card.GetComponent<Image>();
             if (image != null)

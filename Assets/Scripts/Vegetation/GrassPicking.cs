@@ -92,7 +92,7 @@ public static class GrassPicking
     {
         var inventory = InventorySystem.Instance;
         if (inventory == null) return;
-        if (!inventory.CheckSlotsAvailable(1)) { inventory.ShowMessage("Inventory is full"); return; }
+        if (!inventory.CheckSlotsAvailable(1)) { inventory.ShowMessage(Lang.T("Inventory is full", "Inventarul e plin")); return; }
         inventory.AddToIventory("hay");
         picked.Add(new Vector3(spot.x, spot.z, Clock));
         if (picked.Count > 300) picked.RemoveAt(0);

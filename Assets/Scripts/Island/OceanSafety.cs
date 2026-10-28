@@ -16,6 +16,7 @@ public class OceanSafety : MonoBehaviour
     PlayerDeath death;
 
     bool warning;
+    public static bool Warning { get; private set; } // the deep water warning is on the screen (the clock hides under it)
     float timeLeft;
     float lastDistance;
     float speedToBeach;
@@ -33,6 +34,7 @@ public class OceanSafety : MonoBehaviour
 
     void OnDestroy()
     {
+        Warning = false;
         if (ui != null) Destroy(ui);
     }
 
@@ -79,8 +81,9 @@ public class OceanSafety : MonoBehaviour
 
         var seconds = Mathf.CeilToInt(timeLeft);
         message.text = goingBack
-            ? $"Good, keep going back to the beach! ({seconds})"
-            : $"Turn back now or you will drown in {seconds}...";
+            ? Lang.T("Good, keep going back to the beach! (", "Bine, întoarce-te la plajă! (") + seconds + ")"
+            : Lang.T("Turn back now or you will drown in ", "Întoarce-te acum sau te îneci în ") + seconds + "...";
+        title.text = Lang.T("DANGER! DEEP WATER!", "PERICOL! APĂ ADÂNCĂ!");
         // pulse
         var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
         title.color = Color.Lerp(new Color(1f, 0.25f, 0.2f), new Color(1f, 0.85f, 0.3f), goingBack ? 0.7f : pulse * 0.4f);
@@ -91,6 +94,7 @@ public class OceanSafety : MonoBehaviour
     {
         if (on == warning) return;
         warning = on;
+        Warning = on;
         timeLeft = secondsToTurnBack;
         if (ui != null) ui.SetActive(on);
     }

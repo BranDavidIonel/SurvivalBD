@@ -185,6 +185,13 @@ public class WeatherSystem : MonoBehaviour
         SetCurrent(next, Random.Range(0.25f, 1f), Random.Range(minHours, maxHours));
     }
 
+    // the story: snow starts falling now (heavy), for this many game hours (not while the TEST weather is set)
+    public void BeginSnow(float hours)
+    {
+        if (!autoWeather) return;
+        SetCurrent(WeatherType.Snow, 0.9f, hours);
+    }
+
     void SetCurrent(WeatherType type, float newStrength, float hours)
     {
         Current = type;

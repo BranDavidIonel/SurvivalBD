@@ -23,7 +23,7 @@ public class HealthBar : MonoBehaviour
         maxHealth= playerState.GetComponent<PlayerState>().maxHealth;
         float fillValue = currentHealth / maxHealth;//0 or 1 , betwen 0.9 etc
         slider.value = fillValue;
-        healthCounter.text = currentHealth + "/" + maxHealth;
+        healthCounter.text = Lang.T("Health  ", "Viață  ") + Mathf.CeilToInt(currentHealth) + " / " + Mathf.RoundToInt(maxHealth);
 
 
 

@@ -16,9 +16,12 @@ using UnityEngine.UI;
 //                                take the prayer book (without light in the cave the shadow kills)
 //   Level 7  The prayer          at night, when the shadow comes, open the prayer book: it flees
 //   Level 8  Iron                10 iron ore from the cave + a log -> the iron axe (any tree in 3 blows)
-//   Level 9  The raft (the last) hemp -> ropes; logs, planks, sticks, hay brought to the raft on the beach (many
-//                                trips) -> it slides into the sea -> board it:
-//                                the island gets smaller behind it, the end (new levels go before this one)
+//   Level 9  Brother Ioan's canon  snares -> a male and a female rabbit alive -> a pen (foundation, walls, door wall,
+//                                roof) -> 5 rabbits in it, door shut -> plant 10 trees -> the cross (5 planks), raised
+//                                last on the top of the other mountain: the miracle, a new stream to the sea
+//   Level 10 The raft (the last) hemp -> ropes; logs, planks, sticks, hay, cooked meat, rabbit hides and 2 live rabbits
+//                                brought to the raft where the new stream meets the sea (many trips) -> it slides into
+//                                the sea -> board it: the island gets smaller behind it, the end (new levels go before it)
 // The save keeps the level and its goals (EnviromentData.story).
 public class StoryManager : MonoBehaviour
 {
@@ -187,6 +190,30 @@ public class StoryManager : MonoBehaviour
             hint = "The iron ore lies along the cave's tunnel. With the iron axe any tree falls in 3 blows.",
             done = "Now I can cut all the wood I need.",
         },
+        new Level
+        {
+            title = "BROTHER IOAN'S CANON",
+            story = new[]
+            {
+                "Among Brother Ioan's pages I found a canon, written in his own hand:",
+                "\"Do not spoil what is beautiful on this island. Care for the creatures and they will multiply; plant trees for those who come after you.\"",
+                "<b><color=#FFD780>\"You must make paradise out of everything you have.\"</color></b>",
+                "\"And when your work is done, raise a cross on the other mountain.\"",
+                "He kept it, and God kept him alive on this island for many years. With His help, I will keep it too.",
+                "Rabbits multiply quickly: a male and a female meet, and a day later there are little ones. Hemp for the snares grows around the lake.",
+            },
+            steps = new[]
+            {
+                "Catch a male and a female rabbit alive (snare: Crafting > Survival)",
+                "Build a pen: foundation, walls, door wall, roof (Construction)",
+                "Shut them in the pen and wait: 5 rabbits in the pen",
+                "Plant 10 trees (seeds from under the trees)",
+                "Make the cross (Crafting > Construction: 5 planks)",
+                "Last: raise the cross on the other mountain (Menu > Map)",
+            },
+            hint = "Empty hands take a caught rabbit alive, the axe kills it. Shut the pen's door: an open door lets them all out! Babies give nothing. The cross goes up last.",
+            done = "Water springs from the rock under the cross and runs down to the sea! Now I understand where the other river came from: Brother Ioan raised a cross there too. He was a saint... and now I feel that I am protected as well.",
+        },
         // the last level: keep it the last one (new levels go before it)
         new Level
         {
@@ -194,19 +221,19 @@ public class StoryManager : MonoBehaviour
             story = new[]
             {
                 "This island is not my home. Somewhere beyond the sea, people are waiting for me.",
-                "I will build a raft on the beach, by the wreck: logs, planks, rope, branches and hay.",
-                "And food for the journey: cooked meat that will not go bad on the way.",
-                "Hemp for the rope grows on the slopes near the mountain. It will take many trips.",
+                "I will build a raft where the new stream flows into the sea: logs, planks, rope, branches and hay.",
+                "Food for the journey: cooked meat that will not go bad, and two live rabbits. Rabbit hides against the cold nights at sea.",
+                "Hemp for the rope grows thickest around the lake. It will take many trips.",
             },
             steps = new[]
             {
-                "Pick 18 hemp (on the slopes near the mountain)",
+                "Pick 18 hemp (most of it grows around the lake)",
                 "Make 6 ropes (Crafting > Refine: 3 hemp each)",
-                "Go to the raft on the beach, by the wreck",
-                "Bring it 12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay and 5 cooked meat",
+                "Go to the raft, where the new stream flows into the sea (follow the light, Menu > Map)",
+                "Bring it 12 logs, 8 planks, 6 ropes, 16 sticks, 10 hay, 5 cooked meat, 3 rabbit hides and 2 live rabbits",
                 "Board the raft in the sea",
             },
-            hint = "Look at the raft and click: what it needs and you carry goes onto it. Planks: Crafting > Refine (1 log = 2). The iron axe fells a tree in 3 blows.",
+            hint = "Look at the raft and click: what it needs and you carry goes onto it. Planks: Crafting > Refine (1 log = 2). Live rabbits: from your pen (a snare inside it) or from the snares.",
             done = "",
         },
     };
@@ -232,7 +259,7 @@ public class StoryManager : MonoBehaviour
             steps = new[]
             {
                 "Strânge 6 pietre",
-                "Fă un foc de tabără (Crafting > Survival)",
+                "Fă un foc de tabără (Meșteșuguri > Supraviețuire)",
                 "Așază focul de tabără",
                 "Găsește lemne (bețe) și fân (smulge iarbă uscată)",
                 "Aprinde focul (lemne în foc + 1 fân)",
@@ -318,7 +345,7 @@ public class StoryManager : MonoBehaviour
             },
             steps = new[]
             {
-                "Fă o torță (Crafting > Tools)",
+                "Fă o torță (Meșteșuguri > Unelte)",
                 "Ține torța în mână (se aprinde)",
                 "Coboară până la capătul peșterii",
                 "Citește jurnalul vechi",
@@ -355,10 +382,34 @@ public class StoryManager : MonoBehaviour
             {
                 "Găsește 10 minereuri de fier în peșteră (ia o torță!)",
                 "Să ai un buștean",
-                "Fă toporul de fier (Crafting > Tools)",
+                "Fă toporul de fier (Meșteșuguri > Unelte)",
             },
             hint = "Minereul de fier stă de-a lungul tunelului peșterii. Cu toporul de fier orice copac cade din 3 lovituri.",
             done = "Acum pot tăia tot lemnul de care am nevoie.",
+        },
+        new Level
+        {
+            title = "CANONUL FRATELUI IOAN",
+            story = new[]
+            {
+                "Printre paginile fratelui Ioan am găsit un canon, scris cu mâna lui:",
+                "„Nu strica ce este frumos pe insula aceasta. Îngrijește făpturile și ele se vor înmulți; sădește copaci pentru cei ce vin după tine.”",
+                "<b><color=#FFD780>„Trebuie să faci rai din tot ce ai.”</color></b>",
+                "„Iar când lucrul tău e gata, înalță o cruce pe celălalt munte.”",
+                "El l-a ținut, și Dumnezeu l-a ținut în viață pe insula asta mulți ani. Cu ajutorul Lui, îl voi ține și eu.",
+                "Iepurii se înmulțesc repede: un mascul și o femelă se întâlnesc, iar o zi mai târziu apar puii. Cânepa pentru lațuri crește în jurul lacului.",
+            },
+            steps = new[]
+            {
+                "Prinde vii un iepure mascul și o femelă (laț: Meșteșuguri > Supraviețuire)",
+                "Construiește un țarc: fundație, pereți, perete cu ușă, acoperiș (Construcții)",
+                "Închide-i în țarc și așteaptă: 5 iepuri în țarc",
+                "Plantează 10 copaci (semințe de sub copaci)",
+                "Fă crucea (Meșteșuguri > Construcții: 5 scânduri)",
+                "La sfârșit: înalță crucea pe celălalt munte (Meniu > Hartă)",
+            },
+            hint = "Cu mâinile goale iei viu iepurele prins, cu toporul îl omori. Închide ușa țarcului: deschisă, îi lasă pe toți să fugă! Puii nu dau nimic. Crucea se pune ultima.",
+            done = "Din stâncă, de sub cruce, izvorăște apă și curge până în mare! Acum înțeleg de unde a apărut celălalt râu: și acolo fratele Ioan a înălțat o cruce. A fost un sfânt... și acum simt că și eu voi fi ocrotit.",
         },
         new Level
         {
@@ -366,19 +417,19 @@ public class StoryManager : MonoBehaviour
             story = new[]
             {
                 "Insula asta nu e casa mea. Undeva, dincolo de mare, oamenii mă așteaptă.",
-                "Voi construi o plută pe plajă, lângă epavă: bușteni, scânduri, frânghie, crengi și fân.",
-                "Și hrană pentru drum: carne gătită, care să nu se strice pe drum.",
-                "Cânepa pentru frânghie crește pe pantele de lângă munte. Vor fi multe drumuri.",
+                "Voi construi o plută acolo unde pârâul cel nou se varsă în mare: bușteni, scânduri, frânghie, crengi și fân.",
+                "Hrană pentru drum: carne gătită, care să nu se strice, și doi iepuri vii. Blănuri de iepure pentru nopțile reci pe mare.",
+                "Cânepa pentru frânghie crește cel mai deasă în jurul lacului. Vor fi multe drumuri.",
             },
             steps = new[]
             {
-                "Culege 18 cânepă (pe pantele de lângă munte)",
-                "Fă 6 frânghii (Crafting > Refine: câte 3 cânepă)",
-                "Mergi la pluta de pe plajă, lângă epavă",
-                "Adu-i 12 bușteni, 8 scânduri, 6 frânghii, 16 bețe, 10 fân și 5 carne gătită",
+                "Culege 18 cânepă (cea mai multă crește în jurul lacului)",
+                "Fă 6 frânghii (Meșteșuguri > Prelucrare: câte 3 cânepă)",
+                "Mergi la plută, unde pârâul cel nou se varsă în mare (urmează lumina, Meniu > Hartă)",
+                "Adu-i 12 bușteni, 8 scânduri, 6 frânghii, 16 bețe, 10 fân, 5 carne gătită, 3 blănuri de iepure și 2 iepuri vii",
                 "Urcă pe plută, în mare",
             },
-            hint = "Privește pluta și apasă: ce îi trebuie și ai la tine se pune pe ea. Scânduri: Crafting > Refine (1 buștean = 2). Toporul de fier doboară un copac din 3 lovituri.",
+            hint = "Privește pluta și apasă: ce îi trebuie și ai la tine se pune pe ea. Scânduri: Meșteșuguri > Prelucrare (1 buștean = 2). Iepuri vii: din țarcul tău (un laț pus în el) sau din lațuri.",
             done = "",
         },
     };
@@ -401,6 +452,8 @@ public class StoryManager : MonoBehaviour
     readonly List<Image> stepIcons = new List<Image>();
     readonly List<Text> stepTexts = new List<Text>();
     CanvasGroup bannerGroup;
+    // the "LEVEL N" banner is on the screen (the clock hides under it)
+    public bool BannerShowing => bannerGroup != null && bannerGroup.alpha > 0.01f;
     Text bannerTitle, bannerSub;
     CanvasGroup toastGroup;
     Text toastText;
@@ -409,6 +462,7 @@ public class StoryManager : MonoBehaviour
     static readonly HashSet<string> Mushrooms = new HashSet<string> { "porcini", "redmushroom", "fieldmushroom" };
 
     public int CurrentLevel => data != null ? data.level : 0;
+    CaveBeacon crossBeacon;
 
     void Awake()
     {
@@ -426,6 +480,8 @@ public class StoryManager : MonoBehaviour
         InventoryItem.Consumed += OnConsumed;
         BookReader.Opened += OnBookOpened;
         Raft.Boarded += OnRaftBoarded;
+        RabbitPopulation.TakenAlive += OnTakenAlive;
+        SeedPlanting.Planted += OnTreePlanted;
         Lang.Changed += RefreshPanel; // the goals in the other language at once
     }
 
@@ -437,6 +493,8 @@ public class StoryManager : MonoBehaviour
         InventoryItem.Consumed -= OnConsumed;
         BookReader.Opened -= OnBookOpened;
         Raft.Boarded -= OnRaftBoarded;
+        RabbitPopulation.TakenAlive -= OnTakenAlive;
+        SeedPlanting.Planted -= OnTreePlanted;
         Lang.Changed -= RefreshPanel;
     }
 
@@ -484,8 +542,8 @@ public class StoryManager : MonoBehaviour
 
     public StoryData GetData()
     {
-        if (data == null) return new StoryData { version = 1, level = 1, introSeen = true };
-        data.version = 1;
+        if (data == null) return new StoryData { version = StoryData.CurrentVersion, level = 1, introSeen = true };
+        data.version = StoryData.CurrentVersion;
         if (Raft.Instance != null) data.raft = (int[])Raft.Instance.have.Clone();
         return data;
     }
@@ -493,11 +551,41 @@ public class StoryManager : MonoBehaviour
     public void SetData(StoryData saved)
     {
         loading = false;
-        data = saved != null && saved.version >= 1 ? saved : new StoryData { version = 1, level = 1, introSeen = true };
+        data = saved != null && saved.version >= 1 ? saved : new StoryData { version = StoryData.CurrentVersion, level = 1, introSeen = true };
+        // a save from before the rabbit pen (level 9): the raft (and the end) moved one level on
+        if (data.version < 2 && data.level >= 9) data.level++;
+        data.version = StoryData.CurrentVersion;
         data.introSeen = true;
         if (panel == null) BuildUI();
         RefreshPanel();
         UpdateCave();
+        if (data.winterCame) StartWinter(false); // (the season is not in the save)
+    }
+
+    // ---------------- the first winter (a day after the canon) ---------------- //
+
+    void UpdateWinter()
+    {
+        if (data == null || data.winterCame || data.winterInHours < 0f) return;
+        data.winterInHours -= Time.deltaTime * DayNightSystem.GameHoursPerSecond;
+        if (data.winterInHours <= 0f) StartWinter(true);
+    }
+
+    void StartWinter(bool now)
+    {
+        data.winterCame = true;
+        data.winterInHours = 0f;
+        var time = TimeManager.Instance;
+        if (time != null && time.currentSeason != TimeManager.Season.Winter) time.SetSeason(TimeManager.Season.Winter);
+        var weather = WeatherSystem.Instance;
+        if (weather == null) return;
+        if (now)
+        {
+            weather.BeginSnow(12f);
+            ShowToast(Lang.T("Winter has come! Snow is falling on the island. Keep a fire burning: the nights are long and cold.",
+                "A venit iarna! Ninge peste insulă. Ține focul aprins: nopțile sunt lungi și reci."), 9f);
+        }
+        else if (weather.SnowCover < 0.5f) weather.SetSnowCover(0.6f);
     }
 
     // ---------------- goals ---------------- //
@@ -510,6 +598,7 @@ public class StoryManager : MonoBehaviour
             return;
         }
         UpdatePanelVisibility();
+        UpdateWinter();
         if (modal || !data.introSeen || data.level > Levels.Length) return;
         checkTimer -= Time.deltaTime;
         if (checkTimer > 0f) return;
@@ -625,6 +714,20 @@ public class StoryManager : MonoBehaviour
                 break;
             case 9:
             {
+                // Brother Ioan's canon: rabbits in a pen, trees, and last the cross on the other mountain
+                int penned = PennedRabbits();
+                s[5] = data.crossPlaced;
+                s[4] = s[5] || Count("cross") > 0;
+                s[3] = data.treesPlanted >= CanonTrees;
+                s[2] = penned >= CanonRabbits;
+                s[1] = s[2] || PenBuilt();
+                bool male = data.caughtMale || Count(RabbitPopulation.LiveMale) > 0;
+                bool female = data.caughtFemale || Count(RabbitPopulation.LiveFemale) > 0;
+                s[0] = s[2] || (male && female) || penned >= 2;
+                break;
+            }
+            case 10:
+            {
                 var raft = Raft.Instance;
                 if (raft == null) raft = Raft.MakeSite(data.raft);
                 int ropes = Count("rope") + (raft != null ? raft.have[2] : 0);
@@ -638,6 +741,113 @@ public class StoryManager : MonoBehaviour
             }
         }
         return s;
+    }
+
+    // a pen: a foundation, at least 4 walls (one with a door) and a roof
+    static bool PenBuilt()
+    {
+        int walls = Buildings.Count(BuildingKind.Wall) + Buildings.Count(BuildingKind.DoorWall) + Buildings.Count(BuildingKind.WindowWall);
+        return Buildings.Count(BuildingKind.Foundation) > 0 && Buildings.Count(BuildingKind.DoorWall) > 0 && walls >= 4
+            && Buildings.Count(BuildingKind.Roof) > 0;
+    }
+
+    public const int CanonRabbits = 5, CanonTrees = 10;
+
+    // the most rabbits (any age) inside one pen whose doors are shut
+    public static int PennedRabbits()
+    {
+        var population = RabbitPopulation.Instance;
+        if (population == null || PenDoor.All.Count == 0) return 0;
+        int most = 0;
+        foreach (var door in PenDoor.All)
+        {
+            if (door == null) continue;
+            Vector3 c = door.transform.position;
+            if (PenDoor.AnyOpenNear(c, 16f)) continue;
+            int n = 0;
+            foreach (var r in population.Rabbits)
+            {
+                if (r == null || !r.Alive || r.caughtIn != null) continue;
+                Vector3 d = r.transform.position - c; d.y = 0f;
+                if (d.sqrMagnitude > 16f * 16f || !Buildings.IsEnclosed(r.transform.position)) continue;
+                n++;
+            }
+            most = Mathf.Max(most, n);
+        }
+        return most;
+    }
+
+    // the canon: the cross goes up last (when the rabbits, the pen and the trees are done)
+    public bool CanonReadyForCross => data != null && (data.level > 9 || (data.level == 9 && (data.stepsDone & 15) == 15));
+    public bool CrossPlaced => data != null && data.crossPlaced;
+
+    // CanonCross: the cross was raised on the other mountain: the miracle
+    public void OnCrossRaised(Vector3 at, float yaw)
+    {
+        if (data == null) return;
+        data.crossPlaced = true;
+        data.crossPosition = at;
+        data.crossYaw = yaw;
+        if (MiracleStream.Instance != null) MiracleStream.Instance.Begin(at, true);
+        ShowToast(Lang.T("Listen... water!", "Ascultă... apă!"), 6f);
+    }
+
+    // the Map (Menu > Map): where the current goal is, if it is a place
+    public bool MapGoal(out Vector3 at, out string label)
+    {
+        at = Vector3.zero;
+        label = "";
+        if (data == null) return false;
+        switch (data.level)
+        {
+            case 2:
+                if (River.Instance != null && River.Instance.points.Count > 0)
+                {
+                    River.Instance.DistanceToWater(PlayerPosition(), out at);
+                    label = Lang.T("Fresh water: the river", "Apă dulce: râul");
+                    return true;
+                }
+                return false;
+            case 5:
+            case 6:
+            case 8:
+                if (Cave.Instance == null) return false;
+                at = Cave.Instance.Mouth;
+                label = data.level == 8 ? Lang.T("Iron ore: in the cave", "Minereu de fier: în peșteră") : Lang.T("The cave", "Peștera");
+                return true;
+            case 9:
+                if (MiracleStream.Instance == null) return false;
+                if (CanonReadyForCross && !data.crossPlaced)
+                {
+                    at = MiracleStream.Instance.Summit;
+                    label = Lang.T("Raise the cross here", "Înalță crucea aici");
+                    return true;
+                }
+                if (River.Instance != null && River.Instance.lakeRadius > 0f)
+                {
+                    at = River.Instance.lakeCentre;
+                    label = Lang.T("Hemp for snares: around the lake", "Cânepă pentru lațuri: în jurul lacului");
+                    return true;
+                }
+                return false;
+            case 10:
+                if (Raft.Instance == null) return false;
+                at = Raft.Instance.transform.position;
+                label = Lang.T("Build the raft here", "Construiește pluta aici");
+                return true;
+        }
+        return false;
+    }
+
+    void OnTreePlanted()
+    {
+        if (data != null && data.level == 9) data.treesPlanted++;
+    }
+
+    void OnTakenAlive(RabbitInfo.Sex sex)
+    {
+        if (data == null) return;
+        if (sex == RabbitInfo.Sex.Male) data.caughtMale = true; else data.caughtFemale = true;
     }
 
     static Vector3 PlayerPosition()
@@ -690,6 +900,18 @@ public class StoryManager : MonoBehaviour
     void UpdateCave()
     {
         if (Cave.Instance != null && data != null) Cave.Instance.SetOpen(data.level >= 5);
+        // the canon's cross on the other mountain and the stream it brought (also when level 9 was skipped: TEST)
+        var stream = MiracleStream.Instance;
+        // a light on the top of the other mountain while the cross is to be raised (canon ready, cross not up yet)
+        if (data != null && stream != null && data.level == 9 && crossBeacon == null)
+            crossBeacon = CaveBeacon.Make("Cross beacon (made in code)", stream.Summit, new Color(1f, 0.92f, 0.62f, 1f),
+                () => data != null && data.level == 9 && !data.crossPlaced && CanonReadyForCross);
+        if (data != null && stream != null && (data.crossPlaced || data.level > 9) && !stream.Flowing)
+        {
+            Vector3 at = data.crossPlaced ? data.crossPosition : stream.Summit;
+            CanonCross.Show(at, data.crossYaw);
+            stream.Begin(at, false);
+        }
         // the last level: the raft, only started, lies on the beach by the wreck
         if (data != null && data.level == Levels.Length && Raft.Instance == null) Raft.MakeSite(data.raft);
     }
@@ -747,6 +969,8 @@ public class StoryManager : MonoBehaviour
         var level = Levels[data.level - 1];
         int finished = data.level;
         data.level++;
+        // after the canon: a day later the first winter comes (snow)
+        if (finished == 9 && !data.winterCame && data.winterInHours < 0f) data.winterInHours = 24f;
         data.stepsDone = 0;
         modal = true; // no checks meanwhile
         RefreshPanel();
@@ -821,6 +1045,48 @@ public class StoryManager : MonoBehaviour
 
     // Lines told one after the other on a dark screen (black for the intro); the game waits meanwhile.
     // Tap / click / Space shows the whole line, again goes to the next one; "Skip" ends it.
+    // The story lines may have <b> (bold) or <color=...> in them: the letters come one by one, the tags never show.
+    static int VisibleLength(string line)
+    {
+        int n = 0;
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (line[i] == '<') { int end = line.IndexOf('>', i); if (end > i) { i = end; continue; } }
+            n++;
+        }
+        return n;
+    }
+
+    static string Typed(string line, int count)
+    {
+        var sb = new System.Text.StringBuilder();
+        var open = new List<string>();
+        int seen = 0;
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+            if (c == '<')
+            {
+                int end = line.IndexOf('>', i);
+                if (end > i)
+                {
+                    string tag = line.Substring(i, end - i + 1);
+                    if (seen >= count && !tag.StartsWith("</")) break;
+                    sb.Append(tag);
+                    if (tag.StartsWith("</")) { if (open.Count > 0) open.RemoveAt(open.Count - 1); }
+                    else open.Add(tag.Substring(1, tag.Length - 2).Split('=')[0]);
+                    i = end;
+                    continue;
+                }
+            }
+            if (seen >= count) break;
+            sb.Append(c);
+            seen++;
+        }
+        for (int k = open.Count - 1; k >= 0; k--) sb.Append("</" + open[k] + ">");
+        return sb.ToString();
+    }
+
     IEnumerator StoryText(string[] lines, bool black)
     {
         modal = true;
@@ -861,11 +1127,12 @@ public class StoryManager : MonoBehaviour
             if (skip) break;
             tapped = false;
             float shown = 0f;
-            while (shown < line.Length && !skip)
+            int letters = VisibleLength(line);
+            while (shown < letters && !skip)
             {
-                if (tapped || Advance()) { shown = line.Length; tapped = false; break; }
+                if (tapped || Advance()) { shown = letters; tapped = false; break; }
                 shown += Time.unscaledDeltaTime * lettersPerSecond;
-                text.text = line.Substring(0, Mathf.Min(line.Length, Mathf.FloorToInt(shown)));
+                text.text = Typed(line, Mathf.Min(letters, Mathf.FloorToInt(shown)));
                 yield return null;
             }
             text.text = line;
@@ -1003,12 +1270,22 @@ public class StoryManager : MonoBehaviour
             stepTexts[i].text = level.steps[i];
             stepTexts[i].color = done ? new Color(0.6f, 0.85f, 0.55f) : i == current ? Color.white : UISkin.TextDim;
             UISkin.Place(stepIcons[i].rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(22f, y - line * 0.5f), new Vector2(20f, 20f));
-            UISkin.Place(stepTexts[i].rectTransform, new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(52f, y - line * 0.5f), new Vector2(width - 70f, line));
-            y -= line;
+            // a long goal takes two lines (or more): the next one goes under it
+            var stepText = stepTexts[i];
+            stepText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            stepText.verticalOverflow = VerticalWrapMode.Overflow;
+            UISkin.Place(stepText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(52f, y), new Vector2(width - 70f, line));
+            float tall = Mathf.Max(line, stepText.preferredHeight + 8f);
+            stepText.alignment = tall > line ? TextAnchor.UpperLeft : TextAnchor.MiddleLeft;
+            UISkin.Place(stepText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(52f, tall > line ? y - 4f : y), new Vector2(width - 70f, tall));
+            y -= tall;
         }
         panelHint.text = level.hint;
+        panelHint.verticalOverflow = VerticalWrapMode.Overflow;
         UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, 54f));
-        y -= 66f;
+        float hintTall = Mathf.Max(54f, panelHint.preferredHeight + 4f);
+        UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, hintTall));
+        y -= hintTall + 12f;
         panel.sizeDelta = new Vector2(width, -y);
     }
 

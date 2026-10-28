@@ -64,9 +64,11 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public void OnPointerEnter(PointerEventData eventData)
     {
         itemInfoUI.SetActive(true);
-        itemInfoUI_itemName.text = thisName;
-        itemInfoUI_itemDescription.text = thisDescription;
-        itemInfoUI_itemFunctionality.text = thisFunctionality;
+        string shownName = thisName, shownDescription = thisDescription, shownUse = thisFunctionality;
+        Translations.Item(InventorySystem.CleanName(gameObject.name), ref shownName, ref shownDescription, ref shownUse); // (Romanian)
+        itemInfoUI_itemName.text = shownName;
+        itemInfoUI_itemDescription.text = shownDescription;
+        itemInfoUI_itemFunctionality.text = shownUse;
     }
 
     // Triggered when the mouse exits the area of the item that has this script.
@@ -216,6 +218,43 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 itemInfoUI.SetActive(false);
                 gameObject.SetActive(true);
                 BookReader.Open(gameObject.name.StartsWith("journal") ? BookReader.Book.Journal : BookReader.Book.PrayerBook);
+                break;
+            case "doorwall(Clone)":
+            case "doorwall":
+                ConstructionManager.Instance.itemToBeDestroyed = gameObject;
+                ConstructionManager.Instance.ActivateConstructionPlacement(Buildings.DoorWallModel);
+                break;
+            case "windowwall(Clone)":
+            case "windowwall":
+                ConstructionManager.Instance.itemToBeDestroyed = gameObject;
+                ConstructionManager.Instance.ActivateConstructionPlacement(Buildings.WindowWallModel);
+                break;
+            case "roof(Clone)":
+            case "roof":
+                ConstructionManager.Instance.itemToBeDestroyed = gameObject;
+                ConstructionManager.Instance.ActivateConstructionPlacement(Buildings.RoofModel);
+                break;
+            case "snare(Clone)":
+            case "snare":
+                // set it on the ground where the player looks (SnarePlacing)
+                itemInfoUI.SetActive(false);
+                if (SnarePlacing.Instance != null) SnarePlacing.Instance.Begin(gameObject);
+                else gameObject.SetActive(true);
+                break;
+            case "cross(Clone)":
+            case "cross":
+                // the canon's cross: raised on the top of the other mountain (level 9)
+                itemInfoUI.SetActive(false);
+                if (SnarePlacing.Instance != null) SnarePlacing.Instance.Begin(gameObject, SnarePlacing.Thing.Cross);
+                else gameObject.SetActive(true);
+                break;
+            case "rabbitmale(Clone)":
+            case "rabbitmale":
+            case "rabbitfemale(Clone)":
+            case "rabbitfemale":
+                // a live rabbit: let it go in front of the player (in the pen it stays, outside it runs away)
+                itemInfoUI.SetActive(false);
+                RabbitPopulation.ReleaseFromInventory(gameObject);
                 break;
             default:
                 // a seed (pine cone, acorn, beechnut, birch catkin): plant it where the player looks

@@ -117,8 +117,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isTrashable: 1
   thisName: Hemp
-  thisDescription: A tall plant with strong fibres. It grows near the mountain.
-  thisFunctionality: 3 hemp make a rope (Crafting > Refine).
+  thisDescription: A tall plant with strong fibres. It grows thickest around the
+    lake.
+  thisFunctionality: 3 hemp make a rope (Crafting > Refine); 5 hemp and a stick make
+    a snare (Crafting > Survival).
   isConsumable: 0
   healthEffect: 0
   caloriesEffect: 0

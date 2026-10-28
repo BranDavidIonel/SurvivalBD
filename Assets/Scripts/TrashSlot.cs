@@ -63,7 +63,7 @@ public class TrashSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
     static string ShownName(GameObject item)
     {
         var info = item != null ? item.GetComponent<InventoryItem>() : null;
-        if (info != null && !string.IsNullOrEmpty(info.thisName)) return info.thisName;
+        if (info != null && !string.IsNullOrEmpty(info.thisName)) return Translations.Name(info.thisName);
         return item != null ? InventorySystem.CleanName(item.name) : "";
     }
 
@@ -84,7 +84,10 @@ public class TrashSlot : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoi
         if (item == null) return;
         itemToBeDeleted = item;
         dropping = true;
-        Ask(Lang.T("Drop the " + ShownName(item) + " on the ground?\nYou can pick it up again.", "Arunci pe jos: " + ShownName(item) + "?\nÎl poți lua din nou."));
+        if (RabbitPopulation.IsLiveRabbit(InventorySystem.CleanName(item.name)))
+            Ask(Lang.T("Let the rabbit go?\nOutside a closed pen it runs away!", "Dai drumul iepurelui?\nÎn afara unui țarc închis fuge!"));
+        else
+            Ask(Lang.T("Drop the " + ShownName(item) + " on the ground?\nYou can pick it up again.", "Arunci pe jos: " + ShownName(item) + "?\nÎl poți lua din nou."));
     }
 
     // the words on the Yes / No buttons (in the language of the Settings)

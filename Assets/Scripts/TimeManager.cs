@@ -77,8 +77,20 @@ public class TimeManager : MonoBehaviour
     }
     private void updateUI()
     {
-        dayUI.text = $"{currentDayOfWeek} day: {daysInCurrentSeason}, Season:{currentSeason}, Year:{yearInGame}";
+        if (dayUI == null) return;
+        if (Lang.Ro)
+        {
+            // "Luni, ziua 1, Primăvara, anul 0"
+            string[] days = { "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică" };
+            string[] seasons = { "Primăvara", "Vara", "Toamna", "Iarna" };
+            dayUI.text = days[(int)currentDayOfWeek] + ", ziua " + daysInCurrentSeason + ", " + seasons[(int)currentSeason] + ", anul " + yearInGame;
+        }
+        else dayUI.text = $"{currentDayOfWeek} day: {daysInCurrentSeason}, Season:{currentSeason}, Year:{yearInGame}";
     }
+
+    // the line in the language of the Settings at once
+    void OnEnable() => Lang.Changed += updateUI;
+    void OnDisable() => Lang.Changed -= updateUI;
 
     public int DaysPerSeason => daysPerSeason;
     public int DayInSeason => daysInCurrentSeason;

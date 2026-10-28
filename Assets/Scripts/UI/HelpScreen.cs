@@ -99,22 +99,22 @@ public class HelpScreen : MonoBehaviour
                 "<b><color=#FFD780>Pe PC</color></b>\n" +
                 "W A S D  mers          Mouse  privit          Space  sărit (în apă: sus)          Left Ctrl  jos, în apă\n" +
                 "Clic stânga  lovești cu unealta din mână / iei / deschizi / bei / așezi\n" +
-                "I  inventar          C  crafting          M  meniu (salvare, încărcare, setări)          H  acest ajutor\n" +
+                "I  inventar          C  meșteșuguri          M  meniu (salvare, încărcare, setări)          H  acest ajutor          N  harta\n" +
                 "1 - 6  bara rapidă: iei o unealtă în mână, mănânci, plantezi o sămânță, așezi un foc\n" +
                 "Clic dreapta pe un obiect  îl folosești / îl mănânci / îl pui în bara rapidă          X  anulezi așezarea\n" +
                 "Tab  eliberezi mouse-ul ca să apeși butoanele din dreapta sus\n" +
                 "Tragi un obiect afară din fereastră  îl arunci pe jos (te întreabă înainte)\n\n" +
                 "<b><color=#FFD780>Pe telefon</color></b>\n" +
                 "Joystick stânga  mers          Joystick dreapta sau glisare  privit\n" +
-                "Butonul mare  Attack / Take / Open / Place (se schimbă după ce privești)\n" +
-                "Jump (în apă: sus) și Down          Inventory, Crafting, Menu  în dreapta sus\n" +
+                "Butonul mare  Lovește / Ia / Deschide / Așază (se schimbă după ce privești)\n" +
+                "Sari (în apă: sus) și Jos          Inventar, Meșteșuguri, Meniu  în dreapta sus\n" +
                 "Dublu tap pe un obiect  îl folosești / îl mănânci          Tap pe un loc din bara rapidă  îl iei în mână\n" +
-                "Cancel  oprești așezarea";
+                "Anulează  oprești așezarea";
         return
             "<b><color=#FFD780>On the PC</color></b>\n" +
             "W A S D  walk          Mouse  look          Space  jump (in water: up)          Left Ctrl  down in water\n" +
             "Left click  hit with the tool in your hand / take / open / drink / place\n" +
-            "I  inventory          C  crafting          M  menu (save, load, settings)          H  this help\n" +
+            "I  inventory          C  crafting          M  menu (save, load, settings)          H  this help          N  map\n" +
             "1 - 6  the quick bar: take a tool in your hand, eat, plant a seed, place a campfire\n" +
             "Right click on an item  use it / eat it / put it in the quick bar          X  cancel placing\n" +
             "Tab  free the mouse to click the buttons at the top right\n" +
@@ -157,10 +157,12 @@ public class HelpScreen : MonoBehaviour
                 "<b>Umbra</b>: vine noaptea când nu arde niciun foc lângă tine. Focul, torța aprinsă în mână și cartea de rugăciuni o alungă.\n" +
                 "<b>Peștera</b>: beznă totală. Intră doar cu o torță aprinsă în mână (6 ore fiecare). Ia una de rezervă.\n" +
                 "<b>Copacii</b>: semințele cad sub ei și cresc copaci noi după 2-3 zile. Culege semințe și plantează-le.\n" +
-                "<b>Iepurii</b>: masculii (albastru) și femelele (roz) fac pui. Un iepure vânat dă carne și blană.\n" +
-                "<b>Pluta</b> (ultimul nivel): stă pe plajă, lângă epavă. Adu-i ce îi trebuie în câte drumuri vrei,\n" +
-                "      plus 5 carne gătită: hrană pentru drum (vânezi iepuri și frigi carnea la foc).\n" +
-                "<b>Salvarea</b>: Menu > Save Game. <b>Limba și dificultatea</b>: Menu > Settings.";
+                "<b>Iepurii</b>: masculii (albastru) și femelele (roz) fac 2-5 pui. Puii omorâți nu dau nimic: lasă-i să crească.\n" +
+                "<b>Lațul</b> (1 băț + 5 cânepă; cânepa crește mai ales în jurul lacului): prinde iepuri mari. Cu mâinile goale îl iei viu,\n" +
+                "      cu toporul îl omori. Dă-i drumul în țarc și <b>închide ușa</b>: o ușă lăsată deschisă îi lasă pe toți să fugă!\n" +
+                "<b>Harta</b>: Meniu > Hartă (N pe PC). Săgeata roșie ești tu, cercul auriu e ținta. Coloanele de lumină arată drumul.\n" +
+                "<b>Pluta</b> (ultimul nivel): unde pârâul cel nou se varsă în mare. Adu-i ce îi trebuie în câte drumuri vrei.\n" +
+                "<b>Salvarea</b>: Meniu > Salvează jocul. <b>Limba și dificultatea</b>: Meniu > Setări.";
         return
             "<b>Water</b>: a full water bar lasts one day. Drink from the river, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
             "<b>Food</b>: a full food bar lasts about three days. Mushrooms, berries, herbs, cooked meat. Empty bars kill you.\n" +
@@ -168,9 +170,11 @@ public class HelpScreen : MonoBehaviour
             "<b>The shadow</b>: it comes at night when no fire burns near you. A fire, a burning torch in your hand and the prayer book drive it away.\n" +
             "<b>The cave</b>: pitch dark. Go in only with a burning torch in your hand (6 hours each). Take a spare one.\n" +
             "<b>Trees</b>: seeds fall under them and grow into new trees after 2-3 days. Pick seeds and plant them.\n" +
-            "<b>Rabbits</b>: males (blue) and females (pink) make babies. Hunting one gives meat and its hide.\n" +
-            "<b>The raft</b> (the last level): it lies on the beach by the wreck. Bring it what it needs in as many trips as you like,\n" +
-            "      and 5 cooked meat: food for the journey (hunt rabbits, cook the meat on a campfire).\n" +
+            "<b>Rabbits</b>: males (blue) and females (pink) make 2-5 babies. A killed baby gives nothing: let them grow.\n" +
+            "<b>Snares</b> (1 stick + 5 hemp; hemp grows mostly around the lake) catch grown rabbits. Empty hands take it alive,\n" +
+            "      the axe kills it. Let it go in your pen and <b>shut the door</b>: a door left open lets them all out!\n" +
+            "<b>Map</b>: Menu > Map (N on the PC). The red arrow is you, the gold ring is the goal. Columns of light show the way.\n" +
+            "<b>The raft</b> (the last level): where the new stream flows into the sea. Bring it what it needs in as many trips as you like.\n" +
             "<b>Saving</b>: Menu > Save Game. <b>Language and difficulty</b>: Menu > Settings.";
     }
 

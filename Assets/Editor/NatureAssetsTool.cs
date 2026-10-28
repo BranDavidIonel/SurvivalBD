@@ -300,7 +300,7 @@ public static class NatureAssetsTool
         new ItemDef { item = "beechnut", name = "Beechnut", description = "The seed of a beech. Fallen beechnuts grow into new beeches.", use = "Use it (double tap / right click) to plant a beech in front of you.", seed = true, renderSeed = 3 },
         new ItemDef { item = "birchseed", name = "Birch Catkin", description = "Full of tiny birch seeds. Fallen catkins grow into new birches.", use = "Use it (double tap / right click) to plant a birch in front of you.", seed = true, renderSeed = 1 },
         new ItemDef { item = "ironore", name = "Iron Ore", description = "A heavy rusty stone from the cave.", use = "10 of them and a log make an iron axe (Crafting > Tools).", icon = "stone/ore_01_n_t.PNG" },
-        new ItemDef { item = "hemp", name = "Hemp", description = "A tall plant with strong fibres. It grows near the mountain.", use = "3 hemp make a rope (Crafting > Refine).", renderPlant = "Hemp" },
+        new ItemDef { item = "hemp", name = "Hemp", description = "A tall plant with strong fibres. It grows thickest around the lake.", use = "3 hemp make a rope (Crafting > Refine); 5 hemp and a stick make a snare (Crafting > Survival).", renderPlant = "Hemp" },
         new ItemDef { item = "rope", name = "Rope", description = "A strong rope twisted from hemp fibres.", use = "Ties the logs of a raft together.", icon = "addons/186_t.png" },
         new ItemDef { item = "journal", name = "Old Journal", description = "The journal of Brother Ioan, a monk who lived on this island long ago.", use = "Use it (double tap / right click) to read it.", book = true, icon = "parts/Journal_t_01.png" },
         new ItemDef { item = "prayerbook", name = "Prayer Book", description = "The old prayer book of Brother Ioan.", use = "Use it to read the prayers. At night the prayer drives the shadow away for a while.", book = true, renderPlant = "Prayer Book" },
@@ -340,7 +340,7 @@ public static class NatureAssetsTool
     }
 
     // a picture of the icon pack, copied next to the game's other icons (the pack folder is not in git)
-    static Sprite CopyIcon(string packPath, string item)
+    internal static Sprite CopyIcon(string packPath, string item)
     {
         string source = Pack + packPath;
         string target = IconDir + "/" + item + ".png";
@@ -355,7 +355,7 @@ public static class NatureAssetsTool
         return ImportSprite(target);
     }
 
-    static Sprite ImportSprite(string path)
+    internal static Sprite ImportSprite(string path)
     {
         var importer = (TextureImporter)AssetImporter.GetAtPath(path);
         if (importer != null)
@@ -411,7 +411,7 @@ public static class NatureAssetsTool
     }
 
     // draws one model alone (perspective, a soft light) into a picture with a transparent background
-    static Texture2D RenderModel(GameObject model, int width, int height, Quaternion view, bool ortho)
+    internal static Texture2D RenderModel(GameObject model, int width, int height, Quaternion view, bool ortho)
     {
         var scene = EditorSceneManager.NewPreviewScene();
         SceneManager.MoveGameObjectToScene(model, scene);
@@ -548,7 +548,7 @@ public static class NatureAssetsTool
         hr.sharedMaterial = Mat("Hemp", new Color(0.24f, 0.44f, 0.13f), 0.15f);
         hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var hp = hemp.AddComponent<ScenePlant>();
-        hp.item = "hemp"; hp.displayName = "Hemp"; hp.regrowHours = 72f; hp.size = ScenePlant.PlantSize.Medium; hp.hideUnderSnow = true;
+        hp.item = "hemp"; hp.displayName = "Hemp"; hp.regrowHours = 48f; hp.size = ScenePlant.PlantSize.Medium; hp.hideUnderSnow = true;
         PrefabUtility.SaveAsPrefabAsset(hemp, VegetationDir + "/Hemp.prefab");
         Object.DestroyImmediate(hemp);
 

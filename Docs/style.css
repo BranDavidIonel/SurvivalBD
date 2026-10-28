@@ -136,3 +136,13 @@ figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
 .warn-box { border-left: 4px solid var(--danger); background: var(--paper); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 14px 0; }
 
 footer { text-align: center; color: var(--muted); font-size: 14px; padding: 28px 16px 40px; border-top: 1px solid var(--line); }
+
+/* the RO / EN switch at the start of the menu bar */
+nav.top .langs { display: inline-block; margin-right: 8px; vertical-align: middle; }
+nav.top .langs a {
+  display: inline-block; padding: 4px 11px; margin: 0; font-size: 14px; font-weight: 600;
+  border: 1px solid var(--line); color: var(--muted);
+}
+nav.top .langs a:first-child { border-radius: 99px 0 0 99px; }
+nav.top .langs a:last-child { border-radius: 0 99px 99px 0; border-left: 0; }
+nav.top .langs a.on { background: var(--accent); border-color: var(--accent); color: #fff; }

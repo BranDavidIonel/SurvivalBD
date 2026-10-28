@@ -27,6 +27,8 @@ public static class EnvironmentBootstrap
         go.AddComponent<SnowCover>();
         go.AddComponent<AmbienceAudio>(); // forest sounds by day and night, the sea, an owl
 
+        // the stream of the miracle (level 9: it flows once the cross stands on the other mountain)
+        MiracleStream.Create();
         // the story first: a new game puts the player on the beach before the forest looks around them
         new GameObject("Story (made in code)").AddComponent<StoryManager>();
 

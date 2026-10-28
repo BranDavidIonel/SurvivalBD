@@ -139,7 +139,7 @@ public class River : MonoBehaviour
 
     // a few seconds of murmuring water, made in code (loops without a click)
     static AudioClip brook;
-    static AudioClip BrookSound()
+    public static AudioClip BrookSound()
     {
         if (brook != null) return brook;
         const int rate = 22050;

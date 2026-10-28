@@ -34,6 +34,13 @@ public class PlayerDeath : MonoBehaviour
     void Update()
     {
         KeepAboveGround();
+        // ADMIN: immortal (nothing takes the player: no hunger, thirst, sea, cave or shadow)
+        if (GameSettings.Immortal && PlayerState.Instance != null && !IsDead)
+        {
+            PlayerState.Instance.KeepFull();
+            nextMessage = null;
+            return;
+        }
         if (!IsDead && PlayerState.Instance != null && PlayerState.Instance.currentHealth <= 0f)
         {
             StartCoroutine(Die());

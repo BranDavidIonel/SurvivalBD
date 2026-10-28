@@ -45,7 +45,8 @@ public class ConstructionManager : MonoBehaviour
 
     public void ActivateConstructionPlacement(string itemToConstruct)
     {
-        GameObject item = Instantiate(Resources.Load<GameObject>(itemToConstruct));
+        // the door wall, the window wall and the roof are made in code (Buildings)
+        GameObject item = Buildings.IsCodeModel(itemToConstruct) ? Buildings.Create(itemToConstruct) : Instantiate(Resources.Load<GameObject>(itemToConstruct));
 
         //change the name of the gameobject so it will not be (clone)
         item.name = itemToConstruct;
@@ -189,7 +190,13 @@ public class ConstructionManager : MonoBehaviour
                     selectingAGhost = true;
                     selectedGhost = selectionTransform.gameObject;
                 }
-                else if(selectionTransform.gameObject.CompareTag("wallGhost") && itemToBeConstructed.name == "WallModel")
+                else if(selectionTransform.gameObject.CompareTag("wallGhost") && Buildings.IsWallModel(itemToBeConstructed.name))
+                {
+                    itemToBeConstructed.SetActive(false);
+                    selectingAGhost = true;
+                    selectedGhost = selectionTransform.gameObject;
+                }
+                else if(selectionTransform.GetComponent<RoofGhost>() != null && itemToBeConstructed.name == Buildings.RoofModel)
                 {
                     itemToBeConstructed.SetActive(false);
                     selectingAGhost = true;
@@ -274,6 +281,9 @@ public class ConstructionManager : MonoBehaviour
 
         }
 
+        // what it is (for the rabbits and the save); a foundation gets the place for its roof
+        Buildings.OnPlaced(itemToBeConstructed, itemToBeConstructed.name);
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayCraft();
 
         itemToBeConstructed = null;
 
@@ -305,6 +315,9 @@ public class ConstructionManager : MonoBehaviour
         //Adding all the ghosts of this item into the manager's ghost bank
         GetAllGhosts(itemToBeConstructed);
         PerformGhostDeletionScan();
+
+        Buildings.OnPlaced(itemToBeConstructed, itemToBeConstructed.name);
+        if (SoundManager.Instance != null) SoundManager.Instance.PlayCraft();
 
         itemToBeConstructed = null;
 

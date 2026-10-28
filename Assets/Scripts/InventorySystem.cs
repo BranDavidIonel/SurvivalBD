@@ -133,7 +133,7 @@ public class InventorySystem : MonoBehaviour
         GameObject prefab = Resources.Load<GameObject>(itemName);
         if (whatSlotToEquip == null || prefab == null)
         {
-            if (whatSlotToEquip == null) ShowMessage("Inventory is full");
+            if (whatSlotToEquip == null) ShowMessage(Lang.T("Inventory is full", "Inventarul e plin"));
             else Debug.LogWarning("No item prefab Resources/" + itemName);
             return false;
         }
@@ -150,7 +150,7 @@ public class InventorySystem : MonoBehaviour
         Sprite spriteImageItem = itemToAdd.GetComponent<Image>().sprite;
         var info = itemToAdd.GetComponent<InventoryItem>();
         string shownName = info != null && !string.IsNullOrEmpty(info.thisName) ? info.thisName : itemName;
-        if (showPopup) TriggerPickupPopUp("+1  " + shownName, spriteImageItem);
+        if (showPopup) TriggerPickupPopUp("+1  " + Translations.Name(shownName), spriteImageItem);
 
         RecalculateList();
         CraftingSystem.Instance.RefreshNeededItems();

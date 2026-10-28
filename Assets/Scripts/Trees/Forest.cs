@@ -148,6 +148,7 @@ public class Forest : MonoBehaviour
     static readonly int LeafLossId = Shader.PropertyToID("_SB_LeafLoss");
 
     public int TreeCount => trees.Count;
+    public IReadOnlyList<ForestTree> Trees => trees; // (the map draws the forests)
     public int SeedCount => seedsOnGround.Count;
     public int ShownModels => shown.Count;
     public Vector3 PlayerPosition => player != null ? player.position : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);

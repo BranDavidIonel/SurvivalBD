@@ -13,7 +13,8 @@ public class InteractableObject : MonoBehaviour
 
     public string GetItemName()
     {
-        return string.IsNullOrEmpty(displayName) ? ItemName : displayName;
+        // (in Romanian when it is chosen: Translations)
+        return Translations.Name(string.IsNullOrEmpty(displayName) ? ItemName : displayName);
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -49,7 +50,7 @@ public class InteractableObject : MonoBehaviour
             }
             else
             {
-                InventorySystem.Instance.ShowMessage("Inventory is full");
+                InventorySystem.Instance.ShowMessage(Lang.T("Inventory is full", "Inventarul e plin"));
             }
         }
     }

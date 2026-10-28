@@ -25,6 +25,12 @@ public static class DroppedItems
     {
         if (inventoryItem == null) return;
         string item = InventorySystem.CleanName(inventoryItem.name);
+        // a live rabbit is not put down: it is let go (and runs away, unless it is in a pen)
+        if (RabbitPopulation.IsLiveRabbit(item))
+        {
+            RabbitPopulation.ReleaseFromInventory(inventoryItem);
+            return;
+        }
         string shown = NameOf(item);
         var equip = EquipSystem.Instance;
         if (equip != null && equip.selectedItem == inventoryItem)
@@ -47,7 +53,7 @@ public static class DroppedItems
         forward.y = 0f;
         forward = forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
         Spawn(item, from + forward * 1.4f + Random.insideUnitSphere * 0.25f, Random.Range(0f, 360f));
-        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Dropped: ", "Aruncat: ") + shown);
+        if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Dropped: ", "Aruncat: ") + Translations.Name(shown));
     }
 
     // the name shown in the game (the inventory item's own name: "Stone Axe" for "Axe")

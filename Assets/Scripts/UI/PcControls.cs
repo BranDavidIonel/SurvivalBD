@@ -28,13 +28,14 @@ public class PcControls : MonoBehaviour
         if (!hasMobileControls) GameInput.BeginTouchFrame();
 
         if (Input.GetKeyDown(KeyCode.H)) HelpScreen.Toggle();
+        if (Input.GetKeyDown(KeyCode.N) && !MapScreen.IsOpen) MapScreen.Open(); // (N again closes it: MapScreen)
 
         bool windows = (InventorySystem.Instance != null && InventorySystem.Instance.isOpen)
             || (CraftingSystem.Instance != null && CraftingSystem.Instance.isOpen)
             || (MenuManager.Instance != null && MenuManager.Instance.isMenuOpen)
             || (StorageManager.Instance != null && StorageManager.Instance.storageUIOpen)
             || (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen)
-            || HelpScreen.IsOpen || BookReader.IsOpen;
+            || HelpScreen.IsOpen || BookReader.IsOpen || MapScreen.IsOpen;
         if (!GameInput.TouchControls)
         {
             if (Input.GetKeyDown(KeyCode.Tab) && !windows) SetFreeMouse(!freeMouse);
@@ -42,7 +43,7 @@ public class PcControls : MonoBehaviour
         }
         if (buttons != null)
         {
-            bool show = GameInput.TouchControls == false && !HelpScreen.IsOpen && !BookReader.IsOpen;
+            bool show = GameInput.TouchControls == false && !HelpScreen.IsOpen && !BookReader.IsOpen && !MapScreen.IsOpen;
             if (buttons.activeSelf != show) buttons.SetActive(show);
         }
     }
@@ -99,6 +100,7 @@ public class PcControls : MonoBehaviour
         Add("Crafting  [C]", -436f, () => Press(GameInput.TouchAction.Crafting));
         Add("Menu  [M]", -230f, () => Press(GameInput.TouchAction.Menu));
         Add("Help  [H]", -24f, HelpScreen.Toggle);
+        Add("Map  [N]", -848f, MapScreen.Toggle);
         var hint = UISkin.NewText("Hint", buttons.transform, "Tab: free the mouse to click", 18, new Color(1f, 1f, 1f, 0.6f), TextAnchor.MiddleRight, false);
         UISkin.Place(hint.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-28f, -76f), new Vector2(500f, 26f));
     }
@@ -140,12 +142,25 @@ public class PcControls : MonoBehaviour
             float line = load != null ? ((RectTransform)load.transform).anchoredPosition.y - sr.anchoredPosition.y : 70f;
             float gap = sr.anchoredPosition.y - qr.anchoredPosition.y;
             hr.anchoredPosition = sr.anchoredPosition - new Vector2(0f, line);
-            qr.anchoredPosition = hr.anchoredPosition - new Vector2(0f, gap);
             help.transform.SetSiblingIndex(settings.transform.GetSiblingIndex() + 1);
+            // "Map" under "Help": the island with the player and where to go
+            var mapButton = Instantiate(settings.gameObject, settings.transform.parent);
+            mapButton.name = "MapButton (made in code)";
+            var mapWords = mapButton.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (mapWords != null) mapWords.text = "Map";
+            var mapClick = mapButton.GetComponent<Button>();
+            mapClick.onClick = new Button.ButtonClickedEvent();
+            mapClick.onClick.AddListener(MapScreen.Open);
+            var mr = (RectTransform)mapButton.transform;
+            mr.anchoredPosition = hr.anchoredPosition - new Vector2(0f, line);
+            mapButton.transform.SetSiblingIndex(help.transform.GetSiblingIndex() + 1);
+            qr.anchoredPosition = mr.anchoredPosition - new Vector2(0f, gap);
             return;
         }
         // (a menu without those words: a small button at the top)
         var pill = UISkin.NewButton("HelpButton (made in code)", menu.transform, UISkin.Pill, new Color(0.42f, 0.33f, 0.24f, 0.95f), "Help", 34, Color.white, HelpScreen.Open);
         UISkin.Place((RectTransform)pill.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -40f), new Vector2(260f, 76f));
+        var mapPill = UISkin.NewButton("MapButton (made in code)", menu.transform, UISkin.Pill, new Color(0.42f, 0.33f, 0.24f, 0.95f), "Map", 34, Color.white, MapScreen.Open);
+        UISkin.Place((RectTransform)mapPill.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -126f), new Vector2(260f, 76f));
     }
 }

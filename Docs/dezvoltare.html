@@ -21,6 +21,7 @@
 </header>
 
 <nav class="top"><div class="inner">
+  <span class="langs"><a class="on" href="dezvoltare.html">RO</a><a href="developer-en.html" onclick="this.href='developer-en.html'+location.hash">EN</a></span>
   <a href="#scena">Scena</a>
   <a href="#unelte">Meniul Tools</a>
   <a href="#test">Testare rapidă</a>
@@ -48,9 +49,10 @@
     <tr><td><code>River</code></td><td>Punctele râului, lățimea, lacul (centru + rază)</td><td>da; apoi <i>Tools › Nature › 2</i> refă albia</td></tr>
     <tr><td><code>Cave</code></td><td>Drumul tunelului, intrarea cu pietre, minereul, stalactitele, locul călugărului</td><td>da (copiii ei)</td></tr>
     <tr><td><code>StoryStart</code></td><td>Unde și cu fața încotro începe un joc nou</td><td>da</td></tr>
-    <tr><td>Epava</td><td>Bucățile corabiei de pe plajă; pluta din nivelul 9 apare lângă <code>StoryStart</code></td><td>da</td></tr>
+    <tr><td>Epava</td><td>Bucățile corabiei de pe plajă</td><td>da</td></tr>
+    <tr><td><code>BigCroosModel</code></td><td>Crucea veche a fratelui Ioan, pe vârful muntelui mare (unde începe râul), din lemn închis (<code>Materials/OldCrossWood.mat</code>)</td><td>da</td></tr>
   </table></div>
-  <p>La rulare, scriptul <code>Forest</code> creează <code>Forest (made in code)</code> cu toți copacii vii; de departe copacii se desenează ca imagini (billboard-uri), de aproape ca modele (110 m pe telefon, 170 m pe PC).</p>
+  <p>Făcute în cod când rulează jocul (nu în scenă): pădurea vie (<code>Forest (made in code)</code>; de departe copacii se desenează ca imagini, de aproape ca modele: 110 m pe telefon, 170 m pe PC), povestea, iepurii, pârâul-minune al canonului (drumul lui până în mare e găsit pe teren), pluta din nivelul 10 (la gura pârâului nou) și piesele țarcului (perete cu ușă, perete cu fereastră, acoperiș).</p>
 </section>
 
 <section id="unelte">
@@ -62,7 +64,10 @@
     <tr><td><b>Tools › Nature › 2b. Make Cave In The Mountain</b></td><td>Face peștera: tunel lung în coborâre, gura cu pietre, stalactite și stalagmite, ciuperci, 50 de minereuri de fier, locul călugărului.</td></tr>
     <tr><td><b>Tools › Nature › 3. Fill The Island</b></td><td>Umple insula: păduri pe regiuni, plante, iepuri, epava și locul de start.</td></tr>
     <tr><td><b>Tools › Nature › Add 50 More Rabbits</b></td><td>Încă 50 de iepuri, împrăștiați.</td></tr>
-    <tr><td><b>Tools › Nature › Add Hemp Near The Mountain</b></td><td>Pune cânepa (48 de plante în pâlcuri) pe pantele de la poalele muntelui.</td></tr>
+    <tr><td><b>Tools › Nature › Add Hemp Near The Mountain</b></td><td>Pune cânepa (48 de plante în pâlcuri) pe pantele de la poalele muntelui (șterge orice altă cânepă).</td></tr>
+    <tr><td><b>Tools › Nature › Add Hemp (Lake, Mountain, River)</b></td><td>Cânepa peste tot: ~150 în jurul lacului (cea mai multă), 48 la munte, câteva pâlcuri pe malul râului. Grupuri în <code>Enviroment/Vegetation</code>.</td></tr>
+    <tr><td><b>Tools › Nature › 4. Make Snare, Rabbit, Pen And Cross Items</b></td><td>Obiectele canonului cu iconițe: lațul, iepurii vii (mascul / femelă), peretele cu ușă, peretele cu fereastră, acoperișul, crucea.</td></tr>
+    <tr><td><b>Tools › Nature › Make The Map Picture (From Above)</b></td><td>O cameră sus deasupra insulei îi face poza drept în jos (copaci, munți, lac, mare) pentru harta din joc: <code>Resources/UI/IslandMap.png</code>. Rulează-l din nou după ce schimbi insula.</td></tr>
     <tr><td><b>Tools › Nature › Paint The Ground Under The Trees Again</b></td><td>După ce muți sau adaugi păduri: pământ întunecat sub coroane, fără iarbă, cu ferigi și tufe.</td></tr>
     <tr><td><b>Tools › Nature › Remake The Pictures Of The Trees</b></td><td>Refă imaginile de departe ale copacilor.</td></tr>
     <tr><td><b>Tools › Nature › Make Game Icon (The Island)</b></td><td>Fotografiază insula și o pune ca iconiță pentru Android și PC.</td></tr>
@@ -79,8 +84,11 @@
     <ul>
       <li><b>Next level</b> – termini nivelul curent și treci la următorul.</li>
       <li><b>Give items</b> – primești pietre, bețe, fân, un buștean și o ciupercă.</li>
+      <li><b>Give item</b> – orice obiect din joc (din listă), câte 1 sau 5.</li>
+      <li><b>Immortal</b> – nu pierzi viață, hrană sau apă și nimic nu te omoară (rămâne pornit până îl oprești).</li>
     </ul>
     <p>Un joc nou pornește mereu cu inventarul gol (ce e pus în scenă pentru teste se șterge).</p>
+    <p>Toate cele 10 niveluri au fost jucate de un test automat (face ce face un jucător pentru fiecare pas), pe 2026-10-28.</p>
   </div>
 </section>
 
@@ -88,7 +96,7 @@
   <h2>Cum adaugi un nivel nou</h2>
   <div class="card">
     <ol>
-      <li>În <code>Assets/Scripts/Story/StoryManager.cs</code>, în lista <code>Levels</code>, adaugi un <code>new Level { … }</code> <b>înaintea</b> nivelului „THE RAFT” (pluta rămâne ultima). Ai: titlul, rândurile de poveste, pașii, un sfat și textul de final.</li>
+      <li>În <code>Assets/Scripts/Story/StoryManager.cs</code>, în lista <code>LevelsEn</code> (și la fel în <code>LevelsRo</code>, în română), adaugi un <code>new Level { … }</code> <b>înaintea</b> nivelului „THE RAFT” (pluta rămâne ultima, acum nivelul 10). Ai: titlul, rândurile de poveste, pașii, un sfat și textul de final.</li>
       <li>În funcția <code>Status()</code> fiecare nivel are un <code>case</code> cu numărul lui, care spune ce pași sunt gata. Adaugi un <code>case</code> pentru nivelul nou și muți cu 1 numerele nivelurilor de după el (pluta folosește <code>Levels.Length</code>, deci se mută singură).</li>
       <li>Dacă nivelul are nevoie de ceva ținut minte (ca „a citit jurnalul”), adaugi un câmp în <code>StoryData.cs</code>; se salvează automat.</li>
       <li>Ecranul Help citește nivelurile direct din <code>StoryManager</code>, nu trebuie schimbat.</li>
@@ -105,7 +113,12 @@
     <tr><td><code>Scripts/Story/BookReader.cs</code></td><td>Jurnalul Fratelui Ioan și cartea de rugăciuni (alungă umbra)</td></tr>
     <tr><td><code>Scripts/Trees/Forest.cs</code>, <code>TreeSpecies.cs</code></td><td>Copacii vii: tăiere, semințe, creștere, imagini de departe, salvare</td></tr>
     <tr><td><code>Scripts/Vegetation/Vegetation.cs</code>, <code>ScenePlant.cs</code>, <code>GrassPicking.cs</code></td><td>Plantele care se culeg și cresc la loc, fânul din iarbă</td></tr>
-    <tr><td><code>Scripts/Animals/RabbitPopulation.cs</code>, <code>RabbitLife.cs</code></td><td>Iepurii: sex, pui, creștere, fugă, pradă</td></tr>
+    <tr><td><code>Scripts/Animals/RabbitPopulation.cs</code>, <code>RabbitLife.cs</code></td><td>Iepurii: sex, pui (2-5), creștere, fugă, pradă (puii nu dau nimic), luați vii / eliberați, opriți de pereți</td></tr>
+    <tr><td><code>Scripts/Animals/RabbitSnare.cs</code>, <code>SnarePlacing.cs</code></td><td>Lațul: modelul, prinderea, iepurele care se zbate, salvarea; așezarea lațului și a crucii pe pământ</td></tr>
+    <tr><td><code>Scripts/BuildSystem/Buildings.cs</code>, <code>PenDoor.cs</code></td><td>Peretele cu ușă, peretele cu fereastră, acoperișul (făcute în cod), salvarea construcțiilor, ușa care se deschide și lasă iepurii să fugă</td></tr>
+    <tr><td><code>Scripts/Story/CanonCross.cs</code>, <code>Scripts/Island/MiracleStream.cs</code></td><td>Crucea canonului și pârâul-minune (drumul găsit pe teren de pe celălalt munte până în mare; din el se bea)</td></tr>
+    <tr><td><code>Scripts/UI/MapScreen.cs</code>, <code>StatusBarsLayout.cs</code></td><td>Harta (Meniu › Hartă, N): poza insulei de sus, săgeata jucătorului, ținta nivelului; barele mari de viață / hrană / apă (ceasul se ascunde cât e deschisă o fereastră)</td></tr>
+    <tr><td><code>Scripts/Environment/TerrainLook.cs</code>, <code>Resources/Environment/SB_TerrainSnowCommon.cginc</code></td><td>Munții: stâncă pe pantele abrupte (pusă din lateral, fără întindere), pete și straturi de piatră; doar shader-ul, terenul nu se schimbă</td></tr>
     <tr><td><code>Scripts/Island/River.cs</code>, <code>FreshWater.cs</code></td><td>Râul, lacul, băltoacele: unde se poate bea</td></tr>
     <tr><td><code>Scripts/Island/Cave.cs</code></td><td>Peștera: deschisă de la nivelul 5, întunericul care ucide fără torță</td></tr>
     <tr><td><code>Scripts/Items/TorchLight.cs</code></td><td>Torța: lumina, flacăra, cât mai arde</td></tr>
@@ -113,9 +126,9 @@
     <tr><td><code>Scripts/PlayerState.cs</code></td><td>Viață, hrană, apă (1 zi apă, ~3 zile hrană)</td></tr>
     <tr><td><code>Scripts/CraftingSystem.cs</code></td><td>Rețetele (toporul, focul, torța, toporul de fier, frânghia…)</td></tr>
     <tr><td><code>Scripts/UI/PcControls.cs</code>, <code>HelpScreen.cs</code></td><td>Butoanele de pe PC și ecranul Help</td></tr>
-    <tr><td><code>Scripts/Environment/DebugEnvironmentPanel.cs</code>, <code>Scripts/UI/GameSettings.cs</code></td><td>Ecranul Settings: sunete, dificultate, parola de admin și panoul TEST</td></tr>
-    <tr><td><code>SaveManager.cs</code></td><td>Salvarea: copaci, plante, iepuri, poveste, focuri, băltoace, obiecte aruncate, pluta</td></tr>
-    <tr><td><code>Scripts/UI/Lang.cs</code></td><td>Limba (English / Română). Orice text nou se scrie <code>Lang.T("English", "Română")</code>; textele care stau mult pe ecran ascultă <code>Lang.Changed</code>. Alegerea se ține pe telefon (PlayerPrefs <code>SurvivalBD.Language</code>).</td></tr>
+    <tr><td><code>Scripts/Environment/DebugEnvironmentPanel.cs</code>, <code>Scripts/UI/GameSettings.cs</code></td><td>Ecranul Settings: sunete, dificultate, parola de admin și panoul TEST (cu butonul <b>Immortal</b>: nu pierzi viață, hrană, apă)</td></tr>
+    <tr><td><code>SaveManager.cs</code></td><td>Salvarea: copaci, plante, iepuri, poveste, focuri, băltoace, obiecte aruncate, pluta, construcțiile (cu ușile), lațurile</td></tr>
+    <tr><td><code>Scripts/UI/Lang.cs</code>, <code>Scripts/UI/Translations.cs</code></td><td>Limba (English / Română). <code>Translations.cs</code> ține numele românești ale obiectelor, plantelor și butoanelor, descrierile obiectelor, și traduce singur cuvintele din scenă. Orice text nou se scrie <code>Lang.T("English", "Română")</code>; textele care stau mult pe ecran ascultă <code>Lang.Changed</code>. Alegerea se ține pe telefon (PlayerPrefs <code>SurvivalBD.Language</code>).</td></tr>
     <tr><td><code>Scripts/Story/Prayers.cs</code></td><td>Cele 113 rugăciuni ortodoxe oficiale, în engleză și română (folosite de cartea de rugăciuni și de ecranul de încărcare). Surse: <i>Orthodox Daily Prayers</i> (St. Tikhon's, Project Gutenberg), Ceaslovul (doxologia.ro), crestinortodox.ro, Psalmii din Septuaginta (Brenton; bibliaortodoxa.ro), numerotarea ortodoxă (ex. Psalmul 144).</td></tr>
     <tr><td><code>Scripts/UI/LoadingScreen.cs</code></td><td>Ecranul de încărcare: poza salvării pe fundal și o rugăciune scurtă cu roșu</td></tr>
     <tr><td><code>Scripts/Items/DroppedItems.cs</code>, <code>TrashSlot.cs</code>, <code>DragDrop.cs</code></td><td>Aruncarea obiectelor pe jos (tras afară din fereastră) și coșul de gunoi, cu întrebare înainte</td></tr>
@@ -131,6 +144,7 @@
       <li>Pe Android, texturile terenului trebuie să fie ETC2 RGB (fără alfa), altfel pământul de sub păduri pare lucios / verzui.</li>
       <li>Obiectul <code>Enviroment</code> nu e în originea lumii: obiectele noi puse sub el au nevoie de poziții în coordonate de lume.</li>
       <li>Iconița jocului: <code>Assets/ART/Icons/AppIcon.png</code> (și varianta pentru Android, cu fundal separat).</li>
+      <li>În editor (fără Play) terenul folosește shader-ul lui Unity: stânca munților se vede doar când rulează jocul.</li>
     </ul>
   </div>
 </section>

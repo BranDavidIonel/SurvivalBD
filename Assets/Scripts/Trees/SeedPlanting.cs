@@ -50,7 +50,9 @@ public class SeedPlanting : MonoBehaviour
             SelectionManager.Instance.DisableSelection();
             SelectionManager.Instance.enabled = false; // nothing is picked up or opened while planting
         }
-        InventorySystem.Instance.ShowMessage(GameInput.TouchControls ? "Look where to plant it, press Place" : "Look where to plant it and click (X: cancel)");
+        InventorySystem.Instance.ShowMessage(GameInput.TouchControls
+            ? Lang.T("Look where to plant it, press Place", "Privește unde s-o plantezi, apasă Așază")
+            : Lang.T("Look where to plant it and click (X: cancel)", "Privește unde s-o plantezi și apasă (X: anulezi)"));
         Update();
     }
 
@@ -95,7 +97,7 @@ public class SeedPlanting : MonoBehaviour
         if (Time.frameCount > startFrame + 1 && GameInput.PrimaryDown)
         {
             if (valid) Plant();
-            else InventorySystem.Instance.ShowMessage("A tree can't grow here");
+            else InventorySystem.Instance.ShowMessage(Lang.T("A tree can't grow here", "Aici nu poate crește un copac"));
         }
         else if (GameInput.CancelDown)
         {
@@ -112,9 +114,14 @@ public class SeedPlanting : MonoBehaviour
         InventorySystem.Instance.RecalculateList();
         if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
         if (SoundManager.Instance != null) SoundManager.Instance.PlaySound(SoundManager.Instance.dropItemSound);
-        InventorySystem.Instance.ShowMessage("Planted: a little " + TreeSpecies.Get(species).name.ToLowerInvariant() + " will come out soon");
+        string tree = TreeSpecies.Get(species).name;
+        InventorySystem.Instance.ShowMessage(Lang.Ro ? "Plantat: în curând va ieși un " + Translations.Name(tree).ToLowerInvariant() + " mic" : "Planted: a little " + tree.ToLowerInvariant() + " will come out soon");
         End();
+        if (Planted != null) Planted(); // (the story counts the trees planted)
     }
+
+    // a seed was planted
+    public static event System.Action Planted;
 
     public void Cancel()
     {

@@ -268,9 +268,61 @@ half SBSnowMask(float3 worldPos, float3 geomNormal)
     return saturate((v + amount * 0.6 - (1.0 - amount) * 0.9) * 4.0) * slope * above;
 }
 
+// ---------------- the mountains: rock on the steep slopes ---------------- //
+// (TerrainLook.cs gives the rock picture; without it nothing changes)
+
+sampler2D _SB_CliffRock;     // a rock picture (the terrain's rock layer)
+sampler2D _SB_CliffRockNormal; // its bumps
+half _SB_CliffBump;           // how strong (0: no bump picture)
+float _SB_CliffTile;         // metres for one repeat of it (0: off)
+half4 _SB_CliffTint;
+
+// Steep slopes become bare rock, the picture laid on them from the side (no stretching like the ground textures
+// on a cliff), with big light and dark patches and layers of stone so it does not repeat; high up the rock comes
+// out on gentler slopes too. A little large-scale colour variation everywhere breaks the even green.
+void SBCliffs(float3 worldPos, float3 geomNormal, half3 flatNormal, inout half3 albedo, inout half smoothness, inout fixed3 normal)
+{
+    if (_SB_CliffTile <= 0.0) return;
+    half n1 = tex2D(_SB_SnowNoise, worldPos.xz * 0.021).b;
+    half n2 = tex2D(_SB_SnowNoise, worldPos.xz * 0.09).g;
+    half above = worldPos.y - _SB_SnowMinHeight;
+    albedo *= lerp(0.92, 1.07, n1) * lerp(0.96, 1.03, n2);
+
+    // steeper than about 37 degrees: rock (all of it from about 53), with a ragged edge
+    half steep = saturate((0.8 - geomNormal.y + (n1 - 0.5) * 0.22 + (n2 - 0.5) * 0.1) / 0.2);
+    half high = saturate((above - 70.0) / 60.0);
+    steep = saturate(steep + high * saturate((0.94 - geomNormal.y) / 0.16) * lerp(0.25, 0.8, n2)); // (grass stays on some ledges)
+    if (steep < 0.002) return;
+
+    float s = 1.0 / _SB_CliffTile;
+    float3 w = abs(geomNormal);
+    w = w * w * w * w;
+    w /= (w.x + w.y + w.z + 1e-4);
+    half3 rx = tex2D(_SB_CliffRock, worldPos.zy * s).rgb;
+    half3 rz = tex2D(_SB_CliffRock, worldPos.xy * s + 0.37).rgb;
+    half3 ry = tex2D(_SB_CliffRock, worldPos.xz * s + 0.71).rgb;
+    half3 rock = rx * w.x + ry * w.y + rz * w.z;
+    // the same rock five times bigger (big patches) and layers of stone along the height
+    half3 bigRock = tex2D(_SB_CliffRock, float2(worldPos.x + worldPos.z, worldPos.y) * s * 0.19).rgb;
+    half lum = dot(bigRock, half3(0.3, 0.59, 0.11));
+    half strata = sin(worldPos.y * 0.42 + n1 * 7.0 + n2 * 2.0) * 0.5 + 0.5;
+    rock *= (0.5 + 1.0 * lum) * lerp(0.8, 1.14, strata) * lerp(0.88, 1.1, n2);
+    rock *= _SB_CliffTint.rgb;
+
+    albedo = lerp(albedo, rock, steep);
+    smoothness = lerp(smoothness, 0.08, steep);
+    // the bumps of the rock (from the side the cliff faces), instead of the stretched bumps of the ground textures
+    float2 sideUV = w.x > w.z ? worldPos.zy * s : worldPos.xy * s + 0.37;
+    half3 bump = UnpackNormal(tex2D(_SB_CliffRockNormal, w.y > 0.5 ? worldPos.xz * s + 0.71 : sideUV));
+    half3 rockNormal = normalize(flatNormal + half3(bump.x, bump.y, 0.0) * _SB_CliffBump);
+    normal = normalize(lerp(normal, rockNormal, steep));
+}
+
 // flatNormal: the "no bumps" normal in the same space as normal (tangent space: 0,0,1)
 void SBGroundWeather(float3 worldPos, float3 geomNormal, half3 flatNormal, inout half3 albedo, inout half smoothness, inout half metallic, inout fixed3 normal)
 {
+    SBCliffs(worldPos, geomNormal, flatNormal, albedo, smoothness, normal);
+
     // rain: darker, shiny ground (more on flat ground, where water stays)
     half flat = saturate((geomNormal.y - 0.6) / 0.3);
     half wet = _SB_Wetness * (0.45 + 0.55 * flat);
