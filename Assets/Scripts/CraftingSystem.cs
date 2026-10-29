@@ -218,6 +218,11 @@ public class CraftingSystem : MonoBehaviour
         CloneCardInto(constructionScreenUI.transform, "WindowWall", WindowWallBLP, out WindowWallReq1, out WindowWallReq2, out craftWindowWallBTN);
         RoofBLP = NewBlueprint("RoofBLP", "roof", "plank", 3, "hay", 4);
         CloneCardInto(constructionScreenUI.transform, "Roof", RoofBLP, out RoofReq1, out RoofReq2, out craftRoofBTN);
+        // a fenced yard (Fences): plank panels standing on the ground, as many as you want, and a gate
+        FenceBLP = NewBlueprint("FenceBLP", Fences.FenceItem, "plank", 2, "stick", 2);
+        CloneCardInto(constructionScreenUI.transform, "Fence", FenceBLP, out FenceReq1, out FenceReq2, out craftFenceBTN);
+        GateBLP = NewBlueprint("GateBLP", Fences.GateItem, "plank", 2, "rope", 1);
+        CloneCardInto(constructionScreenUI.transform, "FenceGate", GateBLP, out GateReq1, out GateReq2, out craftGateBTN);
         // the cross of Brother Ioan's canon (level 9): 5 planks
         CrossBLP = NewBlueprint("CrossBLP", "cross", "plank", 5, "", 0);
         CloneCardInto(constructionScreenUI.transform, "Cross", CrossBLP, out CrossReq1, out CrossReq2, out craftCrossBTN);
@@ -235,10 +240,12 @@ public class CraftingSystem : MonoBehaviour
 
     // ---------------- recipes added in code (their cards are copies of the scene's cards) ---------------- //
 
-    public Blueprint IronAxeBLP, RopeBLP, SnareBLP, DoorWallBLP, WindowWallBLP, RoofBLP, CrossBLP;
+    public Blueprint IronAxeBLP, RopeBLP, SnareBLP, DoorWallBLP, WindowWallBLP, RoofBLP, CrossBLP, FenceBLP, GateBLP;
     Text IronAxeReq1, IronAxeReq2, RopeReq1, RopeReq2, SnareReq1, SnareReq2;
     Text DoorWallReq1, DoorWallReq2, WindowWallReq1, WindowWallReq2, RoofReq1, RoofReq2, CrossReq1, CrossReq2;
+    Text FenceReq1, FenceReq2, GateReq1, GateReq2;
     Button craftIronAxeBTN, craftRopeBTN, craftSnareBTN, craftDoorWallBTN, craftWindowWallBTN, craftRoofBTN, craftCrossBTN;
+    Button craftFenceBTN, craftGateBTN;
 
     // a new card on any screen: a copy of the axe card (it has two requirement lines)
     void CloneCardInto(Transform screen, string name, Blueprint blueprint, out Text req1, out Text req2, out Button button)
@@ -463,6 +470,8 @@ public class CraftingSystem : MonoBehaviour
         if (WindowWallReq1 != null) RefreshCard(WindowWallBLP, WindowWallReq1, WindowWallReq2, craftWindowWallBTN);
         if (RoofReq1 != null) RefreshCard(RoofBLP, RoofReq1, RoofReq2, craftRoofBTN);
         if (CrossReq1 != null) RefreshCard(CrossBLP, CrossReq1, CrossReq2, craftCrossBTN);
+        if (FenceReq1 != null) RefreshCard(FenceBLP, FenceReq1, FenceReq2, craftFenceBTN);
+        if (GateReq1 != null) RefreshCard(GateBLP, GateReq1, GateReq2, craftGateBTN);
     }
 
     // "Stone  2 / 3" in red until there is enough, then green; the Craft button greys out when it can't craft

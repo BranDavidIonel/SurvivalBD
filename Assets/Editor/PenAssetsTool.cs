@@ -37,6 +37,12 @@ public static class PenAssetsTool
             use = "Use it, then look at a wall's place on a foundation.", model = () => Buildings.Create(Buildings.WindowWallModel), view = Quaternion.Euler(-10f, 55f, 0f) },
         new Def { item = "roof", name = "Roof", description = "Planks with a thick layer of hay on top.",
             use = "Use it, then look at the top of a foundation's walls.", model = () => Buildings.Create(Buildings.RoofModel), view = Quaternion.Euler(-38f, 35f, 0f) },
+        new Def { item = Fences.FenceItem, name = "Fence", description = "A fence panel of planks, 4 m long.",
+            use = "Use it and look where it goes: next to the end of another fence it goes on from there. Make a yard as big as you want for rabbits and close it with a gate.",
+            model = () => Fences.Create(BuildingKind.Fence, Vector3.zero, 0f, Fences.Length, false), view = Quaternion.Euler(-14f, 60f, 0f) },
+        new Def { item = Fences.GateItem, name = "Gate", description = "A fence panel with a gate that opens.",
+            use = "Use it to put it in the fence. Look at the gate and click to open or shut it: open, the rabbits leave the yard.",
+            model = () => Fences.Create(BuildingKind.FenceGate, Vector3.zero, 0f, Fences.Length, false), view = Quaternion.Euler(-14f, 60f, 0f) },
         new Def { item = "cross", name = "Cross", description = "A cross of five planks, like the one Brother Ioan raised.",
             use = "Brother Ioan's canon: raise it last, on the top of the other mountain (Menu > Map).", model = CanonCross.BuildModel, view = Quaternion.Euler(-6f, 20f, 0f) },
     };

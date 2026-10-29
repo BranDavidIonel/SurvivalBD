@@ -46,14 +46,16 @@ public class GameWindowsLayout : MonoBehaviour
     bool phone;
     float slot, gap, pad, titleHeight, infoHeight, closeSize, windowGap;
     int titleFont, textFont, smallFont;
-    const float TopLimit = 262f; // the windows stay under the clock and the day line at the top of the screen
+    // the windows stay under the health / food / water bars at the top of the screen (the clock and the day line hide
+    // while a window is open: ClockHider); 262 = under the clock, before the bars are laid out
+    static float TopLimit => float.IsNaN(StatusBarsLayout.BottomInCanvas) ? 262f : Mathf.Clamp(StatusBarsLayout.BottomInCanvas - 16f, 200f, 420f);
 
     RectTransform canvasRect;
     Sprite stone, closeSprite;
 
     RectTransform inventoryWindow, storageWindow, campfireWindow, deletionAlert, pickupPopup;
     RectTransform[] craftingScreens;
-    Vector2 inventorySize, craftingSize, storageSize, campfireSize;
+    Vector2 inventorySize, craftingSize, constructionSize, storageSize, campfireSize;
     float campfireScale = 1f;
     GameObject infoHint;
     GameObject itemInfo;
@@ -277,14 +279,17 @@ public class GameWindowsLayout : MonoBehaviour
             (RectTransform)crafting.constructionScreenUI.transform,
         };
         craftingSize = new Vector2(phone ? 700f : 560f, Mathf.Max(inventorySize.y, phone ? 520f : 420f));
+        // Construction has 8 cards (the fence and the gate too): a wider window, 4 cards in a row
+        constructionSize = new Vector2(phone ? 1010f : 840f, Mathf.Max(craftingSize.y, phone ? 790f : 650f));
         string[] titles = { "Crafting", "Tools", "Survival", "Refine & Process", "Construction" };
 
         for (int i = 0; i < craftingScreens.Length; i++)
         {
             var screen = craftingScreens[i];
-            SetupWindow(screen, craftingSize, 1f);
+            var size = i == 4 ? constructionSize : craftingSize;
+            SetupWindow(screen, size, 1f);
             var oldTitle = screen.Find("Text (Legacy)");
-            AddTitle(screen, oldTitle != null ? oldTitle.GetComponent<Text>() : null, titles[i], craftingSize);
+            AddTitle(screen, oldTitle != null ? oldTitle.GetComponent<Text>() : null, titles[i], size);
             AddClose(screen, () => { if (CraftingSystem.Instance.isOpen) CraftingSystem.Instance.CloseUI(); });
             if (i > 0) AddBack(screen, () => CraftingSystem.Instance.ShowCategories());
         }
@@ -331,29 +336,37 @@ public class GameWindowsLayout : MonoBehaviour
             }
         }
 
-        LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe" }, new[] { "Stone Axe", "Torch", "Iron Axe" });
-        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare" }, new[] { "Campfire", "Storage Box", "Snare" });
-        LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" });
-        LayoutCards(craftingScreens[4], new[] { "Foundation", "Wall", "DoorWall", "WindowWall", "Roof", "Cross" },
-            new[] { "Foundation", "Wall", "Door Wall", "Window Wall", "Roof", "Cross" });
+        LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe" }, new[] { "Stone Axe", "Torch", "Iron Axe" },
+            new[] { "Chops trees, hunts rabbits", "Light in the dark and the cave", "Any tree in 3 blows" }, craftingSize);
+        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare" }, new[] { "Campfire", "Storage Box", "Snare" },
+            new[] { "Warmth, light, cooking; the shadow fears it", "Keeps your things", "Catches a rabbit alive" }, craftingSize);
+        LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" },
+            new[] { "For buildings, the cross and the raft", "For the raft and the gate" }, craftingSize);
+        LayoutCards(craftingScreens[4], new[] { "Fence", "FenceGate", "Foundation", "Wall", "DoorWall", "WindowWall", "Roof", "Cross" },
+            new[] { "Fence", "Gate", "Foundation", "Wall", "Door Wall", "Window Wall", "Roof", "Cross" },
+            new[] { "A yard of any size for rabbits", "The way into your yard", "The floor of a house", "A wall on a foundation",
+                    "A wall with a door", "A wall with a window", "Covers a house", "The canon's cross, raised last" }, constructionSize);
 
         crafting.RefreshNeededItems();
     }
 
-    void LayoutCards(RectTransform screen, string[] names, string[] titles)
+    void LayoutCards(RectTransform screen, string[] names, string[] titles, string[] purposes, Vector2 size)
     {
         int n = names.Length;
         // more than 3 cards (Construction): two rows of smaller cards
-        int rows = n > 3 ? 2 : 1;
+        int rows = n > 4 ? 2 : 1;
         int perRow = (n + rows - 1) / rows;
         bool compact = rows > 1;
-        float cardWidth = Mathf.Min(phone ? 300f : 240f, (craftingSize.x - 2f * pad - (perRow - 1) * gap) / perRow);
-        float areaTop = craftingSize.y * 0.5f - titleHeight - 6f;
-        float areaBottom = -craftingSize.y * 0.5f + pad;
+        float cardWidth = Mathf.Min(phone ? 300f : 240f, (size.x - 2f * pad - (perRow - 1) * gap) / perRow);
+        float areaTop = size.y * 0.5f - titleHeight - 6f;
+        float areaBottom = -size.y * 0.5f + pad;
         float cardHeight = (areaTop - areaBottom - (rows - 1) * gap) / rows;
-        float iconSize = compact ? (phone ? 58f : 44f) : (phone ? 120f : 92f);
+        float iconSize = compact ? (phone ? 70f : 54f) : (phone ? 120f : 92f);
         float nameHeight = textFont * (compact ? 1.3f : 1.6f);
         float reqHeight = smallFont * (compact ? 1.3f : 1.6f);
+        int purposeFont = smallFont - 2;
+        float purposeHeight = purposeFont * 2.5f; // two lines
+        float buttonHeight = phone ? 76f : 56f;
 
         for (int i = 0; i < n; i++)
         {
@@ -373,10 +386,18 @@ public class GameWindowsLayout : MonoBehaviour
                 image.color = Color.white;
             }
 
-            // a card with many lines (the raft) gets a smaller picture and tighter lines
+            // a card with many lines (the raft) gets tighter lines
             bool many = card.Find("req3") != null;
-            float cardIcon = many ? iconSize * 0.6f : iconSize;
             float lineHeight = many ? reqHeight * 0.86f : reqHeight;
+            int reqs = 0;
+            foreach (var reqName in new[] { "req1", "req2", "req3", "req4", "req5" })
+            {
+                var r = card.Find(reqName);
+                if (r != null && r.gameObject.activeSelf) reqs++;
+            }
+            // the picture gets what is left of the card (everything else must fit)
+            float rest = 18f + 8f + nameHeight + 4f + purposeHeight + 4f + reqs * (lineHeight + 2f) + 6f + buttonHeight + 16f;
+            float cardIcon = Mathf.Clamp(cardHeight - rest, 30f, many ? iconSize * 0.6f : iconSize);
             float y = -18f;
             var icon = card.Find("Image") as RectTransform;
             if (icon != null)
@@ -390,19 +411,36 @@ public class GameWindowsLayout : MonoBehaviour
             var name = card.Find("Text") as RectTransform;
             if (name != null)
             {
-                UISkin.Place(name, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 16f, nameHeight));
+                UISkin.Place(name, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 12f, nameHeight));
                 var text = name.GetComponent<Text>();
-                UISkin.Style(text, textFont + 2, UISkin.Gold, TextAnchor.MiddleCenter);
-                if (text != null) text.text = titles[i];
+                UISkin.Style(text, textFont + (compact ? 0 : 2), UISkin.Gold, TextAnchor.MiddleCenter);
+                if (text != null) { text.text = titles[i]; text.verticalOverflow = VerticalWrapMode.Truncate; text.resizeTextForBestFit = true; text.resizeTextMinSize = textFont - 6; text.resizeTextMaxSize = text.fontSize; }
             }
-            y -= nameHeight + 8f;
+            y -= nameHeight + 4f;
+
+            // what it is for (a short line; SceneTexts puts it in Romanian)
+            var purpose = card.Find("Purpose") as RectTransform;
+            if (purpose == null) purpose = UISkin.NewText("Purpose", card, "", purposeFont, UISkin.TextColor, TextAnchor.UpperCenter, false).rectTransform;
+            UISkin.Place(purpose, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 14f, purposeHeight));
+            var purposeText = purpose.GetComponent<Text>();
+            UISkin.Style(purposeText, purposeFont, new Color(UISkin.TextColor.r, UISkin.TextColor.g, UISkin.TextColor.b, 0.82f), TextAnchor.UpperCenter, false);
+            purposeText.text = i < purposes.Length ? purposes[i] : "";
+            purposeText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            purposeText.verticalOverflow = VerticalWrapMode.Truncate;
+            purposeText.resizeTextForBestFit = true;
+            purposeText.resizeTextMinSize = Mathf.Max(10, purposeFont - 6);
+            purposeText.resizeTextMaxSize = purposeFont;
+            purposeText.raycastTarget = false;
+            y -= purposeHeight + 4f;
 
             foreach (var reqName in new[] { "req1", "req2", "req3", "req4", "req5" })
             {
                 var req = card.Find(reqName) as RectTransform;
                 if (req == null) continue;
-                UISkin.Place(req, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 16f, lineHeight));
-                UISkin.Style(req.GetComponent<Text>(), many ? smallFont : smallFont + 2, UISkin.TextColor, TextAnchor.MiddleCenter);
+                UISkin.Place(req, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(cardWidth - 12f, lineHeight));
+                var reqText = req.GetComponent<Text>();
+                UISkin.Style(reqText, many ? smallFont : smallFont + (compact ? 0 : 2), UISkin.TextColor, TextAnchor.MiddleCenter);
+                if (reqText != null) { reqText.verticalOverflow = VerticalWrapMode.Truncate; reqText.resizeTextForBestFit = true; reqText.resizeTextMinSize = smallFont - 6; reqText.resizeTextMaxSize = reqText.fontSize; }
                 y -= lineHeight + 2f;
             }
 
@@ -410,7 +448,7 @@ public class GameWindowsLayout : MonoBehaviour
             if (craft != null)
             {
                 UISkin.Place(craft, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 16f),
-                    new Vector2(cardWidth - 36f, phone ? 76f : 56f));
+                    new Vector2(cardWidth - (compact ? 24f : 36f), buttonHeight));
                 var craftImage = craft.GetComponent<Image>();
                 if (craftImage != null)
                 {
@@ -615,7 +653,7 @@ public class GameWindowsLayout : MonoBehaviour
         {
             foreach (var screen in craftingScreens)
             {
-                if (screen != null && screen.gameObject.activeSelf) { right = screen; rightSize = craftingSize; break; }
+                if (screen != null && screen.gameObject.activeSelf) { right = screen; rightSize = screen == craftingScreens[4] ? constructionSize : craftingSize; break; }
             }
         }
         if (right == null && storageWindow != null && storageWindow.gameObject.activeSelf) { right = storageWindow; rightSize = storageSize; }

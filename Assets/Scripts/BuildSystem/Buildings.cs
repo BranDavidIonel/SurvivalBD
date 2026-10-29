@@ -8,7 +8,8 @@ using UnityEngine;
 //    walls (its place is a "roof ghost" every foundation gets when it is built).
 //  - walls, door walls (with the door shut) and window walls stop the rabbits; rabbits walk on the foundations
 //  - the save keeps every built piece and whether the doors are open (before, a loaded game had no buildings).
-public enum BuildingKind { Foundation, Wall, DoorWall, WindowWall, Roof }
+//  - Fence and FenceGate (Fences.cs): panels standing on the ground, no foundation: a yard of any size
+public enum BuildingKind { Foundation, Wall, DoorWall, WindowWall, Roof, Fence, FenceGate }
 
 public static class Buildings
 {
@@ -91,20 +92,88 @@ public static class Buildings
         new Vector3(-1f, 0f, 0f), new Vector3(-0.7071f, 0f, -0.7071f), new Vector3(0f, 0f, -1f), new Vector3(0.7071f, 0f, -0.7071f),
     };
 
-    // Inside a pen: walls all around (looking in 8 directions, at least 7 meet a wall: an open doorway lets one through).
-    // Outside, next to a pen, at most half of the directions meet it.
-    public static bool IsEnclosed(Vector3 p, float reach = 22f)
+    // Inside a pen or a fenced yard: walls / fence all around (looking in 8 directions, at least 7 meet one: an open
+    // doorway or gate lets one through). Outside, next to a pen, at most half of the directions meet it.
+    // Worked out on the map (the walls and panels as lines seen from above), not with rays at one height: in a big
+    // yard on a slope a ray from a rabbit went under the fence on the higher side, or into the hill.
+    // doorsShut: count open doors and gates as shut (is the yard closed at all?).
+    public static bool IsEnclosed(Vector3 p, float reach = 45f, bool doorsShut = false)
     {
-        if (BuildingPiece.All.Count == 0 || !AnyNear(p, 6f)) return false;
-        Vector3 from = p + Vector3.up * 0.6f;
+        if (BuildingPiece.All.Count == 0) return false;
+        var lines = Lines(p, reach + 6f, doorsShut);
+        if (lines.Count < 2) return false;
         int walls = 0;
         for (int k = 0; k < Around.Length; k++)
         {
-            int n = Physics.RaycastNonAlloc(from, Around[k], hits, reach, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            for (int i = 0; i < n; i++) if (IsBlocking(hits[i].collider)) { walls++; break; }
+            Vector2 o = new Vector2(p.x, p.z), d = new Vector2(Around[k].x, Around[k].z);
+            foreach (var l in lines) if (RayMeets(o, d, reach, l.a, l.b)) { walls++; break; }
             if (walls + (Around.Length - 1 - k) < 7) return false; // can't reach 7 any more
         }
         return walls >= 7;
+    }
+
+    // Closed all around, with no gap at all (a missing panel, an open door): in 24 directions every look meets a
+    // wall, a fence panel or a shut door. (IsEnclosed above lets one gap through: it says where a rabbit is.)
+    public static bool IsClosedAll(Vector3 p, float reach = 80f, bool doorsShut = false)
+    {
+        if (BuildingPiece.All.Count == 0) return false;
+        var lines = Lines(p, reach + 6f, doorsShut);
+        if (lines.Count < 3) return false;
+        Vector2 o = new Vector2(p.x, p.z);
+        for (int k = 0; k < 24; k++)
+        {
+            float a = k * Mathf.PI * 2f / 24f;
+            Vector2 d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            bool hit = false;
+            foreach (var l in lines) if (RayMeets(o, d, reach, l.a, l.b)) { hit = true; break; }
+            if (!hit) return false;
+        }
+        return true;
+    }
+
+    static readonly List<(Vector2 a, Vector2 b)> lineList = new List<(Vector2, Vector2)>();
+
+    // the walls and fence panels near p that stop animals, as lines on the map
+    static List<(Vector2 a, Vector2 b)> Lines(Vector3 p, float near, bool doorsShut)
+    {
+        lineList.Clear();
+        foreach (var piece in BuildingPiece.All)
+        {
+            if (piece == null || !piece.BlocksAnimals) continue;
+            var t = piece.transform;
+            Vector3 gap = t.position - p; gap.y = 0f;
+            float half = piece.HalfWidth;
+            if (gap.magnitude > near + half) continue;
+            Vector3 along = t.forward; along.y = 0f;
+            if (along.sqrMagnitude < 0.0001f) continue;
+            along.Normalize();
+            var door = piece.kind == BuildingKind.DoorWall || piece.kind == BuildingKind.FenceGate ? piece.GetComponent<PenDoor>() : null;
+            bool open = door != null && door.IsOpen && !doorsShut;
+            if (!open) { AddLine(t.position, along, -half, half); continue; }
+            // an open doorway: only the wall on its two sides
+            float doorway = piece.kind == BuildingKind.DoorWall ? DoorWidth * 0.5f : half - 0.2f;
+            AddLine(t.position, along, -half, -doorway);
+            AddLine(t.position, along, doorway, half);
+        }
+        return lineList;
+    }
+
+    static void AddLine(Vector3 c, Vector3 along, float from, float to)
+    {
+        Vector3 a = c + along * from, b = c + along * to;
+        lineList.Add((new Vector2(a.x, a.z), new Vector2(b.x, b.z)));
+    }
+
+    // a ray from o along d (length reach) crosses the line a-b
+    static bool RayMeets(Vector2 o, Vector2 d, float reach, Vector2 a, Vector2 b)
+    {
+        Vector2 e = b - a;
+        float den = d.x * e.y - d.y * e.x;
+        if (Mathf.Abs(den) < 1e-6f) return false;
+        Vector2 w = a - o;
+        float t = (w.x * e.y - w.y * e.x) / den;   // along the ray
+        float s = (w.x * d.y - w.y * d.x) / den;   // along the line
+        return t >= 0f && t <= reach && s >= -0.02f && s <= 1.02f;
     }
 
     // ---------------- building (ConstructionManager) ---------------- //
@@ -136,6 +205,22 @@ public static class Buildings
             door.hinge = item.transform.Find("Door");
         }
         if (piece.kind == BuildingKind.Foundation) AddRoofGhost(item.transform);
+    }
+
+    // FencePlacing / a loaded game: a fence panel or a gate stands
+    public static void OnPlaced(GameObject item, BuildingKind kind, float length)
+    {
+        if (item == null) return;
+        var piece = item.GetComponent<BuildingPiece>();
+        if (piece == null) piece = item.AddComponent<BuildingPiece>();
+        piece.kind = kind;
+        piece.length = length;
+        foreach (var c in item.GetComponentsInChildren<Collider>(true)) c.enabled = true;
+        if (kind == BuildingKind.FenceGate && item.GetComponent<PenDoor>() == null)
+        {
+            var door = item.AddComponent<PenDoor>();
+            door.hinge = item.transform.Find("Door");
+        }
     }
 
     static BuildingKind KindOf(string model)
@@ -211,6 +296,7 @@ public static class Buildings
                 rotation = piece.transform.eulerAngles,
                 open = door != null && door.IsOpen,
                 openSide = door != null ? door.Side : 1,
+                length = piece.length,
             });
         }
         return data;
@@ -226,6 +312,18 @@ public static class Buildings
         foreach (var d in data.pieces)
         {
             var kind = (BuildingKind)d.kind;
+            if (Fences.IsFence(kind))
+            {
+                // a fence panel or a gate: made again on the ground where it stood
+                float length = d.length > 0f ? d.length : Fences.Length;
+                var fence = Fences.Create(kind, d.position, d.rotation.y, length, true);
+                fence.transform.SetParent(parent, true);
+                fence.tag = "placedWall";
+                OnPlaced(fence, kind, length);
+                var gate = fence.GetComponent<PenDoor>();
+                if (gate != null && d.open) gate.SetOpen(true, d.openSide);
+                continue;
+            }
             string model = ModelOf(kind);
             GameObject go;
             if (IsCodeModel(model)) go = Create(model);
@@ -629,9 +727,14 @@ public class BuildingPiece : MonoBehaviour
 {
     public static readonly List<BuildingPiece> All = new List<BuildingPiece>();
     public BuildingKind kind;
+    public float length;   // a fence panel: how long it is (the walls are 5 m)
 
-    // walls stop the rabbits (a door wall only with its door shut: the open door turns away from the doorway)
-    public bool BlocksAnimals => kind == BuildingKind.Wall || kind == BuildingKind.DoorWall || kind == BuildingKind.WindowWall;
+    // walls and fences stop the rabbits (a door wall or a gate only when shut: the open door turns away from the doorway)
+    public bool BlocksAnimals => kind == BuildingKind.Wall || kind == BuildingKind.DoorWall || kind == BuildingKind.WindowWall
+        || kind == BuildingKind.Fence || kind == BuildingKind.FenceGate;
+
+    // half of its width along its forward axis (walls: 5 m; fence panels: their length)
+    public float HalfWidth => Fences.IsFence(kind) ? Mathf.Max(0.5f, length) * 0.5f : 2.5f;
 
     void OnEnable() { if (!All.Contains(this)) All.Add(this); }
     void OnDisable() { All.Remove(this); }
@@ -655,4 +758,5 @@ public class BuildingData
     public Vector3 rotation;
     public bool open;         // a door: open
     public int openSide = 1;  // which way it opened
+    public float length;      // a fence panel's length (0: the usual)
 }

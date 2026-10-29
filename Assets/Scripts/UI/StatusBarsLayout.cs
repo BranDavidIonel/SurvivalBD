@@ -4,13 +4,22 @@ using UnityEngine.UI;
 
 // The health, food and water bars at the top of the screen were very small (hard to read, mostly on the phone).
 // Made bigger here, in code (the scene is not edited): one under the other, each with its name and value in big
-// letters ("Health 100 / 100", "Food 1800 / 2500", "Water 87%"); the day line and the clock move down under them.
+// letters ("Health 100 / 100", "Food 1800 / 2500", "Water 87%"); the day line and the clock move under them.
+// They sit at the very top edge, in the middle, between the buttons (Inventory, Crafting, Menu at the top right; on
+// the PC Help and Map at the top left); on a narrow screen where they would touch those buttons, just under them.
+// Laid out again when the screen changes size (a PC window, the editor's phone simulator).
 // Called by GameWindowsLayout when the game scene starts.
 public static class StatusBarsLayout
 {
+    static bool phoneLayout;
+    // the bottom of the three bars, in the game canvas' units from its middle (NaN: not laid out yet): the windows stay under it
+    public static float BottomInCanvas = float.NaN;
+    static readonly List<(RectTransform bar, Text counter)> bars = new List<(RectTransform, Text)>();
+
     public static void Apply(bool phone)
     {
-        var bars = new List<(RectTransform bar, Text counter)>();
+        phoneLayout = phone;
+        bars.Clear();
         var health = Object.FindObjectOfType<HealthBar>();
         var food = Object.FindObjectOfType<CaloriesBar>();
         var water = Object.FindObjectOfType<HydrationBar>();
@@ -23,22 +32,7 @@ public static class StatusBarsLayout
         canvas = canvas.rootCanvas;
         float s = canvas.transform.lossyScale.y; // world units of one canvas unit (1920 x 1080 reference)
 
-        // where they are now: the top of the group, and its middle
-        float top = float.MinValue, left = float.MaxValue, right = float.MinValue;
-        var corners = new Vector3[4];
-        foreach (var b in bars)
-        {
-            b.bar.GetWorldCorners(corners);
-            top = Mathf.Max(top, corners[1].y);
-            left = Mathf.Min(left, corners[0].x);
-            right = Mathf.Max(right, corners[2].x);
-        }
-        // a little below the top edge of the screen
-        float screenTop = ((RectTransform)canvas.transform).rect.yMax * s + canvas.transform.position.y;
-        top = Mathf.Min(top, screenTop - 10f * s);
-        float centerX = (left + right) * 0.5f;
-
-        float width = phone ? 500f : 430f, height = phone ? 38f : 30f, gap = phone ? 7f : 6f;
+        float width = phone ? 500f : 430f, height = phone ? 38f : 30f;
         for (int i = 0; i < bars.Count; i++)
         {
             var bar = bars[i].bar;
@@ -46,8 +40,6 @@ public static class StatusBarsLayout
             bar.pivot = new Vector2(0.5f, 0.5f);
             Vector3 scale = bar.lossyScale;
             bar.sizeDelta = new Vector2(width * s / Mathf.Max(0.0001f, scale.x), height * s / Mathf.Max(0.0001f, scale.y));
-            bar.position = new Vector3(centerX, top - (height * 0.5f + i * (height + gap)) * s, bar.position.z);
-
             // the colour fills the whole bar (it was a thin strip in the middle), on a dark see-through background
             var slider = bar.GetComponent<Slider>();
             if (slider != null && slider.fillRect != null)
@@ -109,32 +101,94 @@ public static class StatusBarsLayout
             }
         }
 
-        // the day line and the clock: under the bars (they were just below the small ones)
+        Place();
+        var canvasObject = canvas.gameObject;
+        // (lower now, they would cover the titles of the windows: hidden while a window is open)
+        if (canvasObject.GetComponent<ClockHider>() == null) canvasObject.AddComponent<ClockHider>();
+        // laid out again when the screen size changes
+        if (canvasObject.GetComponent<StatusBarsWatcher>() == null) canvasObject.AddComponent<StatusBarsWatcher>();
+    }
+
+    // where the bars, the day line and the clock go for the screen as it is now
+    public static void Place()
+    {
+        if (bars.Count == 0 || bars[0].bar == null) return;
+        var canvas = bars[0].bar.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        canvas = canvas.rootCanvas;
+        var canvasRect = (RectTransform)canvas.transform;
+        float s = canvas.transform.lossyScale.y;
+        if (s <= 0f) return;
+        float width = phoneLayout ? 500f : 430f, height = phoneLayout ? 38f : 30f, gap = phoneLayout ? 7f : 6f;
+
+        // the top edge of the screen, in the middle; the buttons: the last ~700 units on the right (Inventory,
+        // Crafting, Menu), on the PC also the first ~470 on the left (Help, Map)
+        float canvasWidth = canvasRect.rect.width;
+        float centreX = canvasRect.position.x;
+        float screenTop = canvasRect.rect.yMax * s + canvasRect.position.y;
+        float left = canvasWidth * 0.5f - width * 0.5f, right = canvasWidth * 0.5f + width * 0.5f;
+        bool roomAtTop = right <= canvasWidth - 710f && left >= (phoneLayout ? 10f : 480f);
+        float top = screenTop - (roomAtTop ? 14f : 122f) * s;
+
+        for (int i = 0; i < bars.Count; i++)
+        {
+            var bar = bars[i].bar;
+            if (bar == null) continue;
+            bar.position = new Vector3(centreX, top - (height * 0.5f + i * (height + gap)) * s, bar.position.z);
+            var text = bars[i].counter;
+            if (text != null && !text.rectTransform.IsChildOf(bar)) text.rectTransform.position = bar.position;
+        }
+
+        // the day line and the clock: just under the bars (the ones in the same column)
         float bottom = top - (bars.Count * (height + gap)) * s;
+        BottomInCanvas = (bottom - canvasRect.position.y) / s;
         var below = new List<RectTransform>();
         if (TimeManager.Instance != null && TimeManager.Instance.dayUI != null) below.Add(TimeManager.Instance.dayUI.rectTransform);
         if (DayNightSystem.Instance != null && DayNightSystem.Instance.timeUI != null) below.Add(DayNightSystem.Instance.timeUI.rectTransform);
-        float overlap = 0f;
+        var corners = new Vector3[4];
+        float textTop = float.MinValue;
+        var column = new List<RectTransform>();
         foreach (var r in below)
         {
+            if (r == null || column.Contains(r)) continue;
             r.GetWorldCorners(corners);
-            float textTop = corners[1].y;
-            // only text that sits under the bars (in the same column)
-            if (corners[2].x < left - 200f * s || corners[0].x > right + 200f * s) continue;
-            overlap = Mathf.Max(overlap, textTop - (bottom - 4f * s));
+            float mid = (corners[0].x + corners[2].x) * 0.5f;
+            if (Mathf.Abs(mid - centreX) > 450f * s) continue;
+            column.Add(r);
+            textTop = Mathf.Max(textTop, corners[1].y);
         }
-        if (overlap > 0f)
+        if (column.Count == 0) return;
+        float shift = (bottom - 2f * s) - textTop;
+        if (Mathf.Abs(shift) < 0.5f * s) return;
+        foreach (var r in column)
         {
-            var moved = new HashSet<RectTransform>();
-            foreach (var r in below)
-            {
-                if (moved.Contains(r)) continue;
-                moved.Add(r);
-                r.position += Vector3.down * overlap;
-            }
+            r.position += Vector3.up * shift;
+            // in the middle under the bars
+            r.GetWorldCorners(corners);
+            r.position += Vector3.right * (centreX - (corners[0].x + corners[2].x) * 0.5f);
         }
-        // (lower now, they would cover the titles of the windows: hidden while a window is open)
-        if (canvas.GetComponent<ClockHider>() == null) canvas.gameObject.AddComponent<ClockHider>();
+    }
+}
+
+// Lays the bars out again when the screen changes size (StatusBarsLayout.Place).
+public class StatusBarsWatcher : MonoBehaviour
+{
+    int width, height;
+    float canvasWidth, timer;
+
+    void LateUpdate()
+    {
+        timer -= Time.unscaledDeltaTime;
+        if (timer > 0f) return;
+        timer = 0.5f;
+        // (the canvas can change width without the screen: NarrowScreenFit on a narrow screen)
+        var canvas = GetComponent<Canvas>();
+        float w = canvas != null ? ((RectTransform)canvas.rootCanvas.transform).rect.width : 0f;
+        if (Screen.width == width && Screen.height == height && Mathf.Abs(w - canvasWidth) < 1f) return;
+        width = Screen.width;
+        height = Screen.height;
+        canvasWidth = w;
+        StatusBarsLayout.Place();
     }
 }
 

@@ -14,7 +14,7 @@ public class ForestTree : MonoBehaviour
     TreeSpecies.Info species;
     Transform model;
     Renderer[] renderers;
-    BoxCollider trunk;
+    CapsuleCollider trunk;
     ChoppableTree choppable;
     float appliedHeight = -1f;
     float widthFactor = 1f;
@@ -28,7 +28,9 @@ public class ForestTree : MonoBehaviour
     public TreeSpecies.Info Species => species;
     public Transform Model => model;
     public float WidthFactor => widthFactor;
-    public float TrunkRadius => Mathf.Max(0.22f, species.trunkPerMetre * data.height);
+    // as thick as the model's trunk (measured from its bark: Forest.MeasureTrunk), else the species' guess
+    public float TrunkRadius => Mathf.Max(0.22f, data.height * (variant != null && variant.trunkRatio > 0f
+        ? variant.trunkRatio * widthFactor * species.widthScale : species.trunkPerMetre));
     public float CrownRadius => variant.crownRatio * data.height * widthFactor * species.widthScale;
     public float Sink => Mathf.Min(0.25f, 0.02f * data.height);
 
@@ -59,7 +61,8 @@ public class ForestTree : MonoBehaviour
         forest.PrepareModel(model.gameObject, data.species);
         renderers = model.GetComponentsInChildren<Renderer>(true);
 
-        trunk = gameObject.AddComponent<BoxCollider>();
+        trunk = gameObject.AddComponent<CapsuleCollider>(); // round like the trunk (a box stuck out at its corners)
+        trunk.direction = 1;
         choppable = gameObject.AddComponent<ChoppableTree>();
         choppable.caloriesSpentChoppingWood = 20f;
 
@@ -97,9 +100,9 @@ public class ForestTree : MonoBehaviour
         model.localScale = new Vector3(variant.prefabScale.x * wide, variant.prefabScale.y * k, variant.prefabScale.z * wide);
         model.localPosition = new Vector3(0f, -variant.baseOffset * k - Sink, 0f);
 
-        float width = Mathf.Max(0.45f, TrunkRadius * 2f);
-        trunk.size = new Vector3(width, h * 0.92f, width);
-        trunk.center = new Vector3(0f, h * 0.46f, 0f);
+        trunk.radius = Mathf.Max(0.22f, TrunkRadius);
+        trunk.height = Mathf.Max(trunk.radius * 2f, h * 0.92f);
+        trunk.center = new Vector3(0f, trunk.height * 0.5f, 0f);
 
         int hits = TreeSpecies.Hits(h);
         bool untouched = choppable.treeHealth >= choppable.treeMaxHealth || choppable.treeMaxHealth <= 0f;

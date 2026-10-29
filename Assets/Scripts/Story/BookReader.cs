@@ -34,6 +34,7 @@ public class BookReader : MonoBehaviour
     {
         new Page("The journal of Brother Ioan", "In the year of our Lord 1894, the third day of the Great Fast.\n\nThe fishermen left me on this island, as I asked them. Here I will live in silence and prayer, far from the noise of the world."),
         new Page("The fortieth day", "The island is good to me. The river gives me water, the forest gives me mushrooms and berries, the oaks give me acorns.\n\nI keep a small fire and I pray the hours, as I did in the monastery."),
+        new Page("The paths", "Every day I walk the same ways, and the ways have become paths: from the shore where the fishermen left me to the lake, to my cave in the mountain, up the other mountain and down to the northern shore.\n\nWhoever comes after me will not lose his way."),
         new Page("At night", "Something walks between the trees at night. A shadow, tall and thin, with eyes like two cold stars.\n\nIt comes when the fire goes out. It waits at the edge of the light. I am afraid."),
         new Page("I have understood", "The shadow did not come with the night. It came with me.\n\nIt is made of my fears, of my sins, of all the darkness I carried here in my heart. The fire keeps it away from the body. Only prayer keeps it away from the soul."),
         new Page("Every man has one", "When I say the prayers, it cannot come near me. When I forget them, it comes back and waits.\n\nEvery man carries such a shadow. Most of them never see it. On this island, it can be seen."),
@@ -44,6 +45,7 @@ public class BookReader : MonoBehaviour
     {
         new Page("Jurnalul Fratelui Ioan", "În anul Domnului 1894, a treia zi a Postului Mare.\n\nPescarii m-au lăsat pe insula aceasta, așa cum i-am rugat. Aici voi trăi în liniște și rugăciune, departe de zgomotul lumii."),
         new Page("A patruzecea zi", "Insula e bună cu mine. Râul îmi dă apă, pădurea îmi dă ciuperci și fructe, stejarii îmi dau ghinde.\n\nȚin un foc mic și citesc Ceasurile, ca la mănăstire."),
+        new Page("Potecile", "În fiecare zi umblu pe aceleași drumuri, iar drumurile s-au făcut poteci: de la țărmul unde m-au lăsat pescarii până la lac, la peștera mea din munte, sus pe celălalt munte și jos, la țărmul de miazănoapte.\n\nCine vine după mine nu se va rătăci."),
         new Page("Noaptea", "Ceva umblă printre copaci noaptea. O umbră, înaltă și slabă, cu ochii ca două stele reci.\n\nVine când se stinge focul. Așteaptă la marginea luminii. Mi-e frică."),
         new Page("Am înțeles", "Umbra n-a venit odată cu noaptea. A venit odată cu mine.\n\nE făcută din fricile mele, din păcatele mele, din tot întunericul pe care l-am adus aici în inima mea. Focul o ține departe de trup. Numai rugăciunea o ține departe de suflet."),
         new Page("Fiecare om are una", "Când spun rugăciunile, nu se poate apropia de mine. Când le uit, se întoarce și așteaptă.\n\nFiecare om poartă o asemenea umbră. Cei mai mulți n-o văd niciodată. Pe insula aceasta, se vede."),

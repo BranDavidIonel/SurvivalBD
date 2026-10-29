@@ -5,7 +5,6 @@ using UnityEngine;
 // A tree the axe can chop. The trees of the forests (ForestTree on the same object) shake and fall over in code;
 // an old birch (Tree_Parent) shakes with its Animator and leaves a ChoppedTree (they are turned into forest trees
 // when the game starts, this is kept for safety).
-[RequireComponent(typeof(BoxCollider))]
 public class ChoppableTree : MonoBehaviour
 {
 

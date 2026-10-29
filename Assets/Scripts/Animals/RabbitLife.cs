@@ -39,6 +39,9 @@ public class RabbitLife : MonoBehaviour
     public bool ReadyToMate => Alive && IsAdult && restHours <= 0f && !Expecting && caughtIn == null;
     public bool Active { get; private set; } = true;
     public bool IsLeaving => path != null && pathIndex < path.Length;
+    // its drawn parts (RabbitPopulation hides the far ones; looked up once, not twice a second for every rabbit)
+    public SkinnedMeshRenderer[] Renderers => renderers != null ? renderers : (renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true));
+    SkinnedMeshRenderer[] renderers;
 
     public void Setup(RabbitInfo.Sex sex, float ageHours, Vector3 adultScale)
     {

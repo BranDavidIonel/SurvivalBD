@@ -17,7 +17,7 @@ using UnityEngine.UI;
 //   Level 7  The prayer          at night, when the shadow comes, open the prayer book: it flees
 //   Level 8  Iron                10 iron ore from the cave + a log -> the iron axe (any tree in 3 blows)
 //   Level 9  Brother Ioan's canon  snares -> a male and a female rabbit alive -> a pen (foundation, walls, door wall,
-//                                roof) -> 5 rabbits in it, door shut -> plant 10 trees -> the cross (5 planks), raised
+//                                roof) -> a male and a female let go in it -> plant 10 trees -> the cross (5 planks), raised
 //                                last on the top of the other mountain: the miracle, a new stream to the sea
 //   Level 10 The raft (the last) hemp -> ropes; logs, planks, sticks, hay, cooked meat, rabbit hides and 2 live rabbits
 //                                brought to the raft where the new stream meets the sea (many trips) -> it slides into
@@ -77,13 +77,14 @@ public class StoryManager : MonoBehaviour
             {
                 "My mouth is dry and the sea water is salty.",
                 "I need fresh water. A river must come down from the mountain... maybe to the lake I saw.",
+                "Near the beach there is an old path, trodden by someone long ago. Maybe it leads to water.",
             },
             steps = new[]
             {
                 "Find fresh water: the river or the lake",
                 "Drink (look down at the water: Drink water)",
             },
-            hint = "The river comes down from the mountain into the lake. The sea is salty: never drink it. After rain, puddles are fresh water too.",
+            hint = "Follow the old path from the beach: it leads to the lake. The sea is salty: never drink it. After rain, puddles are fresh water too.",
             done = "Cold, clear water. I must remember where the river and the lake are.",
         },
         new Level
@@ -135,7 +136,7 @@ public class StoryManager : MonoBehaviour
                 "Explore the mountain",
                 "Find what the falling rocks opened",
             },
-            hint = "Look around the slopes of the mountain: a column of light shines where the rocks fell.",
+            hint = "The old path goes on from the lake to the mountain. A column of light shines where the rocks fell.",
             done = "A cave! It is pitch dark in there, and something moves in the dark. I won't go in without light.",
         },
         new Level
@@ -205,13 +206,13 @@ public class StoryManager : MonoBehaviour
             steps = new[]
             {
                 "Catch a male and a female rabbit alive (snare: Crafting > Survival)",
-                "Build a pen: foundation, walls, door wall, roof (Construction)",
-                "Shut them in the pen and wait: 5 rabbits in the pen",
+                "Build a pen: a fence all around with a gate (Construction)",
+                "Let the male and the female go inside the pen",
                 "Plant 10 trees (seeds from under the trees)",
                 "Make the cross (Crafting > Construction: 5 planks)",
                 "Last: raise the cross on the other mountain (Menu > Map)",
             },
-            hint = "Empty hands take a caught rabbit alive, the axe kills it. Shut the pen's door: an open door lets them all out! Babies give nothing. The cross goes up last.",
+            hint = "Empty hands take a caught rabbit alive, the axe kills it. In the pen, use the live rabbit from the inventory to let it go; with the gate shut they stay and multiply. The cross goes up last: Brother Ioan's path climbs the other mountain.",
             done = "Water springs from the rock under the cross and runs down to the sea! Now I understand where the other river came from: Brother Ioan raised a cross there too. He was a saint... and now I feel that I am protected as well.",
         },
         // the last level: keep it the last one (new levels go before it)
@@ -274,13 +275,14 @@ public class StoryManager : MonoBehaviour
             {
                 "Gura mi s-a uscat, iar apa mării e sărată.",
                 "Am nevoie de apă dulce. Din munte trebuie să coboare un râu... poate spre lacul pe care l-am văzut.",
+                "Lângă plajă e o potecă veche, bătătorită de cineva demult. Poate duce la apă.",
             },
             steps = new[]
             {
                 "Găsește apă dulce: râul sau lacul",
                 "Bea (privește în jos, la apă: Drink water)",
             },
-            hint = "Râul coboară din munte în lac. Marea e sărată: nu bea niciodată din ea. După ploaie, și băltoacele sunt apă bună de băut.",
+            hint = "Urmează poteca veche de la plajă: duce la lac. Marea e sărată: nu bea niciodată din ea. După ploaie, și băltoacele sunt apă bună de băut.",
             done = "Apă rece și limpede. Trebuie să țin minte unde sunt râul și lacul.",
         },
         new Level
@@ -332,7 +334,7 @@ public class StoryManager : MonoBehaviour
                 "Explorează muntele",
                 "Găsește ce au deschis pietrele căzute",
             },
-            hint = "Caută pe pantele muntelui: o coloană de lumină strălucește acolo unde au căzut pietrele.",
+            hint = "Poteca veche merge de la lac până la munte. O coloană de lumină strălucește acolo unde au căzut pietrele.",
             done = "O peșteră! Înăuntru e beznă și ceva se mișcă în întuneric. Nu intru fără lumină.",
         },
         new Level
@@ -402,13 +404,13 @@ public class StoryManager : MonoBehaviour
             steps = new[]
             {
                 "Prinde vii un iepure mascul și o femelă (laț: Meșteșuguri > Supraviețuire)",
-                "Construiește un țarc: fundație, pereți, perete cu ușă, acoperiș (Construcții)",
-                "Închide-i în țarc și așteaptă: 5 iepuri în țarc",
+                "Fă un țarc: gard de jur împrejur cu o poartă (Construcții)",
+                "Lasă masculul și femela liberi în țarc",
                 "Plantează 10 copaci (semințe de sub copaci)",
                 "Fă crucea (Meșteșuguri > Construcții: 5 scânduri)",
                 "La sfârșit: înalță crucea pe celălalt munte (Meniu > Hartă)",
             },
-            hint = "Cu mâinile goale iei viu iepurele prins, cu toporul îl omori. Închide ușa țarcului: deschisă, îi lasă pe toți să fugă! Puii nu dau nimic. Crucea se pune ultima.",
+            hint = "Cu mâinile goale iei viu iepurele prins, cu toporul îl omori. În țarc, folosește iepurele viu din inventar ca să-i dai drumul; cu poarta închisă rămân acolo și se înmulțesc. Crucea se pune ultima: poteca fratelui Ioan urcă pe celălalt munte.",
             done = "Din stâncă, de sub cruce, izvorăște apă și curge până în mare! Acum înțeleg de unde a apărut celălalt râu: și acolo fratele Ioan a înălțat o cruce. A fost un sfânt... și acum simt că și eu voi fi ocrotit.",
         },
         new Level
@@ -722,15 +724,14 @@ public class StoryManager : MonoBehaviour
             case 9:
             {
                 // Brother Ioan's canon: rabbits in a pen, trees, and last the cross on the other mountain
-                int penned = PennedRabbits();
                 s[5] = data.crossPlaced;
                 s[4] = s[5] || Count("cross") > 0;
                 s[3] = data.treesPlanted >= CanonTrees;
-                s[2] = penned >= CanonRabbits;
+                s[2] = PairInPen();
                 s[1] = s[2] || PenBuilt();
                 bool male = data.caughtMale || Count(RabbitPopulation.LiveMale) > 0;
                 bool female = data.caughtFemale || Count(RabbitPopulation.LiveFemale) > 0;
-                s[0] = s[2] || (male && female) || penned >= 2;
+                s[0] = s[2] || (male && female);
                 break;
             }
             case 10:
@@ -750,38 +751,40 @@ public class StoryManager : MonoBehaviour
         return s;
     }
 
-    // a pen: a foundation, at least 4 walls (one with a door) and a roof
+    // a pen: a fenced yard with a gate (Fences), or a house: a foundation, at least 4 walls (one with a door) and a roof
     static bool PenBuilt()
     {
+        if (Buildings.Count(BuildingKind.FenceGate) > 0 && Fences.YardBuilt()) return true;
         int walls = Buildings.Count(BuildingKind.Wall) + Buildings.Count(BuildingKind.DoorWall) + Buildings.Count(BuildingKind.WindowWall);
         return Buildings.Count(BuildingKind.Foundation) > 0 && Buildings.Count(BuildingKind.DoorWall) > 0 && walls >= 4
             && Buildings.Count(BuildingKind.Roof) > 0;
     }
 
-    public const int CanonRabbits = 5, CanonTrees = 10;
+    public const int CanonTrees = 10;
+    const float PenReach = 45f; // a fenced yard can be big: its rabbits are counted this far from its gate
 
-    // the most rabbits (any age) inside one pen whose doors are shut
-    public static int PennedRabbits()
+    // A grown male and a grown female inside one pen or yard (fenced all round; its gate may be open). Once seen the
+    // goal stays done, even if they go out again.
+    public static bool PairInPen()
     {
         var population = RabbitPopulation.Instance;
-        if (population == null || PenDoor.All.Count == 0) return 0;
-        int most = 0;
+        if (population == null || PenDoor.All.Count == 0) return false;
         foreach (var door in PenDoor.All)
         {
             if (door == null) continue;
             Vector3 c = door.transform.position;
-            if (PenDoor.AnyOpenNear(c, 16f)) continue;
-            int n = 0;
+            bool male = false, female = false;
             foreach (var r in population.Rabbits)
             {
-                if (r == null || !r.Alive || r.caughtIn != null) continue;
+                if (r == null || !r.Alive || r.caughtIn != null || !r.IsAdult) continue;
+                if (r.sex == RabbitInfo.Sex.Male ? male : female) continue;
                 Vector3 d = r.transform.position - c; d.y = 0f;
-                if (d.sqrMagnitude > 16f * 16f || !Buildings.IsEnclosed(r.transform.position)) continue;
-                n++;
+                if (d.sqrMagnitude > PenReach * PenReach || !Buildings.IsClosedAll(r.transform.position, PenReach + 20f, true)) continue;
+                if (r.sex == RabbitInfo.Sex.Male) male = true; else female = true;
+                if (male && female) return true;
             }
-            most = Mathf.Max(most, n);
         }
-        return most;
+        return false;
     }
 
     // the canon: the cross goes up last (when the rabbits, the pen and the trees are done)
@@ -795,7 +798,8 @@ public class StoryManager : MonoBehaviour
         data.crossPlaced = true;
         data.crossPosition = at;
         data.crossYaw = yaw;
-        if (MiracleStream.Instance != null) MiracleStream.Instance.Begin(at, true);
+        // (on the stone below the needle of the top: the water springs from the top above it, into its dug bed)
+        if (MiracleStream.Instance != null) MiracleStream.Instance.Begin(CanonCross.OnTheStone(at) ? MiracleStream.Instance.Summit : at, true);
         ShowToast(Lang.T("Listen... water!", "Ascultă... apă!"), 6f);
     }
 
@@ -826,7 +830,7 @@ public class StoryManager : MonoBehaviour
                 if (MiracleStream.Instance == null) return false;
                 if (CanonReadyForCross && !data.crossPlaced)
                 {
-                    at = MiracleStream.Instance.Summit;
+                    at = CanonCross.Place; // the stone where Brother Ioan's steps end (or the top)
                     label = Lang.T("Raise the cross here", "Înalță crucea aici");
                     return true;
                 }
@@ -911,13 +915,13 @@ public class StoryManager : MonoBehaviour
         var stream = MiracleStream.Instance;
         // a light on the top of the other mountain while the cross is to be raised (canon ready, cross not up yet)
         if (data != null && stream != null && data.level == 9 && crossBeacon == null)
-            crossBeacon = CaveBeacon.Make("Cross beacon (made in code)", stream.Summit, new Color(1f, 0.92f, 0.62f, 1f),
+            crossBeacon = CaveBeacon.Make("Cross beacon (made in code)", CanonCross.Place, new Color(1f, 0.92f, 0.62f, 1f),
                 () => data != null && data.level == 9 && !data.crossPlaced && CanonReadyForCross);
         if (data != null && stream != null && (data.crossPlaced || data.level > 9) && !stream.Flowing)
         {
             Vector3 at = data.crossPlaced ? data.crossPosition : stream.Summit;
             CanonCross.Show(at, data.crossYaw);
-            stream.Begin(at, false);
+            stream.Begin(CanonCross.OnTheStone(at) ? stream.Summit : at, false);
         }
         // the last level: the raft, only started, lies on the beach by the wreck
         if (data != null && data.level == Levels.Length && Raft.Instance == null) Raft.MakeSite(data.raft);
@@ -1022,6 +1026,14 @@ public class StoryManager : MonoBehaviour
         if (inventory != null) inventory.RecalculateList();
         if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
         QuickBarUI.Changed();
+        // the goals were checked once already, with the scene's own test items still in the inventory (the first two
+        // goals of level 1 showed as done in a new game): checked again from nothing
+        if (data != null && data.level == 1)
+        {
+            data.stepsDone = 0;
+            checkTimer = 0.5f;
+            RefreshPanel();
+        }
     }
 
     // ---------------- the intro ---------------- //

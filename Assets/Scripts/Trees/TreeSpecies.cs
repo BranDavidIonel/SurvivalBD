@@ -16,13 +16,13 @@ public static class TreeSpecies
         public float daysToGrowUp;          // a sapling reaches ~95% of its size in this many game days
         public float seedFromHeight;        // only trees this tall drop seeds
         public Vector2 seedEveryHours;      // game hours between two seeds of one tree
-        public Vector2 sproutAfterHours;    // a seed lying on the ground becomes a young tree (2-3 game days)
+        public Vector2 sproutAfterHours;    // a seed lying on the ground becomes a young tree (3-4 game days)
         public Vector2 plantedSproutHours;  // a seed planted by the player comes out sooner
         public string seedItem, seedName;   // inventory item and its name
         public string logItem, logName;
         public int maxLogs;                 // logs from the biggest trees
         public float widthScale;            // crown width compared with the model scaled to the height
-        public float trunkPerMetre;         // trunk radius per metre of height
+        public float trunkPerMetre;         // trunk radius per metre of height (if the model can't be measured: ForestTree)
         public Color barkTint;              // logs and stumps
         public float spacing;               // a seed only grows this far from other trunks (metres)
         public bool deciduous;              // autumn colours, bare in winter
@@ -35,36 +35,36 @@ public static class TreeSpecies
             kind = Kind.Pine, name = "Pine",
             models = new[] { "PineForest/Pine 1", "PineForest/Pine 3", "PineForest/Pine 5" },
             minFull = 30f, maxFull = 40f, daysToGrowUp = 10f, seedFromHeight = 14f,
-            seedEveryHours = new Vector2(12f, 40f), sproutAfterHours = new Vector2(48f, 72f), plantedSproutHours = new Vector2(12f, 20f),
+            seedEveryHours = new Vector2(12f, 40f), sproutAfterHours = new Vector2(72f, 96f), plantedSproutHours = new Vector2(12f, 20f),
             seedItem = "pinecone", seedName = "Pine Cone", logItem = "pinelog", logName = "Pine Log", maxLogs = 5,
-            widthScale = 1f, trunkPerMetre = 0.02f, barkTint = new Color(0.3f, 0.26f, 0.24f), spacing = 3.5f, deciduous = false,
+            widthScale = 1f, trunkPerMetre = 0.025f, barkTint = new Color(0.3f, 0.26f, 0.24f), spacing = 3.5f, deciduous = false,
         },
         new Info
         {
             kind = Kind.Birch, name = "Birch",
             models = new[] { "Forest/Birch 1", "Forest/Birch 2" },
             minFull = 16f, maxFull = 22f, daysToGrowUp = 7f, seedFromHeight = 9f,
-            seedEveryHours = new Vector2(10f, 32f), sproutAfterHours = new Vector2(48f, 72f), plantedSproutHours = new Vector2(12f, 20f),
+            seedEveryHours = new Vector2(10f, 32f), sproutAfterHours = new Vector2(72f, 96f), plantedSproutHours = new Vector2(12f, 20f),
             seedItem = "birchseed", seedName = "Birch Catkin", logItem = "log", logName = "Birch Log", maxLogs = 3,
-            widthScale = 0.8f, trunkPerMetre = 0.016f, barkTint = Color.white, spacing = 3f, deciduous = true,
+            widthScale = 0.8f, trunkPerMetre = 0.028f, barkTint = Color.white, spacing = 3f, deciduous = true,
         },
         new Info
         {
             kind = Kind.Oak, name = "Oak",
             models = new[] { "Forest/Oak 1" },
             minFull = 18f, maxFull = 25f, daysToGrowUp = 14f, seedFromHeight = 11f,
-            seedEveryHours = new Vector2(14f, 40f), sproutAfterHours = new Vector2(48f, 80f), plantedSproutHours = new Vector2(14f, 24f),
+            seedEveryHours = new Vector2(14f, 40f), sproutAfterHours = new Vector2(72f, 96f), plantedSproutHours = new Vector2(14f, 24f),
             seedItem = "acorn", seedName = "Acorn", logItem = "log", logName = "Oak Log", maxLogs = 5,
-            widthScale = 0.75f, trunkPerMetre = 0.032f, barkTint = new Color(0.8f, 0.75f, 0.7f), spacing = 4f, deciduous = true,
+            widthScale = 0.75f, trunkPerMetre = 0.088f, barkTint = new Color(0.8f, 0.75f, 0.7f), spacing = 4f, deciduous = true,
         },
         new Info
         {
             kind = Kind.Beech, name = "Beech",
             models = new[] { "Forest/Beech 1" },
             minFull = 18f, maxFull = 26f, daysToGrowUp = 12f, seedFromHeight = 11f,
-            seedEveryHours = new Vector2(14f, 40f), sproutAfterHours = new Vector2(48f, 80f), plantedSproutHours = new Vector2(14f, 24f),
+            seedEveryHours = new Vector2(14f, 40f), sproutAfterHours = new Vector2(72f, 96f), plantedSproutHours = new Vector2(14f, 24f),
             seedItem = "beechnut", seedName = "Beechnut", logItem = "log", logName = "Beech Log", maxLogs = 4,
-            widthScale = 0.72f, trunkPerMetre = 0.026f, barkTint = new Color(0.85f, 0.83f, 0.8f), spacing = 3.5f, deciduous = true,
+            widthScale = 0.72f, trunkPerMetre = 0.095f, barkTint = new Color(0.85f, 0.83f, 0.8f), spacing = 3.5f, deciduous = true,
         },
     };
 

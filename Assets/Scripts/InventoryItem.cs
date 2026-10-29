@@ -234,6 +234,15 @@ public class InventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 ConstructionManager.Instance.itemToBeDestroyed = gameObject;
                 ConstructionManager.Instance.ActivateConstructionPlacement(Buildings.RoofModel);
                 break;
+            case "fence(Clone)":
+            case "fence":
+            case "fencegate(Clone)":
+            case "fencegate":
+                // a fence panel / a gate: set up where the player looks, joined to the fence already standing
+                itemInfoUI.SetActive(false);
+                if (FencePlacing.Instance != null) FencePlacing.Instance.Begin(gameObject);
+                else gameObject.SetActive(true);
+                break;
             case "snare(Clone)":
             case "snare":
                 // set it on the ground where the player looks (SnarePlacing)

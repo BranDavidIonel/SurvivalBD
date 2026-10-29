@@ -4,9 +4,14 @@ using UnityEngine;
 // The miracle of Brother Ioan's canon (level 9): when the cross is raised on the top of the other mountain, water
 // springs from the rock under it and a new stream runs down to the sea. Fresh water: the player can drink from it.
 // Where it flows into the sea the raft of the last level is built (Raft.MakeSite).
-// Made in code when the game scene loads (EnvironmentBootstrap): the way down is found on the terrain (the cheapest
-// way to the sea, uphill is very expensive, like the river), the water is a strip lying on the ground with the river's
-// own water material. Nothing shows until the cross stands.
+//  - its way down: where water really runs, down the mountain's gullies and along the low ground of the plain to the
+//    sea (Route: every spot drains to its lowest neighbour, hollows fill up and spill over). Worked out in the editor
+//    (Tools > Nature > 5. Brother Ioan's Paths And The Stream Bed), which also dug its bed into the ground (a shallow
+//    stony channel, dry until the miracle) and saved the way in Resources/Environment/MiracleStreamRoute.json; without
+//    that file it is worked out here the same way
+//  - the water lies level across in its bed (it floated as a thin strip on the slopes before), with soft edges under
+//    the banks, white where it falls steeply; it uses the river's water, a little clearer
+// Made in code when the game scene loads (EnvironmentBootstrap). Nothing shows until the cross stands.
 public class MiracleStream : MonoBehaviour
 {
     public static MiracleStream Instance { get; private set; }
@@ -17,6 +22,9 @@ public class MiracleStream : MonoBehaviour
 
     public bool Flowing { get; private set; }
     public IReadOnlyList<Vector3> Points => points; // (the map draws it)
+
+    public const string RouteResource = "Environment/MiracleStreamRoute";
+    public const float SourceWidth = 0.9f, MouthWidth = 2.6f; // half of the water's width at the spring and at the sea
 
     readonly List<Vector3> points = new List<Vector3>();
     readonly List<float> halfWidths = new List<float>();
@@ -52,7 +60,12 @@ public class MiracleStream : MonoBehaviour
     {
         get
         {
-            if (!summitFound) FindSummit();
+            if (!summitFound)
+            {
+                summitFound = true;
+                var cave = Cave.Instance != null ? Cave.Instance : FindObjectOfType<Cave>();
+                summit = FindSummit(Terrain.activeTerrain, River.Instance, cave);
+            }
             return summit;
         }
     }
@@ -61,29 +74,31 @@ public class MiracleStream : MonoBehaviour
     public Vector3 Mouth { get; private set; }
     public Vector3 SeaDirection { get; private set; } = Vector3.forward;
 
-    void FindSummit()
+    public static Vector3 FindSummit(Terrain terrain, River river, Cave cave)
     {
-        summitFound = true;
-        var terrain = Terrain.activeTerrain;
-        if (terrain == null) return;
+        if (terrain == null) return Vector3.zero;
         var data = terrain.terrainData;
         Vector3 tp = terrain.transform.position;
-        Vector3 riverSource = River.Instance != null && River.Instance.points.Count > 0 ? River.Instance.points[0] : new Vector3(1e6f, 0f, 1e6f);
-        Vector3 caveMouth = Cave.Instance != null && Cave.Instance.path.Count > 0 ? Cave.Instance.path[0] : new Vector3(1e6f, 0f, 1e6f);
+        Vector3 riverSource = river != null && river.points.Count > 0 ? river.points[0] : new Vector3(1e6f, 0f, 1e6f);
+        Vector3 caveMouth = cave != null && cave.path.Count > 0 ? cave.path[0] : new Vector3(1e6f, 0f, 1e6f);
         const float cell = 6f;
         int n = Mathf.RoundToInt(data.size.x / cell);
         float best = float.MinValue;
+        Vector3 top = Vector3.zero;
         for (int z = 4; z < n - 4; z++)
             for (int x = 4; x < n - 4; x++)
             {
                 Vector3 p = tp + new Vector3((x + 0.5f) * cell, 0f, (z + 0.5f) * cell);
                 if (Flat(p - riverSource) < 280f || Flat(p - caveMouth) < 120f) continue;
                 float h = terrain.SampleHeight(p) + tp.y;
-                if (h > best) { best = h; summit = new Vector3(p.x, h, p.z); }
+                if (h > best) { best = h; top = new Vector3(p.x, h, p.z); }
             }
+        return top;
     }
 
     static float Flat(Vector3 v) { v.y = 0f; return v.magnitude; }
+
+    public static float HalfWidthAt(float along01) => Mathf.Lerp(SourceWidth, MouthWidth, Mathf.Pow(Mathf.Clamp01(along01), 0.7f));
 
     // ---------------- the water appears ---------------- //
 
@@ -109,13 +124,25 @@ public class MiracleStream : MonoBehaviour
         StartSound();
     }
 
+    // the river's water, a little clearer and lighter (a shallow mountain brook over stones)
     static Material WaterMaterial()
     {
         var river = River.Instance;
         var r = river != null ? river.GetComponent<MeshRenderer>() : null;
-        if (r != null && r.sharedMaterial != null) return r.sharedMaterial;
-        var shader = Shader.Find("SurvivalBD/River");
-        return new Material(shader != null ? shader : Shader.Find("Standard")) { name = "Miracle stream", hideFlags = HideFlags.DontSave };
+        Material m;
+        if (r != null && r.sharedMaterial != null) m = new Material(r.sharedMaterial);
+        else
+        {
+            var shader = Shader.Find("SurvivalBD/River");
+            m = new Material(shader != null ? shader : Shader.Find("Standard"));
+        }
+        m.name = "Miracle stream";
+        m.hideFlags = HideFlags.DontSave;
+        if (m.HasProperty("_Deep")) m.SetColor("_Deep", new Color(0.1f, 0.27f, 0.29f, 1f));
+        if (m.HasProperty("_Shallow")) m.SetColor("_Shallow", new Color(0.3f, 0.45f, 0.38f, 1f));
+        if (m.HasProperty("_Alpha")) m.SetFloat("_Alpha", 0.74f);
+        if (m.HasProperty("_Speed")) m.SetFloat("_Speed", 0.45f);
+        return m;
     }
 
     void Update()
@@ -181,7 +208,34 @@ public class MiracleStream : MonoBehaviour
         return best;
     }
 
+
     // ---------------- the way down ---------------- //
+
+    [System.Serializable]
+    public class RouteData { public List<Vector3> points = new List<Vector3>(); }
+
+    static List<Vector3> savedRoute;
+    static bool savedLoaded;
+
+    // the way worked out in the editor (its bed is dug into the ground along it); null: none saved
+    public static List<Vector3> SavedRoute()
+    {
+        if (!savedLoaded)
+        {
+            savedLoaded = true;
+            var text = Resources.Load<TextAsset>(RouteResource);
+            if (text != null)
+            {
+                var data = JsonUtility.FromJson<RouteData>(text.text);
+                if (data != null && data.points != null && data.points.Count > 3) savedRoute = data.points;
+            }
+        }
+        return savedRoute;
+    }
+
+    public static void ForgetSavedRoute() { savedLoaded = false; savedRoute = null; }
+
+    float[] surfaceY, steepness;
 
     bool FindWay(Vector3 from)
     {
@@ -191,83 +245,33 @@ public class MiracleStream : MonoBehaviour
         var terrain = Terrain.activeTerrain;
         var ocean = Ocean.Instance;
         if (terrain == null || ocean == null) return false;
-        var data = terrain.terrainData;
-        Vector3 tp = terrain.transform.position;
-        float level = ocean.Level;
-        const float cell = 8f;
-        int n = Mathf.RoundToInt(data.size.x / cell);
-        var height = new float[n * n];
-        var blocked = new bool[n * n];
-        var sea = new bool[n * n];
-        var river = River.Instance;
-        for (int z = 0; z < n; z++)
-            for (int x = 0; x < n; x++)
+        List<Vector3> path = null;
+        var saved = SavedRoute();
+        if (saved != null)
+        {
+            // the cross may stand anywhere on the top: from it the water joins the saved way at its nearest point
+            int nearest = -1;
+            float best = 45f;
+            for (int i = 0; i < Mathf.Min(saved.Count, 80); i++)
             {
-                int i = z * n + x;
-                Vector3 p = tp + new Vector3((x + 0.5f) * cell, 0f, (z + 0.5f) * cell);
-                float h = terrain.SampleHeight(p) + tp.y;
-                height[i] = h;
-                sea[i] = h < level + 0.3f && ocean.DistanceFromShore(p) > -2f;
-                // not into the old river or the lake
-                if (river != null && (river.DistanceToWater(p) < 14f || (river.lakeRadius > 0f && Flat(p - river.lakeCentre) < river.lakeRadius + 20f))) blocked[i] = true;
+                float d = Flat(saved[i] - from);
+                if (d < best) { best = d; nearest = i; }
             }
-        int Cell(Vector3 p)
-        {
-            int x = Mathf.Clamp(Mathf.FloorToInt((p.x - tp.x) / cell), 0, n - 1);
-            int z = Mathf.Clamp(Mathf.FloorToInt((p.z - tp.z) / cell), 0, n - 1);
-            return z * n + x;
+            if (nearest >= 0)
+            {
+                path = new List<Vector3>();
+                Vector3 a = new Vector3(from.x, 0f, from.z), b = saved[nearest];
+                int steps = Mathf.Max(1, Mathf.CeilToInt(Flat(b - a) / 2f));
+                for (int s = 0; s < steps; s++) path.Add(Vector3.Lerp(a, new Vector3(b.x, 0f, b.z), (float)s / steps));
+                for (int i = nearest; i < saved.Count; i++) path.Add(saved[i]);
+            }
         }
-        int source = Cell(from);
-        blocked[source] = false;
-        var cost = new float[n * n];
-        var back = new int[n * n];
-        for (int i = 0; i < cost.Length; i++) { cost[i] = float.MaxValue; back[i] = -1; }
-        var heap = new Heap();
-        cost[source] = 0f;
-        heap.Push(0f, source);
-        int target = -1;
-        while (heap.Count > 0)
-        {
-            heap.Pop(out float c, out int i);
-            if (c > cost[i]) continue;
-            if (sea[i]) { target = i; break; }
-            int x = i % n, z = i / n;
-            for (int dz = -1; dz <= 1; dz++)
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    if (dx == 0 && dz == 0) continue;
-                    int nx = x + dx, nz = z + dz;
-                    if (nx < 1 || nz < 1 || nx >= n - 1 || nz >= n - 1) continue;
-                    int j = nz * n + nx;
-                    if (blocked[j]) continue;
-                    float len = (dx != 0 && dz != 0 ? 1.4142f : 1f) * cell;
-                    float wx = tp.x + (nx + 0.5f) * cell, wz = tp.z + (nz + 0.5f) * cell;
-                    float wind = Mathf.PerlinNoise(wx * 0.013f + 41.3f, wz * 0.013f + 3.9f);
-                    float step = len * (1f + 1.1f * wind) + Mathf.Max(0f, height[j] - height[i]) * 90f;
-                    float total2 = c + step;
-                    if (total2 < cost[j]) { cost[j] = total2; back[j] = i; heap.Push(total2, j); }
-                }
-        }
-        if (target < 0) return false;
+        if (path == null) path = Route(from, terrain, ocean, River.Instance);
+        if (path == null || path.Count < 3) return false;
 
-        var cells = new List<Vector3>();
-        for (int i = target; i >= 0; i = back[i]) cells.Add(tp + new Vector3((i % n + 0.5f) * cell, 0f, (i / n + 0.5f) * cell));
-        cells.Reverse();
-        cells[0] = new Vector3(from.x, 0f, from.z);
-        // a little way into the sea
-        Vector3 outDir = cells[cells.Count - 1] - cells[Mathf.Max(0, cells.Count - 4)]; outDir.y = 0f;
-        outDir = outDir.sqrMagnitude > 0.01f ? outDir.normalized : Vector3.forward;
-        cells.Add(cells[cells.Count - 1] + outDir * 12f);
-
-        var path = cells;
-        for (int k = 0; k < 4; k++) path = Chaikin(path);
-        path = Resample(path, 2f);
         // the spring: just below the cross, on the downhill side
-        if (path.Count > 2)
-        {
-            Vector3 down = path[2] - path[0]; down.y = 0f;
-            if (down.sqrMagnitude > 0.01f) path[0] = new Vector3(from.x, 0f, from.z) + down.normalized * 1.6f;
-        }
+        Vector3 down = path[2] - path[0]; down.y = 0f;
+        if (down.sqrMagnitude > 0.01f) path[0] = new Vector3(from.x, 0f, from.z) + down.normalized * 1.6f;
 
         float run = 0f;
         for (int i = 0; i < path.Count; i++)
@@ -278,17 +282,108 @@ public class MiracleStream : MonoBehaviour
         total = Mathf.Max(1f, run);
         for (int i = 0; i < path.Count; i++)
         {
-            float t = lengths[i] / total;
-            halfWidths.Add(Mathf.Lerp(0.7f, 2.4f, Mathf.Pow(t, 0.7f)));
+            halfWidths.Add(HalfWidthAt(lengths[i] / total));
             points.Add(new Vector3(path[i].x, Forest.GroundY(path[i]), path[i].z));
         }
+        float level = ocean.Level;
+        // the water's surface: in its bed, a little over the bottom, never higher than upstream; how steeply it falls
+        int count = points.Count;
+        surfaceY = new float[count];
+        steepness = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            int a0 = Mathf.Max(0, i - 3), a1 = Mathf.Min(count - 1, i + 3);
+            steepness[i] = Mathf.Max(0f, (points[a0].y - points[a1].y) / Mathf.Max(0.1f, lengths[a1] - lengths[a0]));
+            surfaceY[i] = Mathf.Max(points[i].y + 0.3f, level + 0.05f);
+            if (i > 0) surfaceY[i] = Mathf.Min(surfaceY[i], surfaceY[i - 1]);
+        }
         // where it meets the sea: the first point at the water
-        int mouth = points.Count - 1;
-        for (int i = 0; i < points.Count; i++) if (points[i].y < level + 0.2f) { mouth = i; break; }
+        int mouth = count - 1;
+        // (by the shore, not by the height: the flat land is only a little over the sea and the dug bed goes under it)
+        for (int i = 0; i < count; i++) if (ocean.DistanceFromShore(points[i]) > -3f) { mouth = i; break; }
         Mouth = points[Mathf.Max(0, mouth - 1)];
-        Vector3 dir = points[Mathf.Min(points.Count - 1, mouth + 3)] - points[Mathf.Max(0, mouth - 6)]; dir.y = 0f;
-        SeaDirection = dir.sqrMagnitude > 0.01f ? dir.normalized : outDir;
+        Vector3 dir = points[Mathf.Min(count - 1, mouth + 3)] - points[Mathf.Max(0, mouth - 6)]; dir.y = 0f;
+        SeaDirection = dir.sqrMagnitude > 0.01f ? dir.normalized : Vector3.forward;
         return true;
+    }
+
+    // Where water from this spot really runs to the sea (also used by the editor tool that digs the bed).
+    // The sea "fills" the island from its shores, the lowest ground first, so every spot is reached from its lowest
+    // neighbour (hollows fill up to where they spill over): following that back from the spring is the way the water
+    // goes down, along the mountain's gullies. On the flat land a gentle made-up unevenness makes it wind like a brook.
+    // Not into the old river or the lake.
+    public static List<Vector3> Route(Vector3 from, Terrain terrain, Ocean ocean, River river)
+    {
+        if (terrain == null || ocean == null) return null;
+        var data = terrain.terrainData;
+        Vector3 tp = terrain.transform.position;
+        float level = ocean.Level;
+        const float cell = 4f;
+        int n = Mathf.RoundToInt(data.size.x / cell);
+        var h = new float[n * n];
+        var sea = new bool[n * n];
+        var blocked = new bool[n * n];
+        for (int z = 0; z < n; z++)
+            for (int x = 0; x < n; x++)
+            {
+                int i = z * n + x;
+                Vector3 p = tp + new Vector3((x + 0.5f) * cell, 0f, (z + 0.5f) * cell);
+                float g = terrain.SampleHeight(p) + tp.y;
+                float wobble = (Mathf.PerlinNoise(p.x * 0.012f + 17.3f, p.z * 0.012f + 4.1f) - 0.5f) * 0.9f
+                             + (Mathf.PerlinNoise(p.x * 0.041f + 3.7f, p.z * 0.041f + 9.2f) - 0.5f) * 0.35f;
+                h[i] = g + wobble;
+                sea[i] = g < level + 0.3f && ocean.DistanceFromShore(p) > -2f;
+                if (river != null && (river.DistanceToWater(p) < 16f || (river.lakeRadius > 0f && Flat(p - river.lakeCentre) < river.lakeRadius + 24f)))
+                    blocked[i] = true;
+            }
+        int CellOf(Vector3 p)
+        {
+            int x = Mathf.Clamp(Mathf.FloorToInt((p.x - tp.x) / cell), 0, n - 1);
+            int z = Mathf.Clamp(Mathf.FloorToInt((p.z - tp.z) / cell), 0, n - 1);
+            return z * n + x;
+        }
+        int source = CellOf(from);
+        blocked[source] = false;
+        var downTo = new int[n * n];
+        var seen = new bool[n * n];
+        var heap = new Heap();
+        for (int i = 0; i < sea.Length; i++) if (sea[i]) { seen[i] = true; downTo[i] = -1; heap.Push(h[i], i); }
+        while (heap.Count > 0)
+        {
+            heap.Pop(out float f, out int i);
+            int x = i % n, z = i / n;
+            for (int dz = -1; dz <= 1; dz++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (dx == 0 && dz == 0) continue;
+                    int nx = x + dx, nz = z + dz;
+                    if (nx < 1 || nz < 1 || nx >= n - 1 || nz >= n - 1) continue;
+                    int j = nz * n + nx;
+                    if (seen[j] || blocked[j]) continue;
+                    seen[j] = true;
+                    downTo[j] = i;
+                    heap.Push(Mathf.Max(h[j], f + 0.002f), j);
+                }
+        }
+        if (!seen[source]) return null;
+        var cells = new List<Vector3>();
+        for (int i = source, guard = 0; i >= 0 && guard < n * 4; guard++)
+        {
+            cells.Add(tp + new Vector3((i % n + 0.5f) * cell, 0f, (i / n + 0.5f) * cell));
+            if (sea[i]) break;
+            i = downTo[i];
+        }
+        if (cells.Count < 2) return null;
+        cells[0] = new Vector3(from.x, 0f, from.z);
+        // a little way into the sea
+        Vector3 outDir = cells[cells.Count - 1] - cells[Mathf.Max(0, cells.Count - 4)]; outDir.y = 0f;
+        outDir = outDir.sqrMagnitude > 0.01f ? outDir.normalized : Vector3.forward;
+        cells.Add(cells[cells.Count - 1] + outDir * 12f);
+        var path = cells;
+        for (int k = 0; k < 4; k++) path = Chaikin(path);
+        path = Resample(path, 2f);
+        for (int i = 0; i < path.Count; i++) path[i] = new Vector3(path[i].x, terrain.SampleHeight(path[i]) + tp.y, path[i].z);
+        return path;
     }
 
     static List<Vector3> Chaikin(List<Vector3> p)
@@ -326,11 +421,12 @@ public class MiracleStream : MonoBehaviour
 
     // ---------------- the water's mesh ---------------- //
 
-    // a strip on the ground (5 points across, each on the ground), only as far as the water has come
+    // A strip of 7 points across, only as far as the water has come. In its bed the water lies level across (it goes
+    // a little under the banks, with soft edges); where it falls steeply it follows the rock, narrower and white.
     void BuildMesh()
     {
-        if (mesh == null || points.Count < 2) return;
-        const int across = 5;
+        if (mesh == null || points.Count < 2 || surfaceY == null) return;
+        const int across = 7;
         float level = Ocean.Instance != null ? Ocean.Instance.Level : -1000f;
         var v = new List<Vector3>();
         var uv = new List<Vector2>();
@@ -342,20 +438,24 @@ public class MiracleStream : MonoBehaviour
         {
             if (lengths[i] > revealed + 2f) break;
             Vector3 side = Side(i);
-            int a0 = Mathf.Max(0, i - 5), a1 = Mathf.Min(points.Count - 1, i + 5);
-            float speed = Mathf.Clamp((points[a0].y - points[a1].y) / Mathf.Max(0.1f, lengths[a1] - lengths[a0]) * 2.5f, 0f, 0.6f); // (less white foam on the steep rock)
+            float steep = steepness[i];
+            bool falling = steep > 0.42f;
+            float reach = halfWidths[i] * (falling ? 0.72f : 1f) + (falling ? 0.25f : 0.9f);
+            float fast = falling ? 0.8f : Mathf.Clamp(steep * 1.5f, 0.06f, 0.5f);
             float fade = Mathf.Clamp01(lengths[i] / 3f)
                 * (lengths[i] > mouthFade ? 1f - Mathf.Clamp01((lengths[i] - mouthFade) / 14f) : 1f)
                 * Mathf.Clamp01((revealed - lengths[i]) / 6f + 0.35f); // the front of the new water
             for (int k = 0; k < across; k++)
             {
                 float u = (float)k / (across - 1);
-                Vector3 p = points[i] + side * halfWidths[i] * (u * 2f - 1f);
-                p.y = Mathf.Max(Forest.GroundY(p) + 0.13f, level + 0.05f);
+                Vector3 p = points[i] + side * reach * (u * 2f - 1f);
+                float g = Forest.GroundY(p);
+                p.y = falling ? g + 0.14f : Mathf.Min(surfaceY[i], g + 0.24f);
+                p.y = Mathf.Max(p.y, level + 0.05f);
                 v.Add(p);
                 uv.Add(new Vector2(u, lengths[i] / 8f));
-                float edge = k == 0 || k == across - 1 ? 0.75f : 1f;
-                col.Add(new Color(speed, 0f, 0f, fade * edge));
+                float edge = k == 0 || k == across - 1 ? 0f : (k == 1 || k == across - 2 ? 0.8f : 1f);
+                col.Add(new Color(fast, 0f, 0f, fade * edge));
             }
             if (rows > 0)
             {
@@ -386,7 +486,7 @@ public class MiracleStream : MonoBehaviour
     }
 
     // a small binary heap (cost, cell)
-    class Heap
+    public class Heap
     {
         readonly List<float> keys = new List<float>();
         readonly List<int> values = new List<int>();

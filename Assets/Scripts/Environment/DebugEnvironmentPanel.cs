@@ -628,6 +628,7 @@ public class DebugEnvironmentPanel : MonoBehaviour
         { "journal", "Old Journal" }, { "prayerbook", "Prayer Book" },
         { "snare", "Snare" }, { "rabbitmale", "Rabbit (male, alive)" }, { "rabbitfemale", "Rabbit (female, alive)" },
         { "doorwall", "Door Wall" }, { "windowwall", "Window Wall" }, { "roof", "Roof" }, { "cross", "Cross" },
+        { "fence", "Fence" }, { "fencegate", "Gate" },
     };
 
     void GiveItem(int index, int amount)

@@ -92,7 +92,7 @@ public class SnarePlacing : MonoBehaviour
         Vector3 flat = p - player; flat.y = 0f;
         if (flat.magnitude > maxDistance) p = player + flat.normalized * maxDistance;
         if (flat.magnitude < 1.5f) p = player + (flat.sqrMagnitude > 0.01f ? flat.normalized : Vector3.forward) * 1.5f;
-        p.y = Buildings.GroundAt(p);
+        p.y = Mathf.Max(Buildings.GroundAt(p), IoanSteps.SurfaceAt(p)); // (also on Brother Ioan's steps and the stone for the cross)
         spot = p;
         // the loop faces the player (the rabbit runs into it from the side); the cross faces the player
         Vector3 face = flat.sqrMagnitude > 0.01f ? flat : Vector3.forward;

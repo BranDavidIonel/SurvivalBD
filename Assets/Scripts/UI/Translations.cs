@@ -66,6 +66,17 @@ public static class Translations
         { "Point at an item to see what it is.\nRight click: use it / put it in the quick bar.  Drag: move it.",
           "Du mouse-ul pe un obiect ca să vezi ce e.\nClic dreapta: îl folosești / îl pui în bara rapidă.  Trage: îl muți." },
         { "Campfire ", "Foc de tabără" },
+        // the fenced yard
+        { "Fence", "Gard" }, { "Gate", "Poartă" }, { "Fence Gate", "Poartă" }, { "Fence gate", "Poartă" },
+        // what each thing is for (the crafting cards)
+        { "Chops trees, hunts rabbits", "Taie copaci, vânează iepuri" }, { "Light in the dark and the cave", "Lumină în întuneric și în peșteră" },
+        { "Any tree in 3 blows", "Orice copac din 3 lovituri" }, { "Warmth, light, cooking; the shadow fears it", "Căldură, lumină, gătit; umbra se teme de el" },
+        { "Keeps your things", "Îți păstrează lucrurile" }, { "Catches a rabbit alive", "Prinde un iepure viu" },
+        { "For buildings, the cross and the raft", "Pentru construcții, cruce și plută" }, { "For the raft and the gate", "Pentru plută și poartă" },
+        { "A yard of any size for rabbits", "O curte de orice mărime pentru iepuri" }, { "The way into your yard", "Intrarea în curtea ta" },
+        { "The floor of a house", "Podeaua unei case" }, { "A wall on a foundation", "Un perete pe o fundație" },
+        { "A wall with a door", "Un perete cu ușă" }, { "A wall with a window", "Un perete cu fereastră" },
+        { "Covers a house", "Acoperă o casă" }, { "The canon's cross, raised last", "Crucea canonului, înălțată la sfârșit" },
     };
 
     // the words are looked up as one line with single spaces (the scene writes some of them on two lines)
@@ -113,6 +124,8 @@ public static class Translations
         { "birchseed", new[] { "Mâțișor de mesteacăn", "Plin de semințe mici. Mâțișorii căzuți cresc mesteceni noi.", "Folosește-l (dublu tap / clic dreapta) ca să plantezi un mesteacăn în fața ta." } },
         { "chicory", new[] { "Cicoare", "O plantă cu flori albastre. Bună împotriva slăbiciunii.", "Mănâncă: +8 viață, +4 apă." } },
         { "cross", new[] { "Cruce", "O cruce din cinci scânduri, ca aceea înălțată de fratele Ioan.", "Canonul fratelui Ioan: înalț-o la sfârșit, pe vârful celuilalt munte (Meniu > Hartă)." } },
+        { "fence", new[] { "Gard", "Un panou de gard din scânduri, de 4 m.", "Folosește-l și privește unde vine: lângă capătul altui gard continuă de acolo. Fă o curte cât vrei de mare pentru iepuri și închide-o cu o poartă." } },
+        { "fencegate", new[] { "Poartă", "Un panou de gard cu o poartă care se deschide.", "Folosește-o ca s-o pui în gard. Privește poarta și apasă ca s-o deschizi sau s-o închizi: deschisă, iepurii ies din curte." } },
         { "doorwall", new[] { "Perete cu ușă", "Un perete cu o ușă de scânduri, prinsă în balamale de frânghie.", "Folosește-l, apoi privește locul unui perete pe o fundație. Privește ușa și apasă ca s-o deschizi sau s-o închizi." } },
         { "fieldmushroom", new[] { "Ciupercă de câmp", "O ciupercă mică și cenușie, de pe solul pădurii.", "Mănâncă: +10 viață, +150 hrană." } },
         { "foundation", new[] { "Fundație", "Baza unei case sau a unui țarc: pe ea pui pereții și acoperișul.", "Folosește-o ca s-o așezi pe pământ (sau lângă altă fundație)." } },

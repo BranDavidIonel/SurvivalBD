@@ -29,6 +29,13 @@ public class SelectionManager : MonoBehaviour
     {
         onTargetSelectItem = false;
         interaction_text = interaction_Info_UI.GetComponent<Text>();
+        // the hand (something to take, open or use): a little bigger, orange, in its own shape (it was squeezed square)
+        if (handIcon != null)
+        {
+            handIcon.preserveAspect = true;
+            handIcon.color = new Color(1f, 0.58f, 0.12f, 1f);
+            handIcon.rectTransform.localScale = new Vector3(0.42f, 0.42f, 1f);
+        }
     }
     private void Awake()
     {
@@ -178,9 +185,9 @@ public class SelectionManager : MonoBehaviour
                     }                    
 
                 }
-                else if (rabbit != null && rabbit.caughtIn != null && !EquipSystem.Instance.IsHoldingWeapon())
+                else if (rabbit != null && (rabbit.caughtIn != null || RabbitPopulation.InPen(rabbit)) && !EquipSystem.Instance.IsHoldingWeapon())
                 {
-                    // a rabbit in a snare, empty hands: take it alive
+                    // a rabbit in a snare or a grown one in a pen, empty hands: take it alive
                     onTargetSelectItem = true;
                     interaction_Info_UI.SetActive(true);
                     interaction_text.text = rabbit.sex == RabbitInfo.Sex.Female
@@ -265,8 +272,9 @@ public class SelectionManager : MonoBehaviour
         if (raft != null && !raft.IsBoarded)
         {
             Vector3 at = raft.transform.position;
-            var box = raft.InWater ? new Bounds(at + Vector3.up * 1.9f, new Vector3(4.8f, 4.8f, 4.8f))
-                                   : new Bounds(at + Vector3.up * 0.4f, new Vector3(4.8f, 1.8f, 4.8f));
+            float s = Raft.Size; // (the model is shown bigger)
+            var box = raft.InWater ? new Bounds(at + Vector3.up * 1.9f * s, new Vector3(5.2f, 4.8f, 5.2f) * s)
+                                   : new Bounds(at + Vector3.up * 0.4f * s, new Vector3(5.2f, 1.2f, 5.2f) * s); // (low: the eyes of a player beside it stay over it)
             if (box.IntersectRay(ray, out float distance) && distance < (raft.InWater ? 14f : 8f))
             {
                 can = true;

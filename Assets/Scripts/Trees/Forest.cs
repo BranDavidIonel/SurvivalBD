@@ -49,6 +49,7 @@ public class Forest : MonoBehaviour
         public float nativeHeight, baseOffset;
         public Vector3 prefabScale;
         public float crownRatio;         // crown radius / height
+        public float trunkRatio;         // the model's trunk radius (at the height of the player's eyes) / height
         public Material billboard;       // the far away picture (null: not made yet)
         public Vector4 bbRatios;         // the picture's width, height and bottom, per metre of tree height
         public readonly List<ForestTree> trees = new List<ForestTree>();
@@ -93,6 +94,7 @@ public class Forest : MonoBehaviour
                 nativeHeight = height,
                 baseOffset = 0f,
                 crownRatio = Mathf.Max(bounds.size.x * scale.x, bounds.size.z * scale.z) * 0.5f / height,
+                trunkRatio = MeasureTrunk(prefab, filter, height),
                 billboard = Resources.Load<Material>("Forest/Billboards/" + name),
             };
             if (v.billboard != null)
@@ -104,6 +106,37 @@ public class Forest : MonoBehaviour
             list.Add(v);
         }
         return list;
+    }
+
+    // How thick the model's trunk really is (per metre of the tree's height), from its bark: the trunks of the oaks and
+    // beeches are 3-4 times thicker than the old guess (trunkPerMetre), so the player walked into them and saw through
+    // the bark. Measured low on the trunk, where the player stands (3-17% of the height), 85% of the bark points
+    // inside. 0: no bark found (the guess is used).
+    static float MeasureTrunk(GameObject prefab, MeshFilter filter, float height)
+    {
+        var mesh = filter.sharedMesh;
+        var renderer = filter.GetComponent<MeshRenderer>();
+        if (mesh == null || renderer == null || !mesh.isReadable || height <= 0f) return 0f;
+        Matrix4x4 m = Matrix4x4.Scale(prefab.transform.localScale) * (prefab.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix);
+        var vertices = mesh.vertices;
+        float bottom = float.MaxValue;
+        foreach (var v in vertices) bottom = Mathf.Min(bottom, m.MultiplyPoint3x4(v).y);
+        var materials = renderer.sharedMaterials;
+        var distances = new List<float>();
+        for (int s = 0; s < mesh.subMeshCount && s < materials.Length; s++)
+        {
+            if (materials[s] == null || IsLeaves(materials[s])) continue;
+            foreach (int index in mesh.GetIndices(s))
+            {
+                Vector3 p = m.MultiplyPoint3x4(vertices[index]);
+                float up = (p.y - bottom) / height;
+                if (up < 0.03f || up > 0.17f) continue;
+                distances.Add(new Vector2(p.x, p.z).magnitude);
+            }
+        }
+        if (distances.Count < 6) return 0f;
+        distances.Sort();
+        return distances[Mathf.Min(distances.Count - 1, (int)(distances.Count * 0.85f))] / height;
     }
 
     // the editor made new tree prefabs or pictures: load them again next time
@@ -348,6 +381,8 @@ public class Forest : MonoBehaviour
             var r = filter.GetComponent<Renderer>();
             if (r == null) continue;
             var info = TreeSpecies.Get(variant.species);
+            // (a tree left standing on one of Brother Ioan's paths or in the stream's bed: not in the game)
+            if (IslandPaths.KeepClear(filter.transform.position, 0.3f)) { filter.gameObject.SetActive(false); continue; }
 
             // an old choppable birch (Tree_Parent: Animator -> model -> tree_base with ChoppableTree): all of it goes
             Transform root = filter.transform;
@@ -447,6 +482,7 @@ public class Forest : MonoBehaviour
             if (ocean.DistanceFromShore(p) > shoreMargin) return false;
         }
         if (River.IsWater(p, 2.5f)) return false; // not in the river or on its very edge
+        if (IslandPaths.KeepClear(p)) return false; // not on Brother Ioan's paths or in the stream's bed
 
         if (checkObjects)
         {
@@ -456,6 +492,7 @@ public class Forest : MonoBehaviour
                 if (c is TerrainCollider || c is CharacterController) continue;
                 if (c.GetComponentInParent<ForestTree>() != null) continue; // other trees: the spacing decides
                 if (c.GetComponent<TreeSeed>() != null || c.GetComponent<ScenePlant>() != null) continue;
+                if (c.GetComponent<InteractableObject>() != null) continue; // logs, branches, things to pick up
                 if (c.GetComponentInParent<Animal>() != null) continue;
                 if (ignore != null && c.transform.IsChildOf(ignore)) continue;
                 return false;
@@ -675,6 +712,25 @@ public class Forest : MonoBehaviour
             float along = h * Mathf.Lerp(0.45f, 0.95f, (i + 0.5f) / branches);
             Vector3 p = basePos + away * along + side * RandomRange(-1f, 1f) * Mathf.Max(1.5f, tree.CrownRadius * 0.6f);
             SpawnBranch(p);
+        }
+        // a grown tree also leaves some of its seeds (cones, acorns...) where its crown came down: to pick up and plant
+        // (left there, they grow into young trees like the others)
+        var species = tree.Species;
+        if (h >= species.seedFromHeight * 0.8f)
+        {
+            int seeds = 2 + random.Next(3), dropped = 0;
+            for (int i = 0; i < seeds; i++)
+            {
+                Vector3 p = basePos + away * h * RandomRange(0.55f, 0.95f) + side * RandomRange(-1f, 1f) * Mathf.Max(1.5f, tree.CrownRadius * 0.5f);
+                float ground = GroundHeight(p);
+                if (Ocean.Instance != null && ground < Ocean.Instance.Level + 0.3f) continue;
+                p.y = ground + SeedLift(tree.data.species);
+                AddSeedOnGround(new SeedData { position = p, age = 0f, sproutAt = RandomRange(species.sproutAfterHours), species = tree.data.species });
+                dropped++;
+            }
+            if (dropped > 0 && InventorySystem.Instance != null && FlatDistance(PlayerPosition, basePos) < 40f)
+                InventorySystem.Instance.ShowMessage(Lang.T(dropped + " × " + species.seedName + " fell from the crown",
+                    dropped + " × " + Translations.Name(species.seedName) + " au căzut din coroană"));
         }
         AddStump(new StumpData { position = basePos, radius = tree.TrunkRadius * 1.1f, species = tree.data.species });
         RemoveTree(tree);
@@ -950,22 +1006,41 @@ public class Forest : MonoBehaviour
             }
         }
 
-        // seeds on the ground become young trees where there is room; otherwise they rot away
+        // Seeds on the ground become young trees after 3-4 game days. They fall under the crown of their tree, where
+        // the old check (the species' full spacing from every trunk) almost never found room, so nearly all of them
+        // rotted away and the forests never grew by themselves: now a seed needs only a little room around it, and if
+        // its own spot is taken (a trunk, a stump, a rock) it takes a free one close by. Only with no room at all it rots.
         for (int i = seedsOnGround.Count - 1; i >= 0; i--)
         {
             var c = seedsOnGround[i];
             if (c == null) { seedsOnGround.RemoveAt(i); continue; } // picked up
             c.data.age += hours;
             if (c.data.age < c.data.sproutAt) continue;
-            var info = TreeSpecies.Get(c.data.species);
-            if (trees.Count < maxTrees && IsGoodSpot(c.data.position, info.spacing, -10f))
-                AddTree(NewSapling(c.data.position, c.data.species, saplingHeight));
+            if (trees.Count < maxTrees && FindSproutSpot(c.data.position, out Vector3 spot))
+                AddTree(NewSapling(spot, c.data.species, saplingHeight));
             seedsOnGround.RemoveAt(i);
             Destroy(c.gameObject);
         }
 
         GrowPlanted(hours);
         SpreadFarAway(hours);
+    }
+
+    const float SproutRoom = 1.6f; // metres a young tree needs from other trunks (their bark)
+
+    // the seed's own spot, or a free one within 3 m of it
+    bool FindSproutSpot(Vector3 seed, out Vector3 spot)
+    {
+        spot = seed;
+        if (IsGoodSpot(seed, SproutRoom, -10f)) return true;
+        for (int k = 0; k < 8; k++)
+        {
+            float a = (k + RandomRange(0f, 0.6f)) * Mathf.PI * 0.25f;
+            float d = RandomRange(1.2f, 3f);
+            Vector3 p = seed + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
+            if (IsGoodSpot(p, SproutRoom, -10f)) { spot = p; return true; }
+        }
+        return false;
     }
 
     // A seed falls under a grown tree (age: game hours it has already been lying there).
@@ -1082,7 +1157,7 @@ public class Forest : MonoBehaviour
             TakeSceneTrees(); // (they are in the save already)
             if (data.version >= 2) Clear();
             else RemoveSpecies((int)TreeSpecies.Kind.Pine);
-            foreach (var t in data.trees) AddTree(t);
+            foreach (var t in data.trees) if (!IslandPaths.KeepClear(t.position, 0.3f)) AddTree(t); // (a tree from an old save on a path: gone)
             if (data.cones != null) foreach (var c in data.cones) AddSeedOnGround(c);
             if (data.stumps != null) foreach (var s in data.stumps) AddStump(s);
             if (data.seeds != null) foreach (var s in data.seeds) AddPlanted(s);

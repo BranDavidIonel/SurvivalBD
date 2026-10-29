@@ -24,6 +24,9 @@ public class MainMenu : MonoBehaviour
 
     void Start()
     {
+        // the big title a little lower, clear of the language buttons (in Romanian it is long)
+        var title = transform.Find("Title") as RectTransform;
+        if (title != null) title.anchoredPosition += new Vector2(0f, -60f);
         if (GameObject.Find("Language buttons (made in code)") != null) return;
         var go = new GameObject("Language buttons (made in code)");
         var canvas = go.AddComponent<Canvas>();

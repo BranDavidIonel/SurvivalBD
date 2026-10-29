@@ -45,7 +45,9 @@ public class Raft : MonoBehaviour
     public bool IsComplete { get { for (int i = 0; i < Needs.Length; i++) if (have[i] < Amounts[i]) return false; return true; } }
     public bool Started { get { foreach (int h in have) if (h > 0) return true; return false; } }
 
-    const float SlideDistance = 12f; // from the beach into the sea, when it is finished
+    // The model (3.5 x 4.3 m, made by the tool) is shown this many times bigger: the player is 3.7 m tall.
+    public const float Size = 2.5f;
+    const float SlideDistance = 2f + 4.6f * Size; // from the beach into the sea, when it is finished
     float phase;
     bool launching;
 
@@ -78,25 +80,26 @@ public class Raft : MonoBehaviour
             // where the new stream of the miracle flows into the sea (a little beside it, on the beach)
             seaward = stream.SeaDirection;
             from = stream.Mouth - seaward * 14f;
-            aside = 9f;
+            aside = 6f + 2.2f * Size; // (its side clear of the stream's banks)
         }
         else
         {
             // (no stream: on the beach by the wreck, where the story began)
             from = start != null ? start.transform.position : (PlayerState.Instance != null ? PlayerState.Instance.playerBody.transform.position : ocean.transform.position);
             seaward = from - ocean.transform.position; seaward.y = 0f; seaward.Normalize();
-            aside = 6f;
+            aside = 3f + 2.2f * Size;
         }
         from += Vector3.Cross(Vector3.up, seaward) * aside;
         Vector3 spot = from;
         for (float d = 0f; d < 80f; d += 1f)
         {
             Vector3 q = from + seaward * d;
-            if (Forest.GroundY(q) < ocean.Level + 0.15f) { spot = q - seaward * 4.5f; break; }
+            if (Forest.GroundY(q) < ocean.Level + 0.15f) { spot = q - seaward * (2.4f * Size); break; }
         }
         spot.y = Forest.GroundY(spot);
         var go = Instantiate(prefab, spot, Quaternion.LookRotation(seaward, Vector3.up));
         go.name = "Raft";
+        go.transform.localScale = Vector3.one * Size;
         var raft = go.GetComponent<Raft>();
         if (saved != null) for (int i = 0; i < Mathf.Min(saved.Length, Needs.Length); i++) raft.have[i] = saved[i]; // (an older save has no meat yet)
         raft.ShowParts();
@@ -257,7 +260,7 @@ public class Raft : MonoBehaviour
         Vector3 island = ocean != null ? ocean.transform.position : Vector3.zero;
         Vector3 away = transform.position - island; away.y = 0f; away.Normalize();
         cam.transform.SetParent(transform, false);
-        cam.transform.localPosition = new Vector3(0.3f, 1.55f, -0.9f);
+        cam.transform.localPosition = new Vector3(0.3f, 3.2f / Size, -0.9f); // (the raft is scaled: about the eyes' height over its deck)
         cam.farClipPlane = Mathf.Max(cam.farClipPlane, 4000f);
 
         var text = MakeText();
@@ -265,16 +268,16 @@ public class Raft : MonoBehaviour
         Quaternion heading = Quaternion.LookRotation(away, Vector3.up);
         string[] lines = Lang.Ro ? new[]
         {
-            "Am făcut o plută cu mâinile mele.",
-            "Insula se face tot mai mică în urma mea: plaja, pădurile, muntele cu crucea lui.",
-            "Rugăciunile Fratelui Ioan sunt cu mine. Umbra... poate rămâne pe insulă.",
-            "Sau poate a fost mereu o parte din mine. Dar nu mă mai tem de ea.",
+            "Am ajuns aici fără nimic, doar cu mâinile mele. Plec cu rugăciunile fratelui Ioan.",
+            "Copacii pe care i-am pus vor crește, iepurii se vor înmulți. Cine vine după mine nu va găsi o insulă pustie.",
+            "Pe celălalt munte, apa curge de sub cruce până în mare. Umbra a rămas pe țărm.",
+            "„Trebuie să faci rai din tot ce ai.” N-am să uit, frate Ioane.",
         } : new[]
         {
-            "I built a raft with my own hands.",
-            "The island gets smaller behind me: the beach, the forests, the mountain with its cross.",
-            "Brother Ioan's prayers are with me. The shadow... maybe it stays on the island.",
-            "Or maybe it was always a part of me. But I am not afraid of it any more.",
+            "I came here with nothing but my hands. I leave with Brother Ioan's prayers.",
+            "The trees I planted will grow, the rabbits will multiply. Whoever comes after me will not find an empty island.",
+            "On the other mountain, water runs from under the cross down to the sea. The shadow stayed on the shore.",
+            "\"You must make paradise out of everything you have.\" I will not forget, Brother Ioan.",
         };
         int shown = -1;
         bool end = false;
@@ -301,7 +304,7 @@ public class Raft : MonoBehaviour
                 // first up (above the mast), then back over the raft: never through the sail
                 float up = Mathf.SmoothStep(0f, 1f, (time - 16f) / 4f);
                 float back = Mathf.SmoothStep(0f, 1f, (time - 20f) / 12f);
-                Vector3 target = transform.position + away * Mathf.Lerp(-1.5f, 22f, back) + Vector3.up * Mathf.Lerp(1.6f, 14f, up);
+                Vector3 target = transform.position + away * Mathf.Lerp(-1.5f, 30f, back) + Vector3.up * Mathf.Lerp(3.2f, 18f, up);
                 cam.transform.position = Vector3.Lerp(cam.transform.position, target, dt * 1.2f);
                 Vector3 look = Vector3.Lerp(transform.position, island, 0.35f) - cam.transform.position;
                 cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, Quaternion.LookRotation(look), dt * 1.2f);
@@ -350,7 +353,7 @@ public class Raft : MonoBehaviour
         UISkin.Fill(dark.rectTransform);
         var title = UISkin.NewText("Title", end, Lang.T("THE END", "SFÂRȘIT"), 110, UISkin.Gold, TextAnchor.MiddleCenter);
         UISkin.Centered(title.rectTransform, new Vector2(0f, 90f), new Vector2(1400f, 160f));
-        var credits = UISkin.NewText("Credits", end, Lang.T("SurvivalBD\na game by Bran David Ionel\n\nThank you for playing!", "SurvivalBD\nun joc de Bran David Ionel\n\nMulțumim că ai jucat!"), 40, UISkin.TextColor, TextAnchor.UpperCenter);
+        var credits = UISkin.NewText("Credits", end, Lang.T("SurvivalBD\na game by Bran David Ionel\n\nThank you for playing!", "SurvivalBD\nun joc de Bran David Ionel\n\nMulțumesc că ai jucat!"), 40, UISkin.TextColor, TextAnchor.UpperCenter);
         UISkin.Centered(credits.rectTransform, new Vector2(0f, -110f), new Vector2(1400f, 260f));
         return text;
     }

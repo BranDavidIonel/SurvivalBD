@@ -33,6 +33,26 @@ public class CanonCross : MonoBehaviour
         return go.AddComponent<CanonCross>();
     }
 
+    // where the cross is to be raised: the stone at the end of Brother Ioan's steps (else the top)
+    public static Vector3 Place
+    {
+        get
+        {
+            var paths = IslandPaths.Data;
+            if (paths != null && paths.landingSize > 0f) return paths.landing;
+            return MiracleStream.Instance != null ? MiracleStream.Instance.Summit : Vector3.zero;
+        }
+    }
+
+    // on Brother Ioan's stone for the cross (where his steps end, at the top of the other mountain)
+    public static bool OnTheStone(Vector3 p)
+    {
+        var paths = IslandPaths.Data;
+        if (paths == null || paths.landingSize <= 0f) return false;
+        Vector3 d = p - paths.landing; d.y = 0f;
+        return d.magnitude < paths.landingSize && p.y > paths.landing.y - 1.5f;
+    }
+
     // is this the top of the other mountain?
     public static bool CanStandAt(Vector3 p, out string why)
     {
@@ -41,6 +61,7 @@ public class CanonCross : MonoBehaviour
         if (stream == null) return true;
         Vector3 top = stream.Summit;
         Vector3 d = p - top; d.y = 0f;
+        if (OnTheStone(p)) return true;
         if (d.magnitude > SummitReach || p.y < top.y - 14f)
         {
             why = Lang.T("Not here: on the top of the other mountain (Menu > Map)", "Nu aici: pe vârful celuilalt munte (Meniu > Hartă)");

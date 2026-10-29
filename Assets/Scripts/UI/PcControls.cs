@@ -267,14 +267,14 @@ public class PcControls : MonoBehaviour
             mr.anchoredPosition = hr.anchoredPosition - new Vector2(0f, line);
             mapCopy.transform.SetSiblingIndex(help.transform.GetSiblingIndex() + 1);
             qr.anchoredPosition = mr.anchoredPosition - new Vector2(0f, gap);
-            // six words now: closer together, so "Quit" stays on the screen (it fell below the bottom edge)
+            // six words now: in the middle of the screen, top to bottom (they began at the middle and "Quit" fell to the
+            // bottom edge, with an empty top half)
             var save = menu.transform.Find("SaveGameButton") as RectTransform;
             if (save != null)
             {
                 RectTransform[] column = { save, load != null ? (RectTransform)load.transform : null, sr, hr, mr, qr };
-                const float lowestQuit = -400f;  // (the menu's units: 540 is the bottom edge of the screen)
-                float top = save.anchoredPosition.y;
-                float step = Mathf.Min(Mathf.Abs(line), (top - lowestQuit) / (column.Length - 1));
+                const float step = 114f;   // (the menu's units: the screen is 1080 high, its middle is 0)
+                float top = step * (column.Length - 1) * 0.5f + 12f;
                 for (int i = 0; i < column.Length; i++)
                     if (column[i] != null) column[i].anchoredPosition = new Vector2(column[i].anchoredPosition.x, top - i * step);
             }

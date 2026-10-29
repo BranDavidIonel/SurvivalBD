@@ -158,10 +158,12 @@ public class HelpScreen : MonoBehaviour
                 "<b>Focul</b>: un foc de tabără e din 6 pietre. Ca să-l aprinzi: lemne în foc și 1 fân (smulgi iarbă de pe pajiști).\n" +
                 "<b>Umbra</b>: vine noaptea când nu arde niciun foc lângă tine. Focul, torța aprinsă în mână și cartea de rugăciuni o alungă.\n" +
                 "<b>Peștera</b>: beznă totală. Intră doar cu o torță aprinsă în mână (6 ore fiecare). Ia una de rezervă.\n" +
-                "<b>Copacii</b>: semințele cad sub ei și cresc copaci noi după 2-3 zile. Culege semințe și plantează-le.\n" +
-                "<b>Iepurii</b>: masculii (albastru) și femelele (roz) fac 2-5 pui. Puii omorâți nu dau nimic: lasă-i să crească.\n" +
+                "<b>Copacii</b>: semințele cad sub ei și cresc copaci noi după 3-4 zile; un copac mare tăiat lasă și el semințe. Culege-le și plantează-le.\n" +
+                "<b>Iepurii</b>: masculii (albastru) și femelele (roz) se văd de la 40 m, se apropie și fac 2-5 pui. Puii omorâți nu dau nimic.\n" +
                 "<b>Lațul</b> (1 băț + 5 cânepă; cânepa crește mai ales în jurul lacului): prinde iepuri mari. Cu mâinile goale îl iei viu,\n" +
-                "      cu toporul îl omori. Dă-i drumul în țarc și <b>închide ușa</b>: o ușă lăsată deschisă îi lasă pe toți să fugă!\n" +
+                "      cu toporul îl omori. Dă-i drumul în țarc; cu <b>poarta închisă</b> rămân acolo, iar pe cei mari îi iei vii cu mâna.\n" +
+                "<b>Țarcul</b>: gard (2 scânduri + 2 bețe) și poartă (2 scânduri + 1 frânghie), Meșteșuguri > Construcții. Oricât de mare.\n" +
+                "<b>Potecile</b> fratelui Ioan leagă plaja, lacul, peștera, celălalt munte și țărmul de nord.\n" +
                 "<b>Harta</b>: Meniu > Hartă (N pe PC). Săgeata roșie ești tu, cercul auriu e ținta. Coloanele de lumină arată drumul.\n" +
                 "<b>Pluta</b> (ultimul nivel): unde pârâul cel nou se varsă în mare. Adu-i ce îi trebuie în câte drumuri vrei.\n" +
                 "<b>Salvarea</b>: Meniu > Salvează. <b>Limba și dificultatea</b>: Meniu > Setări.";
@@ -171,10 +173,12 @@ public class HelpScreen : MonoBehaviour
             "<b>Fire</b>: a campfire is 6 stones. To light it: wood in the fire and 1 hay (pick grass on the meadows).\n" +
             "<b>The shadow</b>: it comes at night when no fire burns near you. A fire, a burning torch in your hand and the prayer book drive it away.\n" +
             "<b>The cave</b>: pitch dark. Go in only with a burning torch in your hand (6 hours each). Take a spare one.\n" +
-            "<b>Trees</b>: seeds fall under them and grow into new trees after 2-3 days. Pick seeds and plant them.\n" +
-            "<b>Rabbits</b>: males (blue) and females (pink) make 2-5 babies. A killed baby gives nothing: let them grow.\n" +
+            "<b>Trees</b>: seeds fall under them and grow into new trees after 3-4 days; a big tree you fell leaves seeds too. Pick them and plant them.\n" +
+            "<b>Rabbits</b>: males (blue) and females (pink) see each other 40 m away, come together and make 2-5 babies. A killed baby gives nothing.\n" +
             "<b>Snares</b> (1 stick + 5 hemp; hemp grows mostly around the lake) catch grown rabbits. Empty hands take it alive,\n" +
-            "      the axe kills it. Let it go in your pen and <b>shut the door</b>: a door left open lets them all out!\n" +
+            "      the axe kills it. Let it go in your pen; with the <b>gate shut</b> they stay, and you take grown ones alive by hand.\n" +
+            "<b>The pen</b>: fence (2 planks + 2 sticks) and gate (2 planks + 1 rope), Crafting > Construction. As big as you like.\n" +
+            "<b>Brother Ioan's paths</b> join the beach, the lake, the cave, the other mountain and the northern shore.\n" +
             "<b>Map</b>: Menu > Map (N on the PC). The red arrow is you, the gold ring is the goal. Columns of light show the way.\n" +
             "<b>The raft</b> (the last level): where the new stream flows into the sea. Bring it what it needs in as many trips as you like.\n" +
             "<b>Saving</b>: Menu > Save Game. <b>Language and difficulty</b>: Menu > Settings.";

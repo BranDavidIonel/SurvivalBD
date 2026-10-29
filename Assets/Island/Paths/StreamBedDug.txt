@@ -1,0 +1,2 @@
+The miracle stream's bed is dug into the terrain along Resources/Environment/MiracleStreamRoute.json.
+Tools > Nature > 5 keeps it on later runs. To dig it again: put the terrain back as it was before (git), delete this file, run the tool.

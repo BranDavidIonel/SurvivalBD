@@ -16,14 +16,17 @@ public class RabbitPopulation : MonoBehaviour
 
     public const float AdultHours = 36f;           // game hours to grow up
 
-    [Tooltip("Not more rabbits than this on the island")]
-    public int maxRabbits = 170;
+    [Tooltip("Not more rabbits than this on the island (phone speed). Rabbits in a pen may go a little over it.")]
+    public int maxRabbits = 280;
+    [Tooltip("Where this many rabbits already live within 30 m, no more babies come (outside a pen): the island never fills " +
+             "up everywhere at once, and where rabbits were hunted or caught, new ones are born again")]
+    public int crowdedAt = 14;
     [Tooltip("Rabbits farther than this from the player stand still")]
     public float activeDistance = 140f;
     [Tooltip("Rabbits farther than this are not drawn")]
     public float drawDistance = 170f;
-    [Tooltip("A ready rabbit looks for a partner this far")]
-    public float findMateDistance = 30f;
+    [Tooltip("A ready rabbit sees a partner this far and goes to it")]
+    public float findMateDistance = 40f;
     public Vector2 pregnancyHours = new Vector2(20f, 30f);
     [Tooltip("Babies in one litter (a pair in a pen: about 5 rabbits in 2-3 days)")]
     public Vector2Int babies = new Vector2Int(2, 5);
@@ -66,6 +69,7 @@ public class RabbitPopulation : MonoBehaviour
         if (started) return;
         started = true;
         if (GetComponent<SnarePlacing>() == null) gameObject.AddComponent<SnarePlacing>(); // setting snares
+        if (GetComponent<FencePlacing>() == null) gameObject.AddComponent<FencePlacing>(); // putting up a fenced yard
         var movement = FindObjectOfType<PlayerMovement>();
         if (movement != null) player = movement.transform;
 
@@ -89,7 +93,7 @@ public class RabbitPopulation : MonoBehaviour
             // most of the scene's rabbits are grown up, a few are still young
             float age = Mathf.Repeat(a.transform.position.x * 3.1f + a.transform.position.z * 1.7f, 1f) < 0.15f ? 18f : AdultHours + 20f;
             var life = AddRabbit(a.gameObject, sex, age, a.transform.localScale);
-            life.restHours = Random.Range(0f, 30f); // not all of them ready at the same moment
+            life.restHours = Random.Range(0f, 12f); // not all of them ready at the same moment
             i++;
         }
     }
@@ -164,8 +168,8 @@ public class RabbitPopulation : MonoBehaviour
             float dist = d.magnitude;
             r.SetActive(dist < activeDistance);
             bool draw = dist < drawDistance;
-            foreach (var renderer in r.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                if (renderer.enabled != draw) renderer.enabled = draw;
+            foreach (var renderer in r.Renderers)
+                if (renderer != null && renderer.enabled != draw) renderer.enabled = draw;
         }
     }
 
@@ -191,7 +195,8 @@ public class RabbitPopulation : MonoBehaviour
                     r.pregnantHours = -1f;
                     r.restHours = femaleRestHours;
                     int count = Random.Range(babies.x, babies.y + 1);
-                    for (int b = 0; b < count && alive < maxRabbits; b++)
+                    int limit = Buildings.IsEnclosed(r.transform.position) ? maxRabbits + PenExtra : maxRabbits;
+                    for (int b = 0; b < count && alive < limit; b++)
                     {
                         Vector2 off = Random.insideUnitCircle * 1.5f;
                         Vector3 at = r.transform.position + new Vector3(off.x, 0f, off.y);
@@ -207,7 +212,7 @@ public class RabbitPopulation : MonoBehaviour
             }
         }
 
-        // a ready female and the nearest ready male find each other
+        // a ready female and the nearest ready male find each other (they see each other up to 40 m away and go)
         foreach (var female in rabbits)
         {
             if (female == null || female.sex != RabbitInfo.Sex.Female) continue;
@@ -216,9 +221,13 @@ public class RabbitPopulation : MonoBehaviour
                 if (female.mate.mate == female) female.mate.mate = null;
                 female.mate = null;
             }
-            if (!female.ReadyToMate || alive >= maxRabbits) continue;
+            if (!female.ReadyToMate) continue;
             if (female.mate == null)
             {
+                // room for babies: in a pen always (a little over the island's limit), outside not where it is crowded
+                bool penned = Buildings.IsEnclosed(female.transform.position);
+                if (alive >= (penned ? maxRabbits + PenExtra : maxRabbits)) continue;
+                if (!penned && Crowded(female.transform.position)) continue;
                 RabbitLife best = null;
                 float bestDistance = findMateDistance * findMateDistance;
                 foreach (var male in rabbits)
@@ -242,7 +251,63 @@ public class RabbitPopulation : MonoBehaviour
                 partner.restHours = maleRestHours;
                 female.mate = null;
                 partner.mate = null;
+                if (!unseen) ShowHeart((female.transform.position + partner.transform.position) * 0.5f);
             }
+        }
+    }
+
+    const int PenExtra = 60;
+
+    bool Crowded(Vector3 p)
+    {
+        int n = 0;
+        foreach (var r in rabbits)
+        {
+            if (r == null || !r.Alive) continue;
+            Vector3 d = r.transform.position - p; d.y = 0f;
+            if (d.sqrMagnitude < 30f * 30f && ++n >= crowdedAt) return true;
+        }
+        return false;
+    }
+
+    // ---------------- a little heart where two rabbits met (babies are on the way) ---------------- //
+
+    readonly List<(TextMeshPro text, float born, Vector3 at)> hearts = new List<(TextMeshPro, float, Vector3)>();
+
+    void ShowHeart(Vector3 at)
+    {
+        Vector3 d = at - PlayerPosition; d.y = 0f;
+        if (d.sqrMagnitude > 45f * 45f) return; // nobody would see it
+        var go = new GameObject("Rabbit heart");
+        go.transform.SetParent(transform, false);
+        var text = go.AddComponent<TextMeshPro>();
+        if (TMP_Settings.defaultFontAsset != null) text.font = TMP_Settings.defaultFontAsset;
+        text.text = "♥";
+        text.fontSize = 6f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableWordWrapping = false;
+        text.rectTransform.sizeDelta = new Vector2(3f, 3f);
+        text.color = new Color(1f, 0.35f, 0.55f, 1f);
+        text.outlineWidth = 0.2f;
+        text.outlineColor = new Color32(90, 0, 30, 200);
+        var mr = text.GetComponent<MeshRenderer>();
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = false;
+        hearts.Add((text, Time.time, at + Vector3.up * 1.6f));
+    }
+
+    void UpdateHearts(Camera cam)
+    {
+        for (int i = hearts.Count - 1; i >= 0; i--)
+        {
+            var h = hearts[i];
+            float t = (Time.time - h.born) / 3f;
+            if (h.text == null || t >= 1f) { if (h.text != null) Destroy(h.text.gameObject); hearts.RemoveAt(i); continue; }
+            h.text.transform.position = h.at + Vector3.up * (t * 1.4f);
+            if (cam != null) h.text.transform.rotation = Quaternion.LookRotation(h.text.transform.position - cam.transform.position, Vector3.up);
+            float s = Mathf.Sin(Mathf.Min(1f, t * 4f) * Mathf.PI * 0.5f) * (1f + 0.12f * Mathf.Sin(Time.time * 14f));
+            h.text.transform.localScale = Vector3.one * s;
+            var c = h.text.color; c.a = 1f - Mathf.Clamp01((t - 0.6f) / 0.4f); h.text.color = c;
         }
     }
 
@@ -251,7 +316,11 @@ public class RabbitPopulation : MonoBehaviour
     public const string LiveMale = "rabbitmale", LiveFemale = "rabbitfemale";
     public static bool IsLiveRabbit(string item) => item == LiveMale || item == LiveFemale;
 
-    // a rabbit in a snare, taken with empty hands
+    // a grown rabbit inside a pen or a fenced yard: it can be taken alive with empty hands, like one in a snare
+    public static bool InPen(RabbitLife r) =>
+        r != null && r.Alive && r.IsAdult && PenDoor.All.Count > 0 && Buildings.IsClosedAll(r.transform.position, 65f, true);
+
+    // a rabbit in a snare (or a grown one in a pen), taken with empty hands
     public bool TakeAlive(RabbitLife r)
     {
         var inventory = InventorySystem.Instance;
@@ -341,6 +410,7 @@ public class RabbitPopulation : MonoBehaviour
             }
         }
         for (int i = used; i < labels.Count; i++) if (labels[i].gameObject.activeSelf) labels[i].gameObject.SetActive(false);
+        UpdateHearts(cam);
     }
 
     TextMeshPro Label(int index)

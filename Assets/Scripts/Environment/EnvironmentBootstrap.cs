@@ -47,6 +47,10 @@ public static class EnvironmentBootstrap
         // footsteps and swimming sounds on the player
         var player = Object.FindObjectOfType<PlayerMovement>();
         if (player != null && player.GetComponent<FootstepAudio>() == null) player.gameObject.AddComponent<FootstepAudio>();
+        // the camera never goes into a trunk, a wall or a rock (looking down tilts it forward)
+        CameraGuard.AddTo(Camera.main);
+        // Brother Ioan's stone steps up the steep rock (to the cave, up the other mountain) and the stone for the cross
+        IoanSteps.Make();
 
         // TEST ONLY: the test settings in the in-game Settings screen (remove for the release)
         DebugEnvironmentPanel.Attach();
