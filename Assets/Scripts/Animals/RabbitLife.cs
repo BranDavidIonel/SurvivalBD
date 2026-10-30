@@ -14,6 +14,15 @@ public class RabbitLife : MonoBehaviour
 
     public Animal animal;
     public RabbitLife mate;             // the partner it walks to
+
+    // how fast it goes (metres per second; the player walks 12). A bit faster than before (the owner: "a bit
+    // faster"), still easy to follow and corner: hit, it hops away about 6.5 m.
+    public const float FleeSpeed = 5.5f;       // hit, or let go from the hands (was 4 / 4.2)
+    public const float FleeDistance = 6.5f;    // how far it hops away when hit (was 5)
+    public const float MateSpeed = 2.9f;       // to its partner (was 2.4)
+    public const float LureSpeed = 2.6f;       // to a snare (was 2.2)
+    public static readonly Vector2 WanderSpeed = new Vector2(1.8f, 2.8f); // grown up, hopping around (was 1.4-2.2)
+    public const float BabySpeed = 1.3f;       // babies (was 1.1)
     public RabbitSnare caughtIn;        // the snare that holds it
     public RabbitSnare lure;            // the snare it walks to
 
@@ -153,7 +162,7 @@ public class RabbitLife : MonoBehaviour
         Vector3 away = transform.position - player; away.y = 0f;
         if (away.sqrMagnitude < 0.01f) away = transform.forward;
         target = transform.position + away.normalized * distance;
-        speed = 4.2f;
+        speed = FleeSpeed;
         moving = true;
         fleeTimer = 1.6f;
     }
@@ -168,6 +177,7 @@ public class RabbitLife : MonoBehaviour
     void Stop()
     {
         moving = false;
+        if (animator != null) animator.speed = 1f;
         if (animator != null && animator.isActiveAndEnabled && Alive) animator.SetBool("isRunning", false);
     }
 
@@ -193,6 +203,7 @@ public class RabbitLife : MonoBehaviour
         if (!Alive)
         {
             moving = false;
+            if (animator != null && animator.speed != 1f) animator.speed = 1f; // (the fall at its own speed)
             return;
         }
 
@@ -208,8 +219,8 @@ public class RabbitLife : MonoBehaviour
             fleeTimer = 1.2f;
             Vector3 away = -toPlayer.normalized;
             if (away.sqrMagnitude < 0.01f) away = transform.forward;
-            target = here + away * 5f;
-            speed = 4f;
+            target = here + away * FleeDistance;
+            speed = FleeSpeed;
             moving = true;
             path = null;
         }
@@ -229,7 +240,7 @@ public class RabbitLife : MonoBehaviour
             if (toMate.sqrMagnitude > 1.1f * 1.1f)
             {
                 target = mate.transform.position;
-                speed = 2.4f;
+                speed = MateSpeed;
                 moving = true;
             }
             else
@@ -241,7 +252,7 @@ public class RabbitLife : MonoBehaviour
         {
             // to the snare (the loop)
             target = lure.Loop;
-            speed = 2.2f;
+            speed = LureSpeed;
             moving = true;
         }
         else if (!moving)
@@ -274,7 +285,7 @@ public class RabbitLife : MonoBehaviour
             Vector3 p = here + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
             if (!IsGoodGround(p) || Buildings.Blocks(here, p)) continue; // (in a pen: somewhere inside)
             target = p;
-            speed = IsAdult ? Random.Range(1.4f, 2.2f) : 1.1f;
+            speed = IsAdult ? Random.Range(WanderSpeed.x, WanderSpeed.y) : BabySpeed;
             moving = true;
             return;
         }
@@ -299,7 +310,9 @@ public class RabbitLife : MonoBehaviour
             return;
         }
         Vector3 dir = to / dist;
-        Vector3 next = here + dir * Mathf.Min(dist, speed * Time.deltaTime);
+        // (at most a tenth of a second of moving in one frame: a slow frame on a phone never makes a long jump; the
+        // wall check below looks along the whole step and a bit further, so a pen's walls and fences still stop it)
+        Vector3 next = here + dir * Mathf.Min(dist, speed * Mathf.Min(Time.deltaTime, 0.1f));
         float nextY = Buildings.GroundAt(next);
         // water, the sea, a wall (or a shut door), or a step too high (the side of a foundation on a slope)
         if (!IsGoodGround(next) || nextY - here.y > 1.1f || Buildings.Blocks(here, next + dir * 0.35f))
@@ -317,6 +330,11 @@ public class RabbitLife : MonoBehaviour
         transform.position = next;
         var look = Quaternion.LookRotation(dir, Vector3.up);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, look, 360f * Time.deltaTime);
-        if (animator != null && animator.isActiveAndEnabled) animator.SetBool("isRunning", true);
+        if (animator != null && animator.isActiveAndEnabled)
+        {
+            animator.SetBool("isRunning", true);
+            // running away fast: the hops a little quicker too (it does not slide)
+            animator.speed = speed > 4f ? Mathf.Min(1.4f, speed / 4f) : 1f;
+        }
     }
 }

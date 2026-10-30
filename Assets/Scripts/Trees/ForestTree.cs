@@ -47,30 +47,34 @@ public class ForestTree : MonoBehaviour
         // each tree a little wider or slimmer than the next
         widthFactor = 0.88f + 0.24f * Mathf.Repeat(Mathf.Sin(data.position.x * 12.9898f + data.position.z * 78.233f) * 43758.5453f, 1f);
 
-        if (reuse != null)
-        {
-            model = reuse.transform;
-            model.SetParent(transform, false);
-        }
-        else
-        {
-            model = Instantiate(variant.prefab, transform).transform;
-        }
-        model.name = "Model";
-        model.localRotation = Quaternion.identity;
-        forest.PrepareModel(model.gameObject, data.species);
-        renderers = model.GetComponentsInChildren<Renderer>(true);
-
         trunk = gameObject.AddComponent<CapsuleCollider>(); // round like the trunk (a box stuck out at its corners)
         trunk.direction = 1;
         choppable = gameObject.AddComponent<ChoppableTree>();
         choppable.caloriesSpentChoppingWood = 20f;
 
-        ModelShown = true;
-        ShowModel(false);
+        if (reuse != null)
+        {
+            model = reuse.transform;
+            model.SetParent(transform, false);
+            SetUpModel();
+            ModelShown = true;
+            ShowModel(false);
+        }
+        // else: the 3D model is made the first time the player comes near (ShowModel). A young tree that comes up far
+        // away costs no model (phone memory): far away only its flat picture is drawn.
         Apply();
         choppable.treeHealth = choppable.treeMaxHealth;
     }
+
+    void SetUpModel()
+    {
+        model.name = "Model";
+        model.localRotation = Quaternion.identity;
+        forest.PrepareModel(model.gameObject, data.species);
+        renderers = model.GetComponentsInChildren<Renderer>(true);
+    }
+
+    public bool HasModel => model != null;
 
     // the model goes back to the forest's pool (a loaded game reuses it)
     public GameObject TakeModel()
@@ -85,6 +89,13 @@ public class ForestTree : MonoBehaviour
     public void ShowModel(bool show)
     {
         if (ModelShown == show) return;
+        if (show && model == null)
+        {
+            // first time near the player: its model now
+            model = Instantiate(variant.prefab, transform).transform;
+            SetUpModel();
+            appliedHeight = -1f; // (sized below)
+        }
         ModelShown = show;
         if (renderers == null) return;
         foreach (var r in renderers) if (r != null) r.enabled = show;
@@ -97,8 +108,11 @@ public class ForestTree : MonoBehaviour
         float h = Mathf.Max(0.2f, data.height);
         float k = h / variant.nativeHeight;
         float wide = k * widthFactor * species.widthScale;
-        model.localScale = new Vector3(variant.prefabScale.x * wide, variant.prefabScale.y * k, variant.prefabScale.z * wide);
-        model.localPosition = new Vector3(0f, -variant.baseOffset * k - Sink, 0f);
+        if (model != null)
+        {
+            model.localScale = new Vector3(variant.prefabScale.x * wide, variant.prefabScale.y * k, variant.prefabScale.z * wide);
+            model.localPosition = new Vector3(0f, -variant.baseOffset * k - Sink, 0f);
+        }
 
         trunk.radius = Mathf.Max(0.22f, TrunkRadius);
         trunk.height = Mathf.Max(trunk.radius * 2f, h * 0.92f);
@@ -117,7 +131,7 @@ public class ForestTree : MonoBehaviour
     // the axe hit it: a short wobble
     public void Shake()
     {
-        if (Falling) return;
+        if (Falling || model == null) return;
         if (shaking != null) StopCoroutine(shaking);
         shaking = StartCoroutine(ShakeRoutine());
     }

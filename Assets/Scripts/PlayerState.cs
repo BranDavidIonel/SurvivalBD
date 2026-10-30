@@ -66,6 +66,14 @@ public class PlayerState : MonoBehaviour
         float hours = Time.deltaTime * DayNightSystem.GameHoursPerSecond;
         bool dead = currentHealth <= 0f;
 
+        // ADMIN: immortal (only while the admin is unlocked: GameSettings.Immortal): the bars stay full, nothing hurts
+        if (GameSettings.Immortal)
+        {
+            KeepFull();
+            lastPosition = playerBody.transform.position;
+            return;
+        }
+
         // walking uses food (a teleport, like loading a game, does not count)
         float moved = Vector3.Distance(playerBody.transform.position, lastPosition);
         if (moved < 20f) distanceTravelled += moved;
@@ -105,9 +113,6 @@ public class PlayerState : MonoBehaviour
                 if (death != null) death.SetNextDeathMessage(thirsty ? Lang.T("You died of thirst...", "Ai murit de sete...") : Lang.T("You died of hunger...", "Ai murit de foame..."));
             }
         }
-
-        // ADMIN: immortal
-        if (GameSettings.Immortal) KeepFull();
     }
 
     // full health, food and water (the admin's "Immortal")

@@ -142,7 +142,14 @@ public class HelpScreen : MonoBehaviour
             sb.Append("</color>\n");
             if (i == current)
             {
-                foreach (var step in StoryManager.LevelSteps(i)) sb.Append("      - " + step + "\n");
+                // the goals already done in green
+                var steps = StoryManager.LevelSteps(i);
+                for (int k = 0; k < steps.Length; k++)
+                {
+                    bool done = StoryManager.Instance != null && StoryManager.Instance.StepIsDone(k);
+                    if (done) sb.Append("<color=#94ED78>      - " + steps[k] + Lang.T("   (done)", "   (gata)") + "</color>\n");
+                    else sb.Append("      - " + steps[k] + "\n");
+                }
             }
         }
         if (current > StoryManager.LevelCount) sb.Append("\n<color=#94ED78>" + Lang.T("You left the island. The end!", "Ai plecat de pe insulă. Sfârșit!") + "</color>");
@@ -156,6 +163,8 @@ public class HelpScreen : MonoBehaviour
                 "<b>Apa</b>: bara de apă plină ține o zi. Bea din râu, din lac sau din băltoacele de după ploaie (2-3 zile). Niciodată din mare!\n" +
                 "<b>Hrana</b>: bara de hrană plină ține cam trei zile. Ciuperci, fructe de pădure, ierburi, carne gătită. Barele goale te omoară.\n" +
                 "<b>Focul</b>: un foc de tabără e din 6 pietre. Ca să-l aprinzi: lemne în foc și 1 fân (smulgi iarbă de pe pajiști).\n" +
+                "<b>Toporul și torța</b> (Meșteșuguri > Unelte): fă-le devreme. Toporul taie lemne; torța arde doar în mână: păstreaz-o pentru noapte.\n" +
+                "<b>Nivelurile</b>: ce ai făcut deja se socotește. O noapte lângă foc, un topor sau o torță făcute devreme: pașii lor sunt bifați.\n" +
                 "<b>Umbra</b>: vine noaptea când nu arde niciun foc lângă tine. Focul, torța aprinsă în mână și cartea de rugăciuni o alungă.\n" +
                 "<b>Peștera</b>: beznă totală. Intră doar cu o torță aprinsă în mână (6 ore fiecare). Ia una de rezervă.\n" +
                 "<b>Copacii</b>: semințele cad sub ei și cresc copaci noi după 3-4 zile; un copac mare tăiat lasă și el semințe. Culege-le și plantează-le.\n" +
@@ -171,6 +180,8 @@ public class HelpScreen : MonoBehaviour
             "<b>Water</b>: a full water bar lasts one day. Drink from the river, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
             "<b>Food</b>: a full food bar lasts about three days. Mushrooms, berries, herbs, cooked meat. Empty bars kill you.\n" +
             "<b>Fire</b>: a campfire is 6 stones. To light it: wood in the fire and 1 hay (pick grass on the meadows).\n" +
+            "<b>Axe and torch</b> (Crafting > Tools): make them early. The axe cuts firewood; the torch burns only in your hand: keep it for the night.\n" +
+            "<b>The levels</b>: what you did before counts. A night by the fire, an axe or a torch made early: their goals are already ticked.\n" +
             "<b>The shadow</b>: it comes at night when no fire burns near you. A fire, a burning torch in your hand and the prayer book drive it away.\n" +
             "<b>The cave</b>: pitch dark. Go in only with a burning torch in your hand (6 hours each). Take a spare one.\n" +
             "<b>Trees</b>: seeds fall under them and grow into new trees after 3-4 days; a big tree you fell leaves seeds too. Pick them and plant them.\n" +

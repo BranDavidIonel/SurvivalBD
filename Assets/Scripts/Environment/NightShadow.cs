@@ -7,6 +7,7 @@ using UnityEngine.UI;
 // closer and closer, raising its long arms towards the player, and the music turns scary (a low drone,
 // trembling strings, a heartbeat that gets faster). When the time runs out it grabs the player and they die.
 // Lighting a fire (or going back to one that burns) makes it fade away; so does the morning.
+// With the admin's Immortal it still comes and counts down, but at the end it fades away without harm (Spare).
 // It stands in the world (it does not move along with the player); now and then it vanishes for a moment and
 // shows up again a little to the left or right, and how see-through it is keeps changing.
 // It sits in the game scene as "Night Shadow" (added by Editor/NightShadowSceneSetup.cs, menu SurvivalBD > Night
@@ -174,6 +175,7 @@ public class NightShadow : MonoBehaviour
                 if (timeLeft <= 0f)
                 {
                     timeLeft = 0f;
+                    if (GameSettings.Immortal) { Spare(); break; } // (admin: it cannot take the player)
                     attackFrom = figure.transform.position;
                     oneShots.PlayOneShot(ShadowSounds.Scream, SoundManager.EffectsVolume);
                     SetState(State.Attacking);
@@ -184,7 +186,8 @@ public class NightShadow : MonoBehaviour
                 if (danger) SetState(State.Hunting); // it comes back
                 break;
             case State.Attacking:
-                if (stateTime >= AttackSeconds) Grab();
+                if (GameSettings.Immortal) Spare();
+                else if (stateTime >= AttackSeconds) Grab();
                 break;
         }
 
@@ -260,8 +263,21 @@ public class NightShadow : MonoBehaviour
         else if (state == State.Waiting) SetState(State.Safe);
     }
 
+    // ADMIN: immortal (GameSettings.Immortal, only while the admin is unlocked). The shadow still comes and counts
+    // down (the story sees it hunt: Level 7, open the prayer book), but when the time is up it cannot take the
+    // player: it fades away and keeps away as after a death, then it may come again.
+    void Spare()
+    {
+        safeUntil = Time.time + safeSecondsAfterStartOrDeath;
+        SetState(State.Retreating);
+        prayed = false;
+        messageUntil = Time.time + 3f;
+        message.text = Lang.T("Immortal (admin): the shadow cannot take you", "Nemuritor (admin): umbra nu te poate lua");
+    }
+
     void Grab()
     {
+        if (GameSettings.Immortal) { Spare(); return; }
         if (death != null) death.SetNextDeathMessage(Lang.T("The shadow took you...", "Umbra te-a luat..."));
         if (PlayerState.Instance != null) PlayerState.Instance.currentHealth = 0f; // PlayerDeath takes it from here
         safeUntil = Time.time + safeSecondsAfterStartOrDeath;
@@ -570,7 +586,8 @@ public class NightShadow : MonoBehaviour
             title.gameObject.SetActive(true);
             message.gameObject.SetActive(true);
             title.text = fireFar ? Lang.T("GET BACK TO YOUR FIRE!", "ÎNTOARCE-TE LA FOC!") : Lang.T("LIGHT A FIRE!", "APRINDE UN FOC!");
-            message.text = state == State.Attacking ? "..." : Lang.T("The shadow will take you in ", "Umbra te ia în ") + Mathf.CeilToInt(timeLeft) + "...";
+            message.text = state == State.Attacking ? "..." : Lang.T("The shadow will take you in ", "Umbra te ia în ") + Mathf.CeilToInt(timeLeft) + "..."
+                + (GameSettings.Immortal ? Lang.T("  (Immortal: it can't)", "  (Nemuritor: nu poate)") : "");
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(5f, 14f, Fear));
             title.color = Color.Lerp(new Color(1f, 0.2f, 0.15f), new Color(1f, 0.85f, 0.3f), pulse * 0.45f);
             message.color = Color.Lerp(Color.white, new Color(1f, 0.55f, 0.5f), Fear);

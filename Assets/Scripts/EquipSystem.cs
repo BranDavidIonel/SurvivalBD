@@ -183,6 +183,12 @@ public class EquipSystem : MonoBehaviour
         }
 
         string selectedItemName = selectedItem.name.Replace("(Clone)", "");
+        if (Spear.IsSpear(selectedItemName))
+        {
+            // the spear is made in code: held, aimed at the "+" and thrown (SpearHeld)
+            selectedItemModel = SpearHeld.Create(toolHolder.transform);
+            return;
+        }
         GameObject modelPrefab = Resources.Load<GameObject>(selectedItemName + "_Model");
         if (modelPrefab == null)
         {

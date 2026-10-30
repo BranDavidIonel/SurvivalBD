@@ -7,6 +7,7 @@ using UnityEngine.UI;
 //  - until Level 5 a fall of rocks closes its mouth (the player does not know about it yet)
 //  - inside it is pitch dark: only a burning torch in the hand gives light (TorchLight)
 //  - deeper than the daylight goes, without a burning torch the shadow comes: a few seconds, then death
+//    (with the admin's Immortal the warning still shows, but it ends without death)
 //  - the rock's shader gets the daylight of the outside for the part near the mouth
 public class Cave : MonoBehaviour
 {
@@ -159,12 +160,19 @@ public class Cave : MonoBehaviour
         darkTime = dark ? darkTime + Time.deltaTime : Mathf.Max(0f, darkTime - Time.deltaTime * 3f);
         ShowWarning(darkTime > 0.05f && !dead);
         if (dark && darkTime >= DarkSeconds) TakePlayer();
-        if (!PlayerInside) taken = false;
+        if (!PlayerInside || TorchLight.Burning) taken = false;
     }
 
     void TakePlayer()
     {
         taken = true;
+        if (GameSettings.Immortal)
+        {
+            // ADMIN: immortal (only while the admin is unlocked): the warning ran out, but the shadow cannot take
+            // the player (quiet again until the torch burns or the player goes out)
+            if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Immortal (admin): the shadow cannot take you", "Nemuritor (admin): umbra nu te poate lua"));
+            return;
+        }
         var death = FindObjectOfType<PlayerDeath>();
         if (death != null) death.SetNextDeathMessage(Lang.T("The shadow took you in the dark...", "Umbra te-a luat în întuneric..."));
         var cam = Camera.main;
@@ -186,7 +194,9 @@ public class Cave : MonoBehaviour
         if (!show) return;
         int left = Mathf.Max(0, Mathf.CeilToInt(DarkSeconds - darkTime));
         warning.text = (TorchLight.HasTorch ? Lang.T("Your torch is out! The shadow is here... ", "Torța ți s-a stins! Umbra e aici... ") : Lang.T("It is pitch dark! The shadow is here... ", "E beznă! Umbra e aici... ")) + left;
-        if (hint != null) hint.text = Lang.T("Get out into the light, or hold a burning torch!", "Ieși la lumină sau ține o torță aprinsă în mână!");
+        if (hint != null) hint.text = GameSettings.Immortal
+            ? Lang.T("Immortal (admin): the shadow cannot take you", "Nemuritor (admin): umbra nu te poate lua")
+            : Lang.T("Get out into the light, or hold a burning torch!", "Ieși la lumină sau ține o torță aprinsă în mână!");
         warning.color = new Color(1f, 0.35f, 0.25f, 0.6f + 0.4f * Mathf.PingPong(Time.time * 2f, 1f));
     }
 

@@ -74,7 +74,15 @@ public class IoanSteps : MonoBehaviour
                     long key = Key(centre);
                     if (!stepCells.TryGetValue(key, out var list)) stepCells[key] = list = new List<Vector3>();
                     list.Add(centre);
+                    // a low stone wall on the edge over the drop, so nobody walks off the steps (not where the way
+                    // turns sharply, nor at the ends of the flight, nor where the ground beside is not lower)
+                    Vector3 edge = p[i] + side * (Outward + StepWidth * 0.5f - ParapetWidth * 0.5f);
+                    if (i >= 2 && i < p.Count - 2 && !SharpTurn(p, i) && Forest.GroundY(edge + side * 0.6f) < p[i].y - 0.8f)
+                        Box(v, uv, tri, edge, along, side, StepLength, ParapetWidth, p[i].y + ParapetHeight);
                 }
+                // a flight left standing over the slope at one of its ends: steps down to the ground there
+                if (!NearStone(data, p[0])) LeadIn(v, uv, tri, p[0], p[0] - p[1]);
+                if (!NearStone(data, p[p.Count - 1])) LeadIn(v, uv, tri, p[p.Count - 1], p[p.Count - 1] - p[p.Count - 2]);
             }
         if (data.landingSize > 0f)
             Box(v, uv, tri, data.landing, Vector3.forward, Vector3.right, data.landingSize, data.landingSize, data.landing.y);
@@ -92,6 +100,43 @@ public class IoanSteps : MonoBehaviour
         renderer.sharedMaterial = material = StoneMaterial();
         meshCollider = gameObject.AddComponent<MeshCollider>();
         meshCollider.sharedMesh = mesh;
+    }
+
+    const float ParapetWidth = 0.36f, ParapetHeight = 0.9f; // higher than the player can step (0.7 m)
+
+    // (the flight that ends at the stone for the cross goes on onto the stone, not down)
+    static bool NearStone(IslandPaths.PathsData data, Vector3 p)
+    {
+        if (data.landingSize <= 0f) return false;
+        Vector3 d = p - data.landing; d.y = 0f;
+        return d.magnitude < data.landingSize + 1.5f;
+    }
+
+    // the way turns by more than 35 degrees around step i
+    static bool SharpTurn(List<Vector3> p, int i)
+    {
+        Vector3 a = p[i] - p[i - 2], b = p[i + 2] - p[i];
+        a.y = 0f; b.y = 0f;
+        return a.sqrMagnitude > 1e-4f && b.sqrMagnitude > 1e-4f && Vector3.Angle(a, b) > 35f;
+    }
+
+    // steps from the end of a flight down to the ground in front of it, when the end stands high over it
+    static void LeadIn(List<Vector3> v, List<Vector2> uv, List<int> tri, Vector3 end, Vector3 away)
+    {
+        away.y = 0f;
+        if (away.sqrMagnitude < 1e-4f) return;
+        away.Normalize();
+        float gap = end.y - Forest.GroundY(end + away * 0.5f);
+        if (gap < 0.6f) return;
+        int count = Mathf.Min(16, Mathf.CeilToInt(gap / 0.55f));
+        Vector3 side = Vector3.Cross(Vector3.up, away);
+        for (int j = 1; j <= count; j++)
+        {
+            Vector3 at = end + away * (0.5f * j);
+            float top = end.y - gap * j / (count + 1f);
+            if (top < Forest.GroundY(at) + 0.1f) break; // the ground is reached
+            Box(v, uv, tri, new Vector3(at.x, 0f, at.z), away, side, StepLength, StepWidth, top);
+        }
     }
 
     static long Key(Vector3 p) => ((long)Mathf.FloorToInt(p.x / 4f) << 32) ^ (uint)Mathf.FloorToInt(p.z / 4f);

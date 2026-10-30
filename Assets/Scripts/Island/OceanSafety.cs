@@ -5,6 +5,7 @@ using UnityEngine.UI;
 // shows a warning with a countdown; if the player does not head back to the beach before it runs out, they drown
 // (PlayerDeath shows the death screen and puts them back at the start). Swimming back towards the beach pauses
 // the countdown, and getting back closer than `warnDistance` cancels it.
+// With the admin's Immortal the countdown still runs, but at the end the player does not drown (a message instead).
 [RequireComponent(typeof(Ocean))]
 public class OceanSafety : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class OceanSafety : MonoBehaviour
     float timeLeft;
     float lastDistance;
     float speedToBeach;
+    bool spared;
 
     GameObject ui;
     Text title;
@@ -62,8 +64,10 @@ public class OceanSafety : MonoBehaviour
         if (dead || distance < warnDistance - 1f)
         {
             SetWarning(false);
+            spared = false;
             return;
         }
+        if (spared) return; // (admin Immortal: the countdown already ran out once, quiet until back near the beach)
         if (!warning)
         {
             if (distance <= warnDistance) return;
@@ -75,6 +79,13 @@ public class OceanSafety : MonoBehaviour
         if (timeLeft <= 0f)
         {
             SetWarning(false);
+            if (GameSettings.Immortal)
+            {
+                // ADMIN: immortal (only while the admin is unlocked): the sea does not take the player
+                spared = true;
+                if (InventorySystem.Instance != null) InventorySystem.Instance.ShowMessage(Lang.T("Immortal (admin): you did not drown", "Nemuritor (admin): nu te-ai înecat"));
+                return;
+            }
             PlayerState.Instance.currentHealth = 0f; // PlayerDeath takes it from here
             return;
         }

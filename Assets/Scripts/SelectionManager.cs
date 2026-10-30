@@ -76,8 +76,15 @@ public class SelectionManager : MonoBehaviour
         {
             var selectionTransform = hit.transform;
 
+            // a dead rabbit close to the crosshair counts as looked at when nothing else to use is right under it
+            // (the body lies low in the grass and is small on a phone screen: no need to aim exactly at it)
+            Animal nearBody = null;
+            if (selectionTransform.GetComponent<Animal>() == null && selectionTransform.GetComponent<InteractableObject>() == null
+                && selectionTransform.GetComponent<StorageBox>() == null && selectionTransform.GetComponent<Campfire>() == null
+                && PenDoor.FromCollider(hit.collider) == null)
+                nearBody = DeadBodyNear(ray, hit.distance);
 
-            ChoppableTree choppableTree = selectionTransform.GetComponent<ChoppableTree>();
+            ChoppableTree choppableTree = nearBody != null ? null : selectionTransform.GetComponent<ChoppableTree>();
 
             if (choppableTree && choppableTree.playerInRange)
             {
@@ -98,6 +105,8 @@ public class SelectionManager : MonoBehaviour
 
 
             InteractableObject interactableObject = selectionTransform.GetComponent<InteractableObject>();
+            // (the last thing looked at does not stay selected: a tap somewhere else used to take it)
+            if (!interactableObject || !interactableObject.playerInRange) selectedObject = null;
             if (interactableObject && interactableObject.playerInRange)
             {
                 onTargetSelectItem = true;
@@ -161,16 +170,16 @@ public class SelectionManager : MonoBehaviour
             }
 
 
-            Animal animal = selectionTransform.GetComponent<Animal>();
+            Animal animal = nearBody != null ? nearBody : selectionTransform.GetComponent<Animal>();
             if (animal && animal.playerInRange)
             {
                 var rabbit = animal.GetComponent<RabbitLife>();
                 if (animal.isDead)
                 {
-                    //looting (a baby rabbit is too small: nothing to take)
-                    interaction_text.text = rabbit != null && rabbit.Growth < BabyNothing
-                        ? Lang.T("Too small: nothing to take", "Prea mic: nu ai ce lua")
-                        : Lang.T("Loot", "Ia");
+                    // looting: one tap takes the meat and the hide (a baby rabbit is too small: nothing to take).
+                    // Busy: the grass under it or the river nearby do not take the text or the tap.
+                    onTargetSelectItem = true;
+                    interaction_text.text = LootText(rabbit);
                     interaction_Info_UI.SetActive(true);
 
                     centerDotImage.gameObject.SetActive(false);
@@ -218,7 +227,9 @@ public class SelectionManager : MonoBehaviour
                 }
             }
 
-            if(!interactableObject && !animal)
+            // nothing in reach to take or hit (also something too far away: the hand of a body looked at before
+            // does not stay, it kept the axe from swinging)
+            if (!(interactableObject && interactableObject.playerInRange) && !(animal && animal.playerInRange))
             {
                 onTargetSelectItem = false;
                 handIsVisible = false;
@@ -256,9 +267,87 @@ public class SelectionManager : MonoBehaviour
             // looking at the sky: no tree is targeted any more (a swing used to chop the last tree looked at)
             ClearSelectedTree();
             selectedDoor = null;
+            // and nothing is selected to take or open (a tap at the sky used to take the last thing looked at, and
+            // the spear could not be thrown upwards)
+            selectedObject = null;
+            onTargetSelectItem = false;
+            selectedStorageBox = null;
+            selectedCampfire = null;
+            if (handIsVisible)
+            {
+                handIsVisible = false;
+                handIcon.gameObject.SetActive(false);
+                centerDotImage.gameObject.SetActive(true);
+                interaction_text.text = "";
+                interaction_Info_UI.SetActive(false);
+            }
         }
 
         if (!UpdateRaft(ray)) UpdateDrinking(ray);
+    }
+
+    // ---- the spear's aiming cross: a "+" in place of the small dot while the spear is in the hand ---- //
+    GameObject aimCross;
+    Color dotColor;
+    bool dotHidden;
+
+    void LateUpdate()
+    {
+        if (centerDotImage == null) return;
+        bool show = Spear.IsHeld && enabled && centerDotImage.enabled && centerDotImage.gameObject.activeInHierarchy;
+        if (show && aimCross == null) aimCross = MakeAimCross();
+        if (aimCross != null && aimCross.activeSelf != show) aimCross.SetActive(show);
+        // the dot itself is only made see-through (its place and on/off stay as the rest of this script sets them)
+        bool hide = Spear.IsHeld;
+        if (hide != dotHidden)
+        {
+            if (hide) { dotColor = centerDotImage.color; centerDotImage.color = new Color(dotColor.r, dotColor.g, dotColor.b, 0f); }
+            else centerDotImage.color = dotColor;
+            dotHidden = hide;
+        }
+    }
+
+    // a window, a book, the map...: the selection is switched off, and the cross goes with it
+    void OnDisable()
+    {
+        if (aimCross != null) aimCross.SetActive(false);
+    }
+
+    // four short white bars around the middle (a gap where the spear goes), with a dark edge to be seen on snow too
+    GameObject MakeAimCross()
+    {
+        var dot = centerDotImage.rectTransform;
+        var go = new GameObject("Aim cross (spear)", typeof(RectTransform));
+        go.layer = dot.gameObject.layer;
+        var rect = (RectTransform)go.transform;
+        rect.SetParent(dot.parent, false);
+        rect.SetSiblingIndex(dot.GetSiblingIndex() + 1);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(60f, 60f);
+        rect.position = dot.TransformPoint(dot.rect.center);
+        const float length = 15f, thick = 4f, gap = 7f;
+        Bar(rect, new Vector2(0f, gap + length * 0.5f), new Vector2(thick, length));
+        Bar(rect, new Vector2(0f, -gap - length * 0.5f), new Vector2(thick, length));
+        Bar(rect, new Vector2(gap + length * 0.5f, 0f), new Vector2(length, thick));
+        Bar(rect, new Vector2(-gap - length * 0.5f, 0f), new Vector2(length, thick));
+        return go;
+    }
+
+    static void Bar(RectTransform parent, Vector2 at, Vector2 size)
+    {
+        var bar = new GameObject("Bar", typeof(RectTransform));
+        bar.layer = parent.gameObject.layer;
+        var rect = (RectTransform)bar.transform;
+        rect.SetParent(parent, false);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = at;
+        rect.sizeDelta = size;
+        var image = bar.AddComponent<Image>();
+        image.color = new Color(1f, 1f, 1f, 0.92f);
+        image.raycastTarget = false;
+        var edge = bar.AddComponent<UnityEngine.UI.Outline>(); // (not QuickOutline's Outline)
+        edge.effectColor = new Color(0f, 0f, 0f, 0.7f);
+        edge.effectDistance = new Vector2(1.5f, -1.5f);
     }
 
     // the raft of the last level: on the beach it shows what it still needs (click: add what you carry);
@@ -383,17 +472,53 @@ public class SelectionManager : MonoBehaviour
         if (chopHolder != null && chopHolder.activeSelf) chopHolder.SetActive(false);
     }
 
+    // what the crosshair says over a dead rabbit
+    static string LootText(RabbitLife rabbit)
+    {
+        float growth = rabbit != null ? rabbit.Growth : 1f;
+        if (growth < BabyNothing) return Lang.T("Too small: nothing to take", "Prea mic: nu ai ce lua");
+        if (growth < 1f) return Lang.T("Take the meat", "Ia carnea");
+        return Lang.T("Take the meat and the hide", "Ia carnea și blana");
+    }
+
+    // The dead rabbit nearest to the aiming line, in reach (Animal.playerInRange: RabbitLife, 4.5 m): its middle within
+    // 0.9 m of the line, in front of the camera, and nothing solid well before it (the ray stopped there: a wall, a
+    // tree, a hill). A body killed from far away (a thrown spear) is taken the same way when the player gets to it.
+    Animal DeadBodyNear(Ray ray, float hitDistance)
+    {
+        var population = RabbitPopulation.Instance;
+        if (population == null) return null;
+        Animal best = null;
+        float bestOff = 0.9f;
+        foreach (var r in population.Rabbits)
+        {
+            if (r == null || r.Alive || r.animal == null || !r.animal.playerInRange || !r.gameObject.activeInHierarchy) continue;
+            Vector3 to = r.transform.position + Vector3.up * 0.25f - ray.origin;
+            float along = Vector3.Dot(to, ray.direction);
+            if (along <= 0.2f || hitDistance < along - 1.2f) continue;
+            float off = (to - ray.direction * along).magnitude;
+            if (off >= bestOff) continue;
+            bestOff = off;
+            best = r.animal;
+        }
+        return best;
+    }
+
+    // One "Take" on the body: its meat and hide go straight into the inventory. (Before, they were thrown on the
+    // ground one by one and each had to be found and taken again: small in the grass, and in a pen under the
+    // foundation's floor, out of reach.) What does not fit in the inventory lies next to the body as dropped things
+    // (DroppedItems: on the right floor, kept in the save, easy to aim at).
     private void Loot(Lootable lootable)
     {
+        if (lootable == null) return;
+        var inventory = InventorySystem.Instance;
         // a baby rabbit gives nothing (only its body goes away); a half grown one only a little meat
         var young = lootable.GetComponent<RabbitLife>();
         float growth = young != null ? young.Growth : 1f;
         if (growth < BabyNothing)
         {
-            InventorySystem.Instance.ShowMessage(Lang.T("Too small: nothing to take. Let them grow!", "Prea mic: nu ai ce lua. Lasă-i să crească!"));
-            var baby = lootable.GetComponent<Animal>();
-            if (baby != null && baby.bloodPuddle != null) baby.bloodPuddle.transform.SetParent(lootable.transform.parent);
-            Destroy(lootable.gameObject);
+            if (inventory != null) inventory.ShowMessage(Lang.T("Too small: nothing to take. Let them grow!", "Prea mic: nu ai ce lua. Lasă-i să crească!"));
+            RemoveBody(lootable);
             return;
         }
         if (growth < 1f && lootable.wasLootCalculated == false)
@@ -426,42 +551,54 @@ public class SelectionManager : MonoBehaviour
             lootable.wasLootCalculated = true;
         }
 
-        //Spawning the loot on the ground
-        Vector3 lootSpawnPosition = lootable.gameObject.transform.position;
+        // the body goes away first (its box would hold up the things dropped next to it)
+        Vector3 bodyAt = lootable.transform.position;
+        RemoveBody(lootable);
 
-        foreach(LootRecieved lootRecieved in lootable.finalLoot)
+        // into the inventory; what does not fit lies next to the body
+        var shown = new List<string>();
+        var counts = new List<int>();
+        int left = 0;
+        bool sound = true;
+        foreach (LootRecieved loot in lootable.finalLoot)
         {
-            for(int i=0; i< lootRecieved.amount; i++)
+            if (loot == null || loot.item == null) continue;
+            string item = loot.item.name;
+            for (int i = 0; i < loot.amount; i++)
             {
-                Debug.Log(lootRecieved.item.name + "_Model");
-                
-                // on the ground around the body (before: at height 0.2 of the world, high above the island's ground)
-                var lootPrefab = Resources.Load<GameObject>(lootRecieved.item.name + "_Model");
-                if (lootPrefab == null) continue;
-                Vector2 spread = UnityEngine.Random.insideUnitCircle * 0.9f;
-                Vector3 at = new Vector3(lootSpawnPosition.x + spread.x, 0f, lootSpawnPosition.z + spread.y);
-                at.y = Forest.GroundY(at) + 0.35f;
-                GameObject lootSpawn = Instantiate(lootPrefab, at, Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0));
-                
+                if (inventory != null && inventory.CheckSlotsAvailable(1) && inventory.AddToIventory(item, sound, false))
+                {
+                    sound = false; // (one pickup sound for all of it)
+                    string name = Translations.Name(DroppedItems.NameOf(item));
+                    int index = shown.IndexOf(name);
+                    if (index < 0) { shown.Add(name); counts.Add(1); } else counts[index]++;
+                }
+                else
+                {
+                    Vector2 spread = UnityEngine.Random.insideUnitCircle * 0.6f;
+                    DroppedItems.Spawn(item, bodyAt + new Vector3(spread.x, 0.3f, spread.y), UnityEngine.Random.Range(0f, 360f));
+                    left++;
+                }
             }
         }
-        //If we want the blood puddle to stay om the ground
-        if (lootable.GetComponent<Animal>())
-        {
-            lootable.GetComponent<Animal>().bloodPuddle.transform.SetParent(lootable.transform.parent);
-        }
 
+        // "+2 Raw Meat  +1 Rabbit Hide" (and what is left on the ground)
+        string text = "";
+        for (int i = 0; i < shown.Count; i++) text += (i > 0 ? "   " : "") + "+" + counts[i] + " " + shown[i];
+        if (left > 0) text += (text.Length > 0 ? "\n" : "") + Lang.T("Inventory is full: the rest lies on the ground", "Inventarul e plin: restul e pe jos");
+        if (inventory != null && text.Length > 0) inventory.ShowMessage(text);
+    }
 
-        //Destroy Looted body
+    // The looted body goes away; its blood stays on the ground, and so does anything stuck in it that can be taken
+    // (a thrown spear, for example): only the rabbit itself is removed.
+    static void RemoveBody(Lootable lootable)
+    {
+        var animal = lootable.GetComponent<Animal>();
+        if (animal != null && animal.bloodPuddle != null) animal.bloodPuddle.transform.SetParent(lootable.transform.parent);
+        foreach (var stuck in lootable.GetComponentsInChildren<InteractableObject>(true))
+            if (stuck.gameObject != lootable.gameObject) stuck.transform.SetParent(lootable.transform.parent, true);
+        lootable.gameObject.SetActive(false); // (its box is gone at once, not at the end of the frame)
         Destroy(lootable.gameObject);
-
-        //if(chest){don't destroy}
-
-
-
-
-
-
     }
 
     IEnumerator DealDamageTo(Animal animal, float delay, int damage)

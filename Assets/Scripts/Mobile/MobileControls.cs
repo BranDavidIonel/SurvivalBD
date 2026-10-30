@@ -284,6 +284,8 @@ public class MobileControls : MonoBehaviour
             if (selection.selectedDoor != null) return selection.selectedDoor.IsOpen ? "Close" : "Open";
             if (selection.handIsVisible) return "Take";
         }
+        // the spear in the hand: the button throws it (SpearHeld)
+        if (Spear.IsHeld) return Lang.T("Throw", "Aruncă");
         return "Attack";
     }
 

@@ -37,7 +37,8 @@ public class InteractableObject : MonoBehaviour
             //if the ivenory is not full then add items
             if (InventorySystem.Instance.CheckSlotsAvailable(1))
             {
-                InventorySystem.Instance.AddToIventory(ItemName);
+                // (only when it really went into the inventory: an item without its prefab is not lost)
+                if (!InventorySystem.Instance.AddToIventory(ItemName)) return;
                 if (onPicked != null)
                 {
                     onPicked(this);

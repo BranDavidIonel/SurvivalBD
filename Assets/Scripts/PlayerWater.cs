@@ -171,6 +171,12 @@ public class PlayerWater : MonoBehaviour
 
     void UpdateBreath()
     {
+        // ADMIN: immortal (only while the admin is unlocked): the air never runs out, no drowning
+        if (GameSettings.Immortal)
+        {
+            ResetBreath();
+            return;
+        }
         if (IsHeadUnderwater)
         {
             currentBreath = Mathf.Max(0f, currentBreath - Time.deltaTime);

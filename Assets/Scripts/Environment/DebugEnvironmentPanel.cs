@@ -9,9 +9,11 @@ using UnityEngine.UI;
 //  The in-game Settings screen (menu > Settings), made in code when the game scene loads (EnvironmentBootstrap):
 //   1. For the player: nature sounds, sound effects, all sounds (0-100), the difficulty (Easy / Normal / Hard,
 //      GameSettings), and an "Admin" password field.
-//   2. Behind the admin password (1212, unlocked until the game is closed), the TEST settings for trying things
-//      quickly: the clock and time speed, move speed, time of day, season, weather, snow, the story (next level,
-//      give items, any item from a list).
+//   2. Behind the admin password (1212, unlocked until the game is closed or "Lock" is pressed), the TEST settings
+//      for trying things quickly: the clock and time speed, move speed, time of day, season, weather, snow, the story
+//      (next level, give items, any item from a list), Immortal.
+//      None of them is kept on the device or in a saved game: a player without the password always plays with the
+//      normal values (Attach puts them back when the game scene loads, Lock puts them back at once).
 //  To remove the TEST part: delete it from Build (the player's part stays).
 // ===================================================================================================
 public class DebugEnvironmentPanel : MonoBehaviour
@@ -48,6 +50,9 @@ public class DebugEnvironmentPanel : MonoBehaviour
     // Puts the panel into the in-game Settings screen (called by EnvironmentBootstrap).
     public static void Attach()
     {
+        // without the admin password the game always runs with the normal values (even if a TEST value was left
+        // changed in the scene by mistake)
+        if (!AdminUnlocked) NormalTestValues();
         var menus = FindObjectOfType<MenuManager>(true);
         if (menus == null || menus.settingsMenu == null) return;
         if (menus.settingsMenu.GetComponent<DebugEnvironmentPanel>() != null) return;
@@ -176,7 +181,8 @@ public class DebugEnvironmentPanel : MonoBehaviour
         NewButton(row, "Next level", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.SkipLevel(); });
         NewButton(row, "Give items", 220f, () => { if (StoryManager.Instance != null) StoryManager.Instance.GiveTestItems(); });
 
-        // 8a. the player can't die: health, food and water stay full (kept on the device until turned off)
+        // 8a. the player can't die: health, food and water stay full (only in this run of the game, never kept
+        // on the device: GameSettings.Immortal)
         row = NewRow(content, "Immortal");
         immortalButton = NewButton(row, "Immortal", 220f, () => { GameSettings.Immortal = !GameSettings.Immortal; Refresh(); });
         immortalInfo = NewLabel(row, "", 760f, 26f, InfoColor);
@@ -212,14 +218,19 @@ public class DebugEnvironmentPanel : MonoBehaviour
     //  The TEST settings above are shown only after the admin password, until the game is closed.
     // =============================================================================================
     const string AdminPassword = "1212";
+    // true only after the password, in this run of the game (never kept on the device). Every TEST setting works
+    // only while it is true (GameSettings.Immortal checks it too).
     public static bool AdminUnlocked { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void LockAtStart() => AdminUnlocked = false;
 
     RectTransform testPanel, playerPanel;
     Slider natureSlider, effectsSlider, masterSlider;
     TextMeshProUGUI natureValue, effectsValue, masterValue, difficultyInfo, adminInfo;
     readonly List<KeyValuePair<Button, GameSettings.Level>> difficultyButtons = new List<KeyValuePair<Button, GameSettings.Level>>();
     TMP_InputField passwordInput;
-    Button unlockButton, adminButton;
+    Button unlockButton, adminButton, lockButton;
     readonly List<KeyValuePair<Button, Lang.Language>> languageButtons = new List<KeyValuePair<Button, Lang.Language>>();
     // the words of this panel in both languages (changed at once when the language is chosen)
     readonly List<KeyValuePair<TMP_Text, string[]>> words = new List<KeyValuePair<TMP_Text, string[]>>();
@@ -316,7 +327,9 @@ public class DebugEnvironmentPanel : MonoBehaviour
         if (passwordInput.placeholder is TMP_Text hint) { hint.text = "password"; Say(hint, "password", "parola"); }
         unlockButton = NewButton(row, "Unlock", "Deblochează", 170f, TryUnlock);
         adminButton = NewButton(row, "Admin settings", "Setări admin", 300f, ShowAdmin);
-        adminInfo = NewLabel(row, "", 520f, 24f, InfoColor);
+        // locks the admin again: every TEST setting goes back to normal (to hand the game to a player)
+        lockButton = NewButton(row, "Lock", "Blochează", 190f, LockAdmin);
+        adminInfo = NewLabel(row, "", 480f, 24f, InfoColor);
         RefreshPlayerSettings();
     }
 
@@ -399,9 +412,46 @@ public class DebugEnvironmentPanel : MonoBehaviour
         passwordInput.gameObject.SetActive(!AdminUnlocked);
         unlockButton.gameObject.SetActive(!AdminUnlocked);
         adminButton.gameObject.SetActive(AdminUnlocked);
+        lockButton.gameObject.SetActive(AdminUnlocked);
         if (AdminUnlocked) { adminInfo.text = Lang.T("Unlocked until the game is closed", "Deblocat până închizi jocul"); adminInfo.color = InfoColor; }
-        else if (adminInfo.text != "Wrong password" && adminInfo.text != "Parolă greșită") adminInfo.text = "";
-        else adminInfo.text = WrongPassword;
+        else if (adminInfo.text == "Wrong password" || adminInfo.text == "Parolă greșită") adminInfo.text = WrongPassword;
+        else if (adminInfo.text == "Locked: normal game" || adminInfo.text == "Blocat: joc normal") adminInfo.text = LockedText;
+        else adminInfo.text = "";
+    }
+
+    static string LockedText => Lang.T("Locked: normal game", "Blocat: joc normal");
+
+    // The admin is locked again: every TEST setting goes back to normal, as for a player without the password.
+    void LockAdmin()
+    {
+        if (!AdminUnlocked) return;
+        GameSettings.Immortal = false;
+        NormalTestValues();
+        if (FindPlayer()) player.speed = normalMoveSpeed;
+        AdminUnlocked = false;
+        ShowPlayerSettings();
+        adminInfo.text = LockedText;
+        adminInfo.color = InfoColor;
+    }
+
+    // The normal values of the TEST settings that would change the game for a player: the clock runs at its own
+    // speed, the weather changes by itself. (The time of day, the season, the snow, the story and the items are
+    // the world itself: a test changes them like playing does.)
+    static void NormalTestValues()
+    {
+        var clock = DayNightSystem.Instance;
+        if (clock != null && (!clock.autoTime || !Mathf.Approximately(clock.timeSpeed, 1f)))
+        {
+            Debug.LogWarning("TEST clock was changed (time speed " + clock.timeSpeed + ", running " + clock.autoTime + "): back to normal (unlock the admin in Settings to test)");
+            clock.timeSpeed = 1f;
+            clock.autoTime = true;
+        }
+        var weather = WeatherSystem.Instance;
+        if (weather != null && !weather.autoWeather)
+        {
+            Debug.LogWarning("TEST weather was kept (" + weather.testWeather + "): back to the automatic weather");
+            weather.SetTestWeather(null);
+        }
     }
 
     void OnEnable()
@@ -442,7 +492,7 @@ public class DebugEnvironmentPanel : MonoBehaviour
         if (immortalButton != null)
         {
             Highlight(immortalButton, GameSettings.Immortal);
-            immortalInfo.text = GameSettings.Immortal ? "ON: no damage, no hunger, no thirst (click to turn off)" : "OFF (click: never lose health, food or water)";
+            immortalInfo.text = GameSettings.Immortal ? "ON: no damage, hunger, thirst, drowning, shadow (click: off)" : "OFF (click: nothing can kill you, until the game closes)";
         }
         if (!speedInput.isFocused) speedInput.SetTextWithoutNotify(clock.timeSpeed.ToString("0.##", CultureInfo.InvariantCulture));
         if (FindPlayer())
@@ -619,7 +669,7 @@ public class DebugEnvironmentPanel : MonoBehaviour
     {
         { "stone", "Stone" }, { "stick", "Stick" }, { "log", "Log" }, { "pinelog", "Pine Log" }, { "plank", "Plank" },
         { "hay", "Hay" }, { "hemp", "Hemp" }, { "rope", "Rope" }, { "ironore", "Iron Ore" },
-        { "Axe", "Stone Axe" }, { "ironaxe", "Iron Axe" }, { "torch", "Torch" }, { "Campfire", "Campfire" },
+        { "Axe", "Stone Axe" }, { "ironaxe", "Iron Axe" }, { "spear", "Spear" }, { "torch", "Torch" }, { "Campfire", "Campfire" },
         { "StorageBox", "Storage Box" }, { "foundation", "Foundation" }, { "wall", "Wall" },
         { "porcini", "Porcini" }, { "redmushroom", "Red Mushroom" }, { "fieldmushroom", "Field Mushroom" },
         { "berries", "Berries" }, { "chicory", "Chicory" }, { "heather", "Heather" },

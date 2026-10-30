@@ -192,7 +192,28 @@ public static class IoanPathsTool
             report.AppendLine("path " + leg.name + ": " + walked.ToString("0") + " m walked (ground up to " + steepest.ToString("0") + " deg), "
                 + stepped.ToString("0") + " m of steps in " + (stairs.Count - stairsBefore) + " flights (highest step " + worstRise.ToString("0.00") + " m), straight " + Flat(leg.to - leg.from).ToString("0") + " m");
         }
-        var saved = new IslandPaths.PathsData { halfWidth = PathHalf, landing = landing, landingSize = 4.5f };
+        // Near a needle-sharp top the steps fold back on themselves every few metres (the flights stand side by side,
+        // one or two metres apart in height: no way up). The flight that ends at the stone is cut before its first
+        // such fold, and the stone goes right after its last good step.
+        float landingSize = 4.5f;
+        foreach (var flight in stairs)
+        {
+            if (flight.Count < 8 || Flat(flight[flight.Count - 1] - landing) > 3f) continue;
+            int cut = -1;
+            for (int i = 2; i < flight.Count - 2 && cut < 0; i++)
+            {
+                Vector3 a = flight[i] - flight[i - 2], b = flight[i + 2] - flight[i];
+                a.y = 0f; b.y = 0f;
+                if (a.sqrMagnitude > 1e-4f && b.sqrMagnitude > 1e-4f && Vector3.Angle(a, b) > 150f) cut = i - 2;
+            }
+            if (cut < 4) continue;
+            flight.RemoveRange(cut + 1, flight.Count - cut - 1);
+            Vector3 dir = Flatten(flight[cut] - flight[cut - 1]);
+            landing = flight[cut] + dir * 1.6f + Vector3.up * 0.3f;
+            landingSize = 3f;
+            report.AppendLine("the steps fold back near the top: the stone for the cross is at " + landing + " (" + (summit.y - landing.y).ToString("0") + " m under the top)");
+        }
+        var saved = new IslandPaths.PathsData { halfWidth = PathHalf, landing = landing, landingSize = landingSize };
         foreach (var p in paths) saved.paths.Add(new IslandPaths.PathLine { points = p });
         foreach (var p in stairs) saved.stairs.Add(new IslandPaths.PathLine { points = p });
         File.WriteAllText("Assets/Resources/Environment/IoanPaths.json", JsonUtility.ToJson(saved));

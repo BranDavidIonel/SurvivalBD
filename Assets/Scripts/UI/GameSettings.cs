@@ -8,21 +8,27 @@ public static class GameSettings
 {
     public enum Level { Easy = 0, Normal = 1, Hard = 2 }
 
-    // ADMIN (Settings > Admin settings, password): the player never loses health, food or water and never dies.
-    // Kept on the device until it is turned off again.
-    const string ImmortalKey = "SurvivalBD.Immortal";
-    static int immortal = -1;
+    // ADMIN (Settings > Admin settings, password): the player never loses health, food or water and never dies
+    // (no hunger, thirst, drowning, deep sea, cave or night shadow).
+    // Only for this run of the game and only while the admin is unlocked (DebugEnvironmentPanel.AdminUnlocked):
+    // it is never written on the device, so after a restart, or for a player without the password, it is off.
+    static bool immortal;
     public static bool Immortal
     {
-        get
+        get => immortal && DebugEnvironmentPanel.AdminUnlocked;
+        set => immortal = value && DebugEnvironmentPanel.AdminUnlocked;
+    }
+
+    // Older versions kept Immortal on the device (PlayerPrefs): that is forgotten when the game starts.
+    const string OldImmortalKey = "SurvivalBD.Immortal";
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void ForgetAdminSettings()
+    {
+        immortal = false;
+        if (PlayerPrefs.HasKey(OldImmortalKey))
         {
-            if (immortal < 0) immortal = PlayerPrefs.GetInt(ImmortalKey, 0);
-            return immortal == 1;
-        }
-        set
-        {
-            immortal = value ? 1 : 0;
-            PlayerPrefs.SetInt(ImmortalKey, immortal);
+            PlayerPrefs.DeleteKey(OldImmortalKey);
             PlayerPrefs.Save();
         }
     }

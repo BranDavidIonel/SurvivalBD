@@ -204,6 +204,10 @@ public class CraftingSystem : MonoBehaviour
         // Iron axe (Tools): 10 iron ore from the cave and a log
         IronAxeBLP = NewBlueprint("IronAxeBLP", "ironaxe", "ironore", 10, "log", 1);
         CloneCard(toolsScreenUI.transform, "Axe", "IronAxe", IronAxeBLP, out IronAxeReq1, out IronAxeReq2, out craftIronAxeBTN);
+        // Spear (Tools): 2 sticks, and an axe to knap its stone point (the axe is not used up: the second line shows it)
+        SpearBLP = NewBlueprint("SpearBLP", Spear.Item, "stick", 2, "", 0);
+        CloneCard(toolsScreenUI.transform, "Axe", "Spear", SpearBLP, out SpearReq1, out SpearAxeLine, out craftSpearBTN);
+        if (SpearAxeLine != null) SpearAxeLine.gameObject.SetActive(true);
         // Rope (Refine & Process): 3 hemp
         RopeBLP = NewBlueprint("RopeBLP", "rope", "hemp", 3, "", 0);
         CloneCard(refineScreenUI.transform, "Plank", "Rope", RopeBLP, out RopeReq1, out RopeReq2, out craftRopeBTN);
@@ -240,7 +244,34 @@ public class CraftingSystem : MonoBehaviour
 
     // ---------------- recipes added in code (their cards are copies of the scene's cards) ---------------- //
 
-    public Blueprint IronAxeBLP, RopeBLP, SnareBLP, DoorWallBLP, WindowWallBLP, RoofBLP, CrossBLP, FenceBLP, GateBLP;
+    public Blueprint IronAxeBLP, RopeBLP, SnareBLP, DoorWallBLP, WindowWallBLP, RoofBLP, CrossBLP, FenceBLP, GateBLP, SpearBLP;
+    Text SpearReq1, SpearAxeLine;
+    Button craftSpearBTN;
+
+    // the spear needs an axe the player keeps (stone or iron, in the inventory, the quick bar or the hand)
+    bool NeedsAxe(Blueprint blueprint) => blueprint != null && blueprint == SpearBLP;
+
+    public static bool HasAxe() => HasAnywhere("Axe") || HasAnywhere("ironaxe");
+
+    static bool HasAnywhere(string item)
+    {
+        var inventory = InventorySystem.Instance;
+        if (inventory != null && inventory.CountInInventory(item) > 0) return true;
+        var equip = EquipSystem.Instance;
+        if (equip == null) return false;
+        foreach (var slot in equip.quickSlotsList)
+            if (slot != null && slot.transform.childCount > 0 && InventorySystem.CleanName(slot.transform.GetChild(0).name) == item) return true;
+        return false;
+    }
+
+    // "Axe (kept)  1 / 1", green when the player has one
+    void ShowAxeLine(Text text)
+    {
+        if (text == null) return;
+        bool has = HasAxe();
+        text.text = Translations.Name("Axe") + Lang.T(" (kept)", " (rămâne)") + "  " + (has ? 1 : 0) + " / 1";
+        text.color = has ? EnoughColor : MissingColor;
+    }
     Text IronAxeReq1, IronAxeReq2, RopeReq1, RopeReq2, SnareReq1, SnareReq2;
     Text DoorWallReq1, DoorWallReq2, WindowWallReq1, WindowWallReq2, RoofReq1, RoofReq2, CrossReq1, CrossReq2;
     Text FenceReq1, FenceReq2, GateReq1, GateReq2;
@@ -347,6 +378,14 @@ public class CraftingSystem : MonoBehaviour
     }
 
 
+    // the same as the card's Craft button (also for a test from a script: TryCraft(SpearBLP)); false when it can't
+    public bool TryCraft(Blueprint blueprint)
+    {
+        if (blueprint == null || !CanCraft(blueprint)) return false;
+        CraftAnyItem(blueprint);
+        return true;
+    }
+
     void CraftAnyItem(Blueprint blueprintToCraft)
     {
         // the button can be out of date (items moved since): check again before taking anything
@@ -378,6 +417,9 @@ public class CraftingSystem : MonoBehaviour
     bool CanCraft(Blueprint blueprint)
     {
         var inventory = InventorySystem.Instance;
+        if (NeedsAxe(blueprint) && !HasAxe()) return false;
+        // (an item whose inventory prefab is missing would eat the materials and give nothing)
+        if (Resources.Load<GameObject>(blueprint.itemName) == null) return false;
         if (inventory.CountItem(blueprint.Req1) < blueprint.Req1amount) return false;
         if (blueprint.numeOfRequirements >= 2 && inventory.CountItem(blueprint.Req2) < blueprint.Req2amount) return false;
 
@@ -472,6 +514,7 @@ public class CraftingSystem : MonoBehaviour
         if (CrossReq1 != null) RefreshCard(CrossBLP, CrossReq1, CrossReq2, craftCrossBTN);
         if (FenceReq1 != null) RefreshCard(FenceBLP, FenceReq1, FenceReq2, craftFenceBTN);
         if (GateReq1 != null) RefreshCard(GateBLP, GateReq1, GateReq2, craftGateBTN);
+        if (SpearReq1 != null) { RefreshCard(SpearBLP, SpearReq1, null, craftSpearBTN); ShowAxeLine(SpearAxeLine); }
     }
 
     // "Stone  2 / 3" in red until there is enough, then green; the Craft button greys out when it can't craft
@@ -490,7 +533,9 @@ public class CraftingSystem : MonoBehaviour
         if (label != null)
         {
             bool enough = inventory.CountItem(blueprint.Req1) >= blueprint.Req1amount
-                && (blueprint.numeOfRequirements < 2 || inventory.CountItem(blueprint.Req2) >= blueprint.Req2amount);
+                && (blueprint.numeOfRequirements < 2 || inventory.CountItem(blueprint.Req2) >= blueprint.Req2amount)
+                && (!NeedsAxe(blueprint) || HasAxe())
+                && Resources.Load<GameObject>(blueprint.itemName) != null;
             label.text = can || !enough ? Lang.T("Craft", "Fă") : Lang.T("Inventory full", "Inventar plin");
             label.color = can ? Color.white : new Color(1f, 1f, 1f, 0.55f);
         }

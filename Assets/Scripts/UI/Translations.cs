@@ -77,6 +77,8 @@ public static class Translations
         { "The floor of a house", "Podeaua unei case" }, { "A wall on a foundation", "Un perete pe o fundație" },
         { "A wall with a door", "Un perete cu ușă" }, { "A wall with a window", "Un perete cu fereastră" },
         { "Covers a house", "Acoperă o casă" }, { "The canon's cross, raised last", "Crucea canonului, înălțată la sfârșit" },
+        // the spear (its card's title and what it is for)
+        { "Spear", "Suliță" }, { "Thrown at rabbits from 10-15 m", "Se aruncă după iepuri de la 10-15 m" },
     };
 
     // the words are looked up as one line with single spaces (the scene writes some of them on two lines)
@@ -146,6 +148,7 @@ public static class Translations
         { "redmushroom", new[] { "Ciupercă roșie", "O ciupercă roșie de pădure. Amară, dar bună.", "Mănâncă: +8 viață, +120 hrană." } },
         { "roof", new[] { "Acoperiș", "Scânduri cu un strat gros de fân deasupra.", "Folosește-l, apoi privește partea de sus a pereților unei fundații." } },
         { "rope", new[] { "Frânghie", "O frânghie tare, împletită din fibre de cânepă.", "Leagă buștenii plutei; balamalele ușii țarcului." } },
+        { "spear", new[] { "Suliță", "Un băț drept cu un vârf ascuțit de piatră, legat cu sfoară.", "Pune-o în bara rapidă și ia-o în mână: + arată unde zboară. Apasă (butonul Aruncă) ca s-o arunci după un iepure de la 10-15 m, apoi ia-o înapoi de unde a căzut." } },
         { "snare", new[] { "Laț", "O buclă de sfoară de cânepă, legată de un băț înfipt în pământ.", "Folosește-l (dublu tap / clic dreapta) ca să-l pui lângă iepuri. Un iepure mare care intră în el rămâne prins viu." } },
         { "stick", new[] { "Băț", "Un băț uscat.", "Pentru meșteșuguri și pentru foc." } },
         { "stone", new[] { "Piatră", "O piatră simplă.", "Pentru meșteșuguri (topor, foc de tabără)." } },

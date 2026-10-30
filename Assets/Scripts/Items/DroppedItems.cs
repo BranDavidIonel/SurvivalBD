@@ -66,6 +66,8 @@ public static class DroppedItems
 
     public static GameObject Spawn(string item, Vector3 at, float yaw)
     {
+        // a spear lies on the ground as the spear itself (ThrownSpear: taken back the same way)
+        if (item == Spear.Item) return Spear.SpawnInWorld(at, yaw, 0f, false);
         GameObject go = null;
         InteractableObject pick = null;
         Transform picture = null;
@@ -143,7 +145,7 @@ public static class DroppedItems
     }
 
     // the ground under a point: the cave's floor or a rock if there is one, else the island's ground
-    static float GroundUnder(Vector3 p)
+    public static float GroundUnder(Vector3 p)
     {
         float ground = Forest.GroundY(p);
         var hits = Physics.RaycastAll(p + Vector3.up * 2.2f, Vector3.down, 8f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
@@ -198,7 +200,11 @@ public static class DroppedItems
     public static List<DroppedItemData> GetData()
     {
         var list = new List<DroppedItemData>();
-        foreach (var d in All) if (d != null) list.Add(new DroppedItemData { item = d.item, position = d.transform.position, yaw = d.transform.eulerAngles.y });
+        foreach (var d in All) if (d != null) list.Add(new DroppedItemData
+        {
+            item = d.item, position = d.transform.position, yaw = d.transform.eulerAngles.y,
+            pitch = d.standing ? d.transform.eulerAngles.x : 0f, standing = d.standing,
+        });
         return list;
     }
 
@@ -207,7 +213,13 @@ public static class DroppedItems
         foreach (var d in All.ToArray()) if (d != null) Object.Destroy(d.gameObject);
         All.Clear();
         if (saved == null) return;
-        foreach (var d in saved) if (!string.IsNullOrEmpty(d.item)) Spawn(d.item, d.position, d.yaw);
+        foreach (var d in saved)
+        {
+            if (string.IsNullOrEmpty(d.item)) continue;
+            // a spear stuck in the ground or a tree comes back at its place and angle
+            if (d.item == Spear.Item) Spear.SpawnInWorld(d.position, d.yaw, d.pitch, d.standing);
+            else Spawn(d.item, d.position, d.yaw);
+        }
     }
 }
 
@@ -217,6 +229,9 @@ public class DroppedItemData
     public string item;
     public Vector3 position;
     public float yaw;
+    // a thrown spear stuck in the ground, a tree or a rock: its tilt (older saves: 0 and false, lying on the ground)
+    public float pitch;
+    public bool standing;
 }
 
 // on every dropped thing: close enough to pick up? Its picture turns to the camera.
@@ -225,6 +240,7 @@ public class DroppedItem : MonoBehaviour
     public string item;
     public InteractableObject pick;
     public Transform picture;
+    public bool standing;   // a spear stuck where it landed (the save keeps its angle)
     Transform player;
     float tick;
 

@@ -7,13 +7,15 @@ using UnityEngine.UI;
 // A new game: the player wakes up on the beach (Story Start) after the shipwreck; the story is told line by line
 // on a black screen, then the levels begin, each with its goals in a panel at the top right:
 //   Level 1  Make a fire         stones -> craft a campfire -> place it -> wood and hay -> light it
-//   Level 2  Fresh water         find the river that comes down from the mountain -> drink from it
+//   Level 2  Fresh water         find the river that comes down from the mountain -> drink from it; before the
+//                                night: a stone axe (wood for the fire) and a torch (fire in the hand at night)
 //   Level 3  Something to eat    pick 2 mushrooms in the forest -> eat them
 //   Level 4  The first night     gather firewood (something strange is on the island) -> a burning fire
-//                                when night falls -> stay by the fire until morning
+//                                when night falls -> stay by the fire until morning (a night spent by the fire
+//                                at an earlier level counts: the level is done at once)
 //   Level 5  The mountain        the cave opens: explore the mountain -> find it (pitch dark: no going in)
-//   Level 6  Into the dark       craft a torch -> hold it -> down to the end of the cave -> read the journal ->
-//                                take the prayer book (without light in the cave the shadow kills)
+//   Level 6  Into the dark       a torch (the one from level 2 counts) -> hold it -> down to the end of the cave ->
+//                                read the journal -> take the prayer book (without light in the cave the shadow kills)
 //   Level 7  The prayer          at night, when the shadow comes, open the prayer book: it flees
 //   Level 8  Iron                10 iron ore from the cave + a log -> the iron axe (any tree in 3 blows)
 //   Level 9  Brother Ioan's canon  snares -> a male and a female rabbit alive -> a pen (foundation, walls, door wall,
@@ -22,7 +24,8 @@ using UnityEngine.UI;
 //   Level 10 The raft (the last) hemp -> ropes; logs, planks, sticks, hay, cooked meat, rabbit hides and 2 live rabbits
 //                                brought to the raft where the new stream meets the sea (many trips) -> it slides into
 //                                the sea -> board it: the island gets smaller behind it, the end (new levels go before it)
-// The save keeps the level and its goals (EnviromentData.story).
+// The save keeps the level and its goals (EnviromentData.story), and what the player did since the game began
+// (a night by the fire, the axe, the torch...: Remember), so a goal done at an earlier level counts at once.
 public class StoryManager : MonoBehaviour
 {
     public static StoryManager Instance { get; private set; }
@@ -78,14 +81,18 @@ public class StoryManager : MonoBehaviour
                 "My mouth is dry and the sea water is salty.",
                 "I need fresh water. A river must come down from the mountain... maybe to the lake I saw.",
                 "Near the beach there is an old path, trodden by someone long ago. Maybe it leads to water.",
+                "And before night comes I need tools: a stone axe to cut wood for the fire, and a torch to carry fire with me in the dark.",
             },
+            // (new steps go after the old ones: a save in the middle of this level keeps its ticks)
             steps = new[]
             {
                 "Find fresh water: the river or the lake",
                 "Drink (look down at the water: Drink water)",
+                "Craft a stone axe (Crafting > Tools: 1 stone + 2 sticks)",
+                "Craft a torch (Crafting > Tools: 1 stick + 2 hay)",
             },
-            hint = "Follow the old path from the beach: it leads to the lake. The sea is salty: never drink it. After rain, puddles are fresh water too.",
-            done = "Cold, clear water. I must remember where the river and the lake are.",
+            hint = "Follow the old path from the beach to the lake; never drink the sea. The axe cuts wood for the fire. Keep the torch for the night: it burns only in your hand, and its fire keeps the dark away.",
+            done = "Cold, clear water, an axe and a torch. I must remember where the river and the lake are.",
         },
         new Level
         {
@@ -119,7 +126,7 @@ public class StoryManager : MonoBehaviour
                 "Have a burning fire when night falls",
                 "Stay by your fire until morning",
             },
-            hint = "Craft a stone axe (1 stone + 2 sticks) and chop trees for logs. Logs burn the longest. Don't let the fire go out!",
+            hint = "Chop trees with your stone axe (Crafting > Tools: 1 stone + 2 sticks) for logs: they burn the longest. Stay near the fire after dark; if it goes out, hold your torch.",
             done = "The sun rises. I made it through the night... but the shadow will come back.",
         },
         new Level
@@ -144,18 +151,18 @@ public class StoryManager : MonoBehaviour
             title = "INTO THE DARK",
             story = new[]
             {
-                "I need a light I can carry.",
-                "A stick with dry grass tied around it will burn for a few hours. Maybe two, to be safe.",
+                "Down there it is pitch dark. I need a light I can carry: a torch.",
+                "A torch burns only a few hours. Better take two, to be safe.",
             },
             steps = new[]
             {
-                "Craft a torch (Crafting > Tools)",
+                "Have a torch (Crafting > Tools: 1 stick + 2 hay)",
                 "Hold the torch in your hand (it lights up)",
                 "Go down to the end of the cave",
                 "Read the old journal",
                 "Take the prayer book (on the stone before the cross)",
             },
-            hint = "A torch burns about 6 hours in the hand. Never be in the cave without light: the shadow lives in the dark!",
+            hint = "A torch burns about 6 hours in the hand: if yours burned out, make a new one first. Never be in the cave without light: the shadow lives in the dark!",
             done = "Brother Ioan fought the same shadow. He left me his prayers.",
         },
         new Level
@@ -169,9 +176,9 @@ public class StoryManager : MonoBehaviour
             steps = new[]
             {
                 "Wait for the night",
-                "When the shadow comes, open the prayer book",
+                "At night, when the shadow comes, open the prayer book",
             },
-            hint = "Use the prayer book from the inventory or the quick bar when the shadow is near (away from your fire, without a torch).",
+            hint = "Use the prayer book from the inventory or the quick bar at night, best when the shadow is near (away from your fire, without a torch).",
             done = "The shadow fled from the prayer. Now I have two ways against it: the fire and the prayer.",
         },
         new Level
@@ -276,14 +283,17 @@ public class StoryManager : MonoBehaviour
                 "Gura mi s-a uscat, iar apa mării e sărată.",
                 "Am nevoie de apă dulce. Din munte trebuie să coboare un râu... poate spre lacul pe care l-am văzut.",
                 "Lângă plajă e o potecă veche, bătătorită de cineva demult. Poate duce la apă.",
+                "Iar până vine noaptea am nevoie de unelte: un topor de piatră, ca să tai lemne pentru foc, și o torță, ca să port focul cu mine prin întuneric.",
             },
             steps = new[]
             {
                 "Găsește apă dulce: râul sau lacul",
-                "Bea (privește în jos, la apă: Drink water)",
+                "Bea (privește în jos, la apă: Bea apă)",
+                "Fă un topor de piatră (Meșteșuguri > Unelte: 1 piatră + 2 bețe)",
+                "Fă o torță (Meșteșuguri > Unelte: 1 băț + 2 fân)",
             },
-            hint = "Urmează poteca veche de la plajă: duce la lac. Marea e sărată: nu bea niciodată din ea. După ploaie, și băltoacele sunt apă bună de băut.",
-            done = "Apă rece și limpede. Trebuie să țin minte unde sunt râul și lacul.",
+            hint = "Urmează poteca veche de la plajă până la lac; nu bea niciodată din mare. Toporul taie lemne pentru foc. Păstrează torța pentru noapte: arde doar în mână, iar focul ei ține întunericul departe.",
+            done = "Apă rece și limpede, un topor și o torță. Trebuie să țin minte unde sunt râul și lacul.",
         },
         new Level
         {
@@ -317,7 +327,7 @@ public class StoryManager : MonoBehaviour
                 "Să ai focul aprins când se lasă noaptea",
                 "Rămâi lângă foc până dimineață",
             },
-            hint = "Fă un topor de piatră (1 piatră + 2 bețe) și taie copaci pentru bușteni. Buștenii ard cel mai mult. Nu lăsa focul să se stingă!",
+            hint = "Taie copaci cu toporul de piatră (Meșteșuguri > Unelte: 1 piatră + 2 bețe) pentru bușteni: ard cel mai mult. După ce se întunecă stai lângă foc; dacă se stinge, ține torța în mână.",
             done = "Răsare soarele. Am trecut de noapte... dar umbra se va întoarce.",
         },
         new Level
@@ -342,18 +352,18 @@ public class StoryManager : MonoBehaviour
             title = "ÎN ÎNTUNERIC",
             story = new[]
             {
-                "Am nevoie de o lumină pe care s-o pot purta cu mine.",
-                "Un băț cu iarbă uscată legată în jurul lui va arde câteva ore. Poate două, ca să fiu sigur.",
+                "Acolo jos e beznă. Am nevoie de o lumină pe care s-o port cu mine: o torță.",
+                "O torță arde doar câteva ore. Mai bine iau două, ca să fiu sigur.",
             },
             steps = new[]
             {
-                "Fă o torță (Meșteșuguri > Unelte)",
+                "Să ai o torță (Meșteșuguri > Unelte: 1 băț + 2 fân)",
                 "Ține torța în mână (se aprinde)",
                 "Coboară până la capătul peșterii",
                 "Citește jurnalul vechi",
                 "Ia cartea de rugăciuni (pe piatra din fața crucii)",
             },
-            hint = "O torță arde cam 6 ore în mână. Nu sta niciodată în peșteră fără lumină: umbra trăiește în întuneric!",
+            hint = "O torță arde cam 6 ore în mână: dacă a ta s-a stins, fă mai întâi alta. Nu sta niciodată în peșteră fără lumină: umbra trăiește în întuneric!",
             done = "Fratele Ioan s-a luptat cu aceeași umbră. Mi-a lăsat rugăciunile lui.",
         },
         new Level
@@ -367,9 +377,9 @@ public class StoryManager : MonoBehaviour
             steps = new[]
             {
                 "Așteaptă noaptea",
-                "Când vine umbra, deschide cartea de rugăciuni",
+                "Noaptea, când vine umbra, deschide cartea de rugăciuni",
             },
-            hint = "Folosește cartea de rugăciuni din inventar sau din bara rapidă când umbra e aproape (departe de foc, fără torță).",
+            hint = "Folosește cartea de rugăciuni din inventar sau din bara rapidă noaptea, cel mai bine când umbra e aproape (departe de foc, fără torță).",
             done = "Umbra a fugit de rugăciune. Acum am două arme împotriva ei: focul și rugăciunea.",
         },
         new Level
@@ -556,6 +566,9 @@ public class StoryManager : MonoBehaviour
         data = saved != null && saved.version >= 1 ? saved : new StoryData { version = StoryData.CurrentVersion, level = 1, introSeen = true };
         // a save from before the rabbit pen (level 9): the raft (and the end) moved one level on
         if (data.version < 2 && data.level >= 9) data.level++;
+        // a save from before the facts (version 3) in the middle of "The first night": the night it had begun by
+        // the fire counts (in the day the level is done at once, at night when the morning comes)
+        if (data.version < 3 && data.level == 4 && data.nightStarted) data.byFireTonight = true;
         data.version = StoryData.CurrentVersion;
         data.introSeen = true;
         if (panel == null) BuildUI();
@@ -608,7 +621,17 @@ public class StoryManager : MonoBehaviour
         }
         UpdatePanelVisibility();
         UpdateWinter();
+        // the facts of the game (a fire at night, a night by the fire, an axe made...) are noted all the time, also
+        // while a story page or a "LEVEL N" banner shows: what happened then still counts for a later goal
+        if (data.introSeen && (rememberTimer -= Time.unscaledDeltaTime) <= 0f)
+        {
+            rememberTimer = 0.5f;
+            Remember();
+        }
         if (modal || !data.introSeen || data.level > Levels.Length) return;
+        // not while the "LEVEL N" banner shows: a level already done (a night by the fire at an earlier level...)
+        // finishes after its banner, not over it
+        if (BannerShowing) return;
         checkTimer -= Time.deltaTime;
         if (checkTimer > 0f) return;
         checkTimer = 0.5f;
@@ -617,6 +640,7 @@ public class StoryManager : MonoBehaviour
 
     void CheckGoals()
     {
+        Remember();
         var done = Status();
         int before = data.stepsDone;
         for (int i = 0; i < done.Length; i++) if (done[i]) data.stepsDone |= 1 << i;
@@ -631,11 +655,77 @@ public class StoryManager : MonoBehaviour
 
     bool StepDone(int i) => (data.stepsDone & (1 << i)) != 0;
 
+    // the Help screen: a goal of the current level is ticked
+    public bool StepIsDone(int step) => data != null && step >= 0 && step < 31 && StepDone(step);
+
+    // ---------------- what the player did, whatever the level ---------------- //
+
+    const float NearFire = 30f;   // "by the fire": a burning campfire this close (the shadow keeps away within 20 m)
+
+    // Kept in the save from the very start of the game, at every check and at any level: a level that asks for it
+    // later is done at once (a night spent by the fire at level 2 makes "The first night" pass, a torch made at
+    // level 2 counts in "Into the dark"...). These facts are only ever set, never taken back.
+    float rememberTimer;
+
+    void Remember()
+    {
+        Vector3 p = PlayerPosition();
+        bool burning = false, near = false;
+        float wood = 0f; // game minutes of wood in the fires now
+        foreach (var f in PlacedFires())
+        {
+            wood += f.fuelMinutes;
+            if (!f.IsBurning) continue;
+            burning = true;
+            if ((f.FireCentre - p).sqrMagnitude < NearFire * NearFire) near = true;
+        }
+        if (burning) data.fireLit = true;
+        if (IsDark())
+        {
+            if (burning) data.fireAtNight = true;
+            if (near) data.byFireTonight = true;
+        }
+        else if (data.byFireTonight)
+        {
+            // daylight again after a night by the fire (even if the fire went out before dawn)
+            data.byFireTonight = false;
+            data.nightByFire = true;
+        }
+        // firewood for a night: 3 logs or 8 sticks (planks between them), carried or put in the fires (4 hours)
+        int carried = Count("log") * 8 + Count("plank") * 4 + Count("stick") * 3;
+        if (carried >= 24 || wood >= 4f * 60f) data.firewood = true;
+        if (Has("Axe") || Has("ironaxe")) data.hadAxe = true;
+        if (Has("ironaxe")) data.hadIronAxe = true;
+        if (Has("torch") || TorchLight.HasTorch) data.hadTorch = true;
+        if (TorchLight.Burning) data.torchLit = true;
+    }
+
+    // dark night: when the shadow can come (the light of the sky), or the hours that are dark in every season
+    static bool IsDark()
+    {
+        if (SkyLighting.Instance != null) return SkyLighting.Instance.DayLight < 0.1f;
+        float hour = Hour();
+        return hour >= 20.5f || hour < 4.5f;
+    }
+
+    static float Hour() => DayNightSystem.Instance != null ? DayNightSystem.Instance.Hour : 12f;
+
+    static int Count(string item) => InventorySystem.Instance != null ? InventorySystem.Instance.CountItem(item) : 0;
+
+    // in the inventory, the quick bar or the hand (CountItem leaves out the item held in the hand: an axe in the
+    // hand did not count)
+    static bool Has(string item)
+    {
+        if (Count(item) > 0) return true;
+        var equip = EquipSystem.Instance;
+        if (equip == null || equip.selectedItem == null) return false;
+        string held = InventorySystem.CleanName(equip.selectedItem.name);
+        return held == item || (item == "log" && held == "pinelog");
+    }
+
     // which goals of the current level are done now (a later goal done means the earlier ones are too)
     bool[] Status()
     {
-        var inventory = InventorySystem.Instance;
-        int Count(string item) => inventory != null ? inventory.CountItem(item) : 0;
         var level = Levels[data.level - 1];
         var s = new bool[level.steps.Length];
         switch (data.level)
@@ -643,18 +733,22 @@ public class StoryManager : MonoBehaviour
             case 1:
             {
                 var fires = PlacedFires();
-                bool burning = false;
+                bool burning = data.fireLit;
                 foreach (var f in fires) if (f.IsBurning) burning = true;
                 s[4] = burning;
                 s[3] = s[4] || ((Count("stick") + Count("log") + Count("plank")) > 0 && Count("hay") > 0 && fires.Count > 0);
                 s[2] = s[3] || fires.Count > 0;
-                s[1] = s[2] || Count("Campfire") > 0;
+                s[1] = s[2] || Has("Campfire");
                 s[0] = s[1] || Count("stone") >= 6;
                 break;
             }
             case 2:
+                // the water (drunk or found at any level), then the tools for the night (made at any time: they
+                // don't tick the water)
                 s[1] = data.drank;
                 s[0] = s[1] || data.riverFound;
+                s[2] = data.hadAxe;
+                s[3] = data.hadTorch;
                 break;
             case 3:
                 s[1] = data.mushroomsEaten >= 2;
@@ -662,16 +756,14 @@ public class StoryManager : MonoBehaviour
                 break;
             case 4:
             {
-                float hour = DayNightSystem.Instance != null ? DayNightSystem.Instance.Hour : 12f;
-                bool night = hour >= 20.5f || hour < 4.5f;
+                // from the facts kept since the game began (Remember): a night already spent by a burning fire, at
+                // any level, makes the whole level done at once; the fire may go out before dawn
                 bool burning = false;
-                float fuel = 0f;
-                foreach (var f in PlacedFires()) { if (f.IsBurning) burning = true; fuel += f.fuelMinutes; }
-                int wood = Count("log") * 4 + Count("stick") + Count("plank") * 2;
-                if (night && StepDone(1)) data.nightStarted = true;
-                s[2] = data.nightStarted && hour >= 6f && hour < 12f && burning;
-                s[1] = s[2] || StepDone(1) || ((hour >= 19f || hour < 5f) && burning);
-                s[0] = s[1] || wood >= 12 || fuel >= 8f * 60f;
+                foreach (var f in PlacedFires()) if (f.IsBurning) burning = true;
+                float hour = Hour();
+                s[2] = data.nightByFire;
+                s[1] = s[2] || data.fireAtNight || ((hour >= 19f || hour < 5f) && burning);
+                s[0] = s[1] || data.firewood;
                 break;
             }
             case 5:
@@ -701,31 +793,33 @@ public class StoryManager : MonoBehaviour
                     float d = cave.DistanceToPath(p, out float along);
                     deep = d < cave.radius * 2.6f && along > cave.Length - 30f;
                 }
-                s[4] = Count("prayerbook") > 0;
+                s[4] = Has("prayerbook");
                 s[3] = s[4] || data.journalRead;
                 s[2] = s[3] || deep;
-                s[1] = s[2] || TorchLight.Burning;
-                s[0] = s[1] || Count("torch") > 0;
+                // the torch made at level 2 (or any time) counts, and so does one that already burned in the hand
+                s[1] = s[2] || TorchLight.Burning || data.torchLit;
+                s[0] = s[1] || Has("torch") || data.hadTorch;
                 break;
             }
             case 7:
             {
-                float hour = DayNightSystem.Instance != null ? DayNightSystem.Instance.Hour : 12f;
+                float hour = Hour();
                 bool shadow = NightShadow.Instance != null && NightShadow.Instance.IsHunting;
                 s[1] = data.prayerOpened;
-                s[0] = s[1] || shadow || hour >= 20.5f || hour < 4.5f;
+                s[0] = s[1] || shadow || IsDark() || hour >= 20.5f || hour < 4.5f;
                 break;
             }
             case 8:
-                s[2] = Count("ironaxe") > 0;
-                s[1] = s[2] || Count("log") > 0;
+                // (an iron axe made earlier counts, also in the hand)
+                s[2] = data.hadIronAxe || Has("ironaxe");
+                s[1] = s[2] || Has("log");
                 s[0] = s[2] || Count("ironore") >= 10;
                 break;
             case 9:
             {
                 // Brother Ioan's canon: rabbits in a pen, trees, and last the cross on the other mountain
                 s[5] = data.crossPlaced;
-                s[4] = s[5] || Count("cross") > 0;
+                s[4] = s[5] || Has("cross");
                 s[3] = data.treesPlanted >= CanonTrees;
                 s[2] = PairInPen();
                 s[1] = s[2] || PenBuilt();
@@ -850,9 +944,10 @@ public class StoryManager : MonoBehaviour
         return false;
     }
 
+    // every tree planted counts for the canon (level 9), also those planted before it
     void OnTreePlanted()
     {
-        if (data != null && data.level == 9) data.treesPlanted++;
+        if (data != null) data.treesPlanted++;
     }
 
     void OnTakenAlive(RabbitInfo.Sex sex)
@@ -902,9 +997,10 @@ public class StoryManager : MonoBehaviour
     void OnBookOpened(BookReader.Book book)
     {
         if (data == null) return;
-        // the journal is found in Level 6; Level 7: the prayer book opened while the shadow comes
-        if (book == BookReader.Book.Journal) { if (data.level == 6) data.journalRead = true; }
-        else if (data.level == 7 && BookReader.DroveShadowAway) data.prayerOpened = true;
+        // the journal is found in Level 6; Level 7: the prayer book opened at night (best while the shadow comes).
+        // Both count at any level (done earlier: the step is ticked at once).
+        if (book == BookReader.Book.Journal) data.journalRead = true;
+        else if (BookReader.DroveShadowAway || IsDark()) data.prayerOpened = true;
     }
 
     // the cave in the mountain opens with Level 5 (until then a fall of rocks closes it)
@@ -1031,6 +1127,8 @@ public class StoryManager : MonoBehaviour
         if (data != null && data.level == 1)
         {
             data.stepsDone = 0;
+            // (the facts that check kept too: the scene's test axe or torch were not made by the player)
+            data.hadAxe = data.hadTorch = data.torchLit = data.hadIronAxe = data.firewood = false;
             checkTimer = 0.5f;
             RefreshPanel();
         }

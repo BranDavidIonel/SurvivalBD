@@ -34,7 +34,9 @@ public class PlayerDeath : MonoBehaviour
     void Update()
     {
         KeepAboveGround();
-        // ADMIN: immortal (nothing takes the player: no hunger, thirst, sea, cave or shadow)
+        // ADMIN: immortal (only while the admin is unlocked in this run). Each danger already checks it (hunger and
+        // thirst: PlayerState, under water: PlayerWater, deep sea: OceanSafety, cave: Cave, night shadow:
+        // NightShadow); this is the last safety: health at 0 from anything else is filled up again, no death.
         if (GameSettings.Immortal && PlayerState.Instance != null && !IsDead)
         {
             PlayerState.Instance.KeepFull();

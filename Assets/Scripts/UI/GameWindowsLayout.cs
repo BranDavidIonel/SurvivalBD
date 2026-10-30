@@ -55,7 +55,7 @@ public class GameWindowsLayout : MonoBehaviour
 
     RectTransform inventoryWindow, storageWindow, campfireWindow, deletionAlert, pickupPopup;
     RectTransform[] craftingScreens;
-    Vector2 inventorySize, craftingSize, constructionSize, storageSize, campfireSize;
+    Vector2 inventorySize, craftingSize, toolsSize, constructionSize, storageSize, campfireSize;
     float campfireScale = 1f;
     GameObject infoHint;
     GameObject itemInfo;
@@ -281,12 +281,14 @@ public class GameWindowsLayout : MonoBehaviour
         craftingSize = new Vector2(phone ? 700f : 560f, Mathf.Max(inventorySize.y, phone ? 520f : 420f));
         // Construction has 8 cards (the fence and the gate too): a wider window, 4 cards in a row
         constructionSize = new Vector2(phone ? 1010f : 840f, Mathf.Max(craftingSize.y, phone ? 790f : 650f));
+        // Tools has 4 cards (the spear too): a wider window, the cards as wide as before
+        toolsSize = new Vector2(phone ? 900f : 720f, craftingSize.y);
         string[] titles = { "Crafting", "Tools", "Survival", "Refine & Process", "Construction" };
 
         for (int i = 0; i < craftingScreens.Length; i++)
         {
             var screen = craftingScreens[i];
-            var size = i == 4 ? constructionSize : craftingSize;
+            var size = i == 4 ? constructionSize : i == 1 ? toolsSize : craftingSize;
             SetupWindow(screen, size, 1f);
             var oldTitle = screen.Find("Text (Legacy)");
             AddTitle(screen, oldTitle != null ? oldTitle.GetComponent<Text>() : null, titles[i], size);
@@ -336,8 +338,8 @@ public class GameWindowsLayout : MonoBehaviour
             }
         }
 
-        LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe" }, new[] { "Stone Axe", "Torch", "Iron Axe" },
-            new[] { "Chops trees, hunts rabbits", "Light in the dark and the cave", "Any tree in 3 blows" }, craftingSize);
+        LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe", "Spear" }, new[] { "Stone Axe", "Torch", "Iron Axe", "Spear" },
+            new[] { "Chops trees, hunts rabbits", "Light in the dark and the cave", "Any tree in 3 blows", "Thrown at rabbits from 10-15 m" }, toolsSize);
         LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare" }, new[] { "Campfire", "Storage Box", "Snare" },
             new[] { "Warmth, light, cooking; the shadow fears it", "Keeps your things", "Catches a rabbit alive" }, craftingSize);
         LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" },
@@ -653,7 +655,12 @@ public class GameWindowsLayout : MonoBehaviour
         {
             foreach (var screen in craftingScreens)
             {
-                if (screen != null && screen.gameObject.activeSelf) { right = screen; rightSize = screen == craftingScreens[4] ? constructionSize : craftingSize; break; }
+                if (screen != null && screen.gameObject.activeSelf)
+                {
+                    right = screen;
+                    rightSize = screen == craftingScreens[4] ? constructionSize : screen == craftingScreens[1] ? toolsSize : craftingSize;
+                    break;
+                }
             }
         }
         if (right == null && storageWindow != null && storageWindow.gameObject.activeSelf) { right = storageWindow; rightSize = storageSize; }

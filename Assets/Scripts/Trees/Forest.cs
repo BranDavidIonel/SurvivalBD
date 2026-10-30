@@ -7,9 +7,11 @@ using UnityEngine.Rendering;
 //    Oak_forest, Beech_forest, Mixed_forest: every tree its own object with a ScenePine / SceneTree) and the old
 //    single trees (TreeFir, the choppable Tree_Parent birches). When the game starts they become living trees at the
 //    same place and size: pine, birch, oak, beech (TreeSpecies.cs)
-//  - they grow over game time; grown trees drop seeds (pine cones, birch catkins, acorns, beechnuts); a seed left
-//    on the ground grows into a young tree after 2-3 game days; a seed can be picked up and planted (SeedPlanting)
+//  - they grow over game time; grown trees near the player drop seeds (pine cones, birch catkins, acorns,
+//    beechnuts) under and around their crowns; a seed left on the ground grows into a young tree after 3-4 game days
+//    (about half of them, where there is room); a seed can be picked up and planted (SeedPlanting)
 //  - far from the player young trees also appear next to grown ones by themselves, so the forests slowly spread
+//  - a new tree always keeps its distance from the others (spacing, crowding), never on paths, water or rocks
 //  - chopping: small trees need 1-2 hits, big ones up to 8; the tree falls over and leaves logs and a stump
 //  - phone friendly: only the trees near the player are real 3D models; farther away every tree is one flat picture
 //    that turns to the camera (2 triangles), all drawn at once
@@ -22,15 +24,29 @@ public class Forest : MonoBehaviour
     [Header("Seeds")]
     [Tooltip("Only trees this close to the player drop the seeds you can see and pick up (metres)")]
     public float seedDropRadius = 140f;
-    public int maxSeedsOnGround = 160;
+    [Tooltip("Seeds closer than this to the player are real objects you can see and pick up (farther: only kept in the save)")]
+    public float seedShowRadius = 50f;
+    [Tooltip("All the seeds lying on the island (each one a few bytes in the save)")]
+    public int maxSeedsOnGround = 1500;
+    [Tooltip("At most this many seeds lie under one crown: a tree drops no more until they sprout or rot")]
+    public int seedsPerCrown = 2;
+    [Tooltip("Share of the seeds that grow into a young tree when their time comes (the others rot, like in nature)")]
+    public float sproutChance = 0.5f;
     [Tooltip("A new game: share of the grown trees near the player with a seed already under them")]
     public float startSeedChance = 0.35f;
-    [Tooltip("Far from the player young trees appear next to grown ones by themselves (how many per game day)")]
-    public float naturalSaplingsPerDay = 30f;
+    [Tooltip("Far from the player young trees appear next to grown ones by themselves (tries per game day for the whole island; a try succeeds only where there is room)")]
+    public float naturalSaplingsPerDay = 120f;
     [Tooltip("No more trees than this on the island (phone memory and speed)")]
-    public int maxTrees = 7000;
-    public float saplingHeight = 0.7f;
+    public int maxTrees = 8500;
+    [Tooltip("Far away no new trees once the island is this close to Max Trees: the rest is kept for what grows near the player")]
+    public int nearReserve = 700;
+    [Tooltip("A new tree needs fewer than Crowd Limit trees within Crowd Radius (metres): forests get thicker, never a thicket")]
+    public float crowdRadius = 8f;
+    public int crowdLimit = 3;
+    public float saplingHeight = 1f;   // a young tree coming out of a seed on the ground
     public float sproutHeight = 0.35f; // a tree coming out of a planted seed
+    [Tooltip("A young tree grows at least this much per game day (metres), so the change is seen every day")]
+    public float youngGrowthPerDay = 1.2f;
 
     [Header("Drawing")]
     [Tooltip("Closer than this the real 3D trees are drawn, farther away a flat picture of each tree (phone)")]
@@ -149,7 +165,12 @@ public class Forest : MonoBehaviour
     readonly Dictionary<Mesh, Variant> byMesh = new Dictionary<Mesh, Variant>();
     readonly List<ForestTree> trees = new List<ForestTree>();
     readonly SpatialGrid<ForestTree> treeGrid = new SpatialGrid<ForestTree>(48f);
-    readonly List<TreeSeed> seedsOnGround = new List<TreeSeed>();
+    // every seed lying on the island (the save keeps them); only those near the player have an object (seedObjects)
+    readonly List<SeedData> lying = new List<SeedData>();
+    readonly SpatialGrid<SeedData> seedGrid = new SpatialGrid<SeedData>(16f);
+    readonly Dictionary<SeedData, TreeSeed> seedObjects = new Dictionary<SeedData, TreeSeed>();
+    readonly List<TreeSeed> seedsOnGround = new List<TreeSeed>(); // the seed objects near the player
+    readonly List<SeedData> seedQuery = new List<SeedData>();
     readonly List<TreeStump> stumps = new List<TreeStump>();
     readonly List<PlantedSeed> planted = new List<PlantedSeed>();
     readonly List<InteractableObject> logs = new List<InteractableObject>();
@@ -171,7 +192,7 @@ public class Forest : MonoBehaviour
     bool built;
     bool billboardsDirty = true;
     float growthSinceBillboards;
-    float tick, modelTick, seasonTick, billboardTick;
+    float tick, modelTick, seasonTick, billboardTick, seedTick;
     float spreadBudget;
     System.Random random = new System.Random();
 
@@ -182,8 +203,50 @@ public class Forest : MonoBehaviour
 
     public int TreeCount => trees.Count;
     public IReadOnlyList<ForestTree> Trees => trees; // (the map draws the forests)
-    public int SeedCount => seedsOnGround.Count;
+    public int SeedCount => lying.Count;              // all the seeds lying on the island
+    public int SeedObjectCount => seedsOnGround.Count; // the ones near the player (real objects)
     public int ShownModels => shown.Count;
+
+    // What happened since the scene loaded (for tests and the TEST panel; not saved)
+    public int SeedsDropped { get; private set; }     // fallen from trees near the player
+    public int SeedsSprouted { get; private set; }    // seeds on the ground that became young trees
+    public int SeedsRotted { get; private set; }      // seeds whose time came but that did not grow (chance, no room)
+    public int SaplingsFarAway { get; private set; }  // young trees that came up by themselves far from the player
+
+    // young trees (not yet tall enough to drop seeds), seeds on the ground and all trees within radius of centre
+    public void CountNear(Vector3 centre, float radius, out int young, out int seeds, out int allTrees)
+    {
+        young = 0; seeds = 0; allTrees = 0;
+        float r2 = radius * radius;
+        foreach (var t in trees)
+        {
+            if (t == null || t.Falling) continue;
+            Vector3 d = t.data.position - centre; d.y = 0f;
+            if (d.sqrMagnitude > r2) continue;
+            allTrees++;
+            if (t.data.height < t.Species.seedFromHeight) young++;
+        }
+        foreach (var s in lying)
+        {
+            Vector3 d = s.position - centre; d.y = 0f;
+            if (d.sqrMagnitude <= r2) seeds++;
+        }
+    }
+
+    // TEST: lets game time pass for the trees at once (growing, seeds falling and sprouting, spreading), in steps of
+    // at most 2 game hours. The clock itself does not move.
+    public void FastForward(float hours)
+    {
+        while (hours > 0.001f)
+        {
+            float step = Mathf.Min(2f, hours);
+            Grow(step);
+            hours -= step;
+        }
+        UpdateSeedObjects(int.MaxValue);
+        UpdateModels();
+        billboardsDirty = true;
+    }
     public Vector3 PlayerPosition => player != null ? player.position : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);
     public float ModelDistance => GameInput.TouchControls ? modelDistancePhone : modelDistancePC;
 
@@ -237,6 +300,7 @@ public class Forest : MonoBehaviour
         if (!built) BuildNewForest(sceneTrees);
         UpdateSeason();
         UpdateModels();
+        UpdateSeedObjects(int.MaxValue);
     }
 
     // ---------------- materials ---------------- //
@@ -429,7 +493,8 @@ public class Forest : MonoBehaviour
         billboardsDirty = true;
     }
 
-    // a new game: a few seeds already lie under the grown trees near the player (so there are some to find)
+    // A new game: seeds already lie under some of the grown trees near the player (so there are some to find). They
+    // fell at different times, so from the first game day on some of them come up as young trees.
     void AddStartSeeds()
     {
         var rng = new System.Random(seed + 7);
@@ -439,7 +504,7 @@ public class Forest : MonoBehaviour
             if (t == null || t.data.height < t.Species.seedFromHeight + 2f) continue;
             if (FlatDistance(t.data.position, p) > seedDropRadius * 1.5f) continue;
             if (rng.NextDouble() > startSeedChance) continue;
-            DropSeed(t, rng, (float)rng.NextDouble() * 24f);
+            DropSeed(t, rng, -1f);
         }
     }
 
@@ -461,6 +526,8 @@ public class Forest : MonoBehaviour
         var t = Terrain.activeTerrain;
         return t != null ? t.SampleHeight(p) + t.transform.position.y : p.y;
     }
+
+    static readonly Collider[] overlaps = new Collider[48]; // (no new array for every check: phone)
 
     // On land (shoreMargin: how far from the sea, negative = inland), not too steep and (checkObjects) not on top of
     // something (a rock, a building...). Used in the game and by the forest tools in the editor.
@@ -487,9 +554,11 @@ public class Forest : MonoBehaviour
         if (checkObjects)
         {
             Vector3 bottom = new Vector3(p.x, ground + 0.6f, p.z);
-            foreach (var c in Physics.OverlapCapsule(bottom, bottom + Vector3.up * 2.5f, 1.1f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            int count = Physics.OverlapCapsuleNonAlloc(bottom, bottom + Vector3.up * 2.5f, 1.1f, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
             {
-                if (c is TerrainCollider || c is CharacterController) continue;
+                var c = overlaps[i];
+                if (c == null || c is TerrainCollider || c is CharacterController) continue;
                 if (c.GetComponentInParent<ForestTree>() != null) continue; // other trees: the spacing decides
                 if (c.GetComponent<TreeSeed>() != null || c.GetComponent<ScenePlant>() != null) continue;
                 if (c.GetComponent<InteractableObject>() != null) continue; // logs, branches, things to pick up
@@ -532,6 +601,41 @@ public class Forest : MonoBehaviour
     public bool IsGoodSpot(Vector3 p, float spacing, float shoreMargin)
     {
         return IsFreeOfTrees(p, spacing) && IsGoodGround(p, shoreMargin, true);
+    }
+
+    // Room for a young tree that comes up by itself (from a seed on the ground, or far away): no trunk closer than
+    // the species' spacing (from its bark), fewer than crowdLimit trees within crowdRadius, no stump or planted seed
+    // right there, and good ground (not on paths, water, the beach, steep slopes, rocks or buildings).
+    // So the forests get thicker and spread at their edges, but never become a thicket.
+    bool HasRoom(Vector3 p, int species)
+    {
+        float spacing = TreeSpecies.Get(species).spacing;
+        float crowd2 = crowdRadius * crowdRadius;
+        int around = 0;
+        query.Clear();
+        treeGrid.Query(p, Mathf.Max(crowdRadius, spacing + 3f), query);
+        foreach (var t in query)
+        {
+            if (t == null || t.Falling) continue;
+            Vector3 d = t.data.position - p; d.y = 0f;
+            float d2 = d.sqrMagnitude;
+            float r = spacing + t.TrunkRadius;
+            if (d2 < r * r) return false;
+            if (d2 < crowd2 && ++around >= crowdLimit) return false;
+        }
+        foreach (var s in stumps)
+        {
+            if (s == null) continue;
+            Vector3 d = s.data.position - p; d.y = 0f;
+            if (d.sqrMagnitude < 2.5f * 2.5f) return false;
+        }
+        foreach (var s in planted)
+        {
+            if (s == null) continue;
+            Vector3 d = s.data.position - p; d.y = 0f;
+            if (d.sqrMagnitude < 2.5f * 2.5f) return false;
+        }
+        return IsGoodGround(p, -10f, true);
     }
 
     // ---------------- trees, seeds, stumps ---------------- //
@@ -605,7 +709,85 @@ public class Forest : MonoBehaviour
         }
     }
 
-    TreeSeed AddSeedOnGround(SeedData data)
+    // a seed now lies on the ground (its object is made when the player is near: UpdateSeedObjects)
+    void AddSeed(SeedData data)
+    {
+        if (data == null) return;
+        lying.Add(data);
+        seedGrid.Add(data, data.position);
+    }
+
+    // a seed is gone (sprouted, rotted or picked up), with its object if it has one
+    void RemoveSeed(SeedData data)
+    {
+        lying.Remove(data);
+        seedGrid.Remove(data, data.position);
+        HideSeed(data);
+    }
+
+    void HideSeed(SeedData data)
+    {
+        if (!seedObjects.TryGetValue(data, out var seedObject)) return;
+        seedObjects.Remove(data);
+        seedsOnGround.Remove(seedObject);
+        if (seedObject != null) Destroy(seedObject.gameObject);
+    }
+
+    // how many seeds lie within radius of p
+    int SeedsNear(Vector3 p, float radius)
+    {
+        int n = 0;
+        float r2 = radius * radius;
+        seedQuery.Clear();
+        seedGrid.Query(p, radius, seedQuery);
+        foreach (var s in seedQuery)
+        {
+            Vector3 d = s.position - p; d.y = 0f;
+            if (d.sqrMagnitude < r2) n++;
+        }
+        return n;
+    }
+
+    const float SeedHideRadius = 12f; // (a seed object goes only this much farther than seedShowRadius: no flicker)
+    const int MaxSeedObjects = 220;
+
+    // The seeds near the player become real objects (to see and pick up), the ones left behind lose theirs.
+    // budget: how many objects may be made now (a few per call, so walking never makes the phone stutter).
+    void UpdateSeedObjects(int budget)
+    {
+        Vector3 p = PlayerPosition;
+        float hide = seedShowRadius + SeedHideRadius;
+        for (int i = seedsOnGround.Count - 1; i >= 0; i--)
+        {
+            var c = seedsOnGround[i];
+            if (c == null) { seedsOnGround.RemoveAt(i); continue; }
+            Vector3 d = c.data.position - p; d.y = 0f;
+            if (d.sqrMagnitude > hide * hide) HideSeed(c.data);
+        }
+        if (budget <= 0 || seedsOnGround.Count >= MaxSeedObjects) return;
+        float show2 = seedShowRadius * seedShowRadius;
+        seedQuery.Clear();
+        seedGrid.Query(p, seedShowRadius, seedQuery);
+        foreach (var s in seedQuery)
+        {
+            if (seedObjects.ContainsKey(s)) continue;
+            Vector3 d = s.position - p; d.y = 0f;
+            if (d.sqrMagnitude > show2) continue;
+            ShowSeed(s);
+            if (--budget <= 0 || seedsOnGround.Count >= MaxSeedObjects) return;
+        }
+    }
+
+    // the player took a seed: it is in the inventory now, no longer on the ground
+    void OnSeedPicked(InteractableObject pick)
+    {
+        if (pick == null) return;
+        var seedObject = pick.GetComponent<TreeSeed>();
+        if (seedObject != null && seedObject.data != null) RemoveSeed(seedObject.data);
+        Destroy(pick.gameObject);
+    }
+
+    TreeSeed ShowSeed(SeedData data)
     {
         var info = TreeSpecies.Get(data.species);
         var go = new GameObject(info.seedName);
@@ -628,11 +810,13 @@ public class Forest : MonoBehaviour
         var pick = go.AddComponent<InteractableObject>();
         pick.ItemName = info.seedItem;
         pick.displayName = info.seedName;
+        pick.onPicked = OnSeedPicked; // (not kept in the save's list of picked up scene items)
         go.tag = "Pickable";
         var seedOnGround = go.AddComponent<TreeSeed>();
         seedOnGround.data = data;
         seedOnGround.pick = pick;
         seedsOnGround.Add(seedOnGround);
+        seedObjects[data] = seedOnGround;
         return seedOnGround;
     }
 
@@ -725,9 +909,11 @@ public class Forest : MonoBehaviour
                 float ground = GroundHeight(p);
                 if (Ocean.Instance != null && ground < Ocean.Instance.Level + 0.3f) continue;
                 p.y = ground + SeedLift(tree.data.species);
-                AddSeedOnGround(new SeedData { position = p, age = 0f, sproutAt = RandomRange(species.sproutAfterHours), species = tree.data.species });
+                AddSeed(new SeedData { position = p, age = 0f, sproutAt = RandomRange(species.sproutAfterHours), species = tree.data.species });
                 dropped++;
+                SeedsDropped++;
             }
+            UpdateSeedObjects(dropped); // (seen right away)
             if (dropped > 0 && InventorySystem.Instance != null && FlatDistance(PlayerPosition, basePos) < 40f)
                 InventorySystem.Instance.ShowMessage(Lang.T(dropped + " × " + species.seedName + " fell from the crown",
                     dropped + " × " + Translations.Name(species.seedName) + " au căzut din coroană"));
@@ -780,10 +966,13 @@ public class Forest : MonoBehaviour
         UpdatePlayerReach();
 
         modelTick -= Time.deltaTime;
-        if (modelTick <= 0f) { modelTick = 0.2f; UpdateModels(); }
+        if (modelTick <= 0f) { modelTick = 0.2f; UpdateModels(10); }
 
         seasonTick -= Time.deltaTime;
         if (seasonTick <= 0f) { seasonTick = 0.5f; UpdateSeason(); }
+
+        seedTick -= Time.deltaTime;
+        if (seedTick <= 0f) { seedTick = 0.25f; UpdateSeedObjects(8); }
 
         tick += Time.deltaTime;
         if (tick >= 1f)
@@ -830,7 +1019,7 @@ public class Forest : MonoBehaviour
         {
             var c = seedsOnGround[i];
             if (c == null || c.pick == null) continue;
-            Vector3 d = c.transform.position - p;
+            Vector3 d = c.data.position - p;
             c.pick.playerInRange = d.sqrMagnitude < PickReach * PickReach;
             c.ShowOutline(d.sqrMagnitude < OutlineReach * OutlineReach);
         }
@@ -842,8 +1031,11 @@ public class Forest : MonoBehaviour
         }
     }
 
-    // the real 3D trees only near the player
-    void UpdateModels()
+    // the real 3D trees only near the player. newModels: how many young trees that never had a model may get one now
+    // (a few per call while walking, so the phone never stutters; all at once after loading)
+    void UpdateModels() => UpdateModels(int.MaxValue);
+
+    void UpdateModels(int newModels)
     {
         float distance = ModelDistance;
         // the pictures start a little inside the 3D zone, so a tree is never missing while the player runs
@@ -871,6 +1063,7 @@ public class Forest : MonoBehaviour
             Vector3 d = t.data.position - p; d.y = 0f;
             if (d.sqrMagnitude <= limit2)
             {
+                if (!t.HasModel && newModels-- <= 0) continue; // (next time)
                 t.ShowModel(true);
                 shown.Add(t);
             }
@@ -973,8 +1166,10 @@ public class Forest : MonoBehaviour
 
     public void Grow(float hours)
     {
+        if (hours <= 0f) return;
         Vector3 p = PlayerPosition;
         float seedRadius2 = seedDropRadius * seedDropRadius;
+        float youngGrowth = youngGrowthPerDay * hours / 24f;
         for (int i = trees.Count - 1; i >= 0; i--)
         {
             var t = trees[i];
@@ -990,6 +1185,9 @@ public class Forest : MonoBehaviour
                 float decay = Mathf.Exp(-rate * hours);
                 float h = Mathf.Max(0.3f, d.height);
                 float grown = Mathf.Min(d.maxHeight, d.maxHeight / (1f + (d.maxHeight / h - 1f) * decay));
+                // a young tree grows at least youngGrowthPerDay: on the curve alone a sapling stayed hidden in the
+                // grass for days, so nobody saw the forest grow
+                if (d.height < d.maxHeight * 0.3f) grown = Mathf.Min(d.maxHeight, Mathf.Max(grown, d.height + youngGrowth));
                 growthSinceBillboards += grown - d.height;
                 d.height = grown;
                 if (t.ModelShown && t.NeedsApply) t.Apply();
@@ -1006,84 +1204,141 @@ public class Forest : MonoBehaviour
             }
         }
 
-        // Seeds on the ground become young trees after 3-4 game days. They fall under the crown of their tree, where
-        // the old check (the species' full spacing from every trunk) almost never found room, so nearly all of them
-        // rotted away and the forests never grew by themselves: now a seed needs only a little room around it, and if
-        // its own spot is taken (a trunk, a stump, a rock) it takes a free one close by. Only with no room at all it rots.
-        for (int i = seedsOnGround.Count - 1; i >= 0; i--)
+        // Seeds on the ground become young trees after 3-4 game days: about half of them (sproutChance; the others
+        // rot, like in nature), where there is room (HasRoom), on their own spot or a free one close by. Before, at
+        // most 160 seeds could lie on the whole island and they filled up in a few minutes where the player stood,
+        // so no new seeds fell where the player went next. Now every seed is only data (the save keeps it) and a
+        // crown holds at most seedsPerCrown seeds; only the seeds near the player have an object (UpdateSeedObjects).
+        // A few sprouts per call at most (each looks for room around it): the rest wait for the next second.
+        int sproutBudget = Mathf.Clamp(16 + Mathf.CeilToInt(hours * 8f), 16, 80);
+        for (int i = lying.Count - 1; i >= 0; i--)
         {
-            var c = seedsOnGround[i];
-            if (c == null) { seedsOnGround.RemoveAt(i); continue; } // picked up
-            c.data.age += hours;
-            if (c.data.age < c.data.sproutAt) continue;
-            if (trees.Count < maxTrees && FindSproutSpot(c.data.position, out Vector3 spot))
-                AddTree(NewSapling(spot, c.data.species, saplingHeight));
-            seedsOnGround.RemoveAt(i);
-            Destroy(c.gameObject);
+            var s = lying[i];
+            s.age += hours;
+            if (s.age < s.sproutAt || sproutBudget <= 0) continue;
+            sproutBudget--;
+            if (trees.Count < maxTrees && random.NextDouble() < sproutChance && FindSproutSpot(s, out Vector3 spot))
+            {
+                AddTree(NewSapling(spot, s.species, saplingHeight));
+                SeedsSprouted++;
+            }
+            else
+            {
+                SeedsRotted++;
+            }
+            RemoveSeedAt(i);
         }
 
         GrowPlanted(hours);
         SpreadFarAway(hours);
     }
 
-    const float SproutRoom = 1.6f; // metres a young tree needs from other trunks (their bark)
-
-    // the seed's own spot, or a free one within 3 m of it
-    bool FindSproutSpot(Vector3 seed, out Vector3 spot)
+    void RemoveSeedAt(int index)
     {
-        spot = seed;
-        if (IsGoodSpot(seed, SproutRoom, -10f)) return true;
+        var s = lying[index];
+        lying.RemoveAt(index);
+        seedGrid.Remove(s, s.position);
+        HideSeed(s);
+    }
+
+    // the seed's own spot, or a free one within 3.5 m of it
+    bool FindSproutSpot(SeedData seed, out Vector3 spot)
+    {
+        spot = seed.position;
+        if (HasRoom(spot, seed.species)) return true;
         for (int k = 0; k < 8; k++)
         {
             float a = (k + RandomRange(0f, 0.6f)) * Mathf.PI * 0.25f;
-            float d = RandomRange(1.2f, 3f);
-            Vector3 p = seed + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
-            if (IsGoodSpot(p, SproutRoom, -10f)) { spot = p; return true; }
+            float d = RandomRange(1.2f, 3.5f);
+            Vector3 p = seed.position + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
+            if (HasRoom(p, seed.species)) { spot = p; return true; }
         }
         return false;
     }
 
-    // A seed falls under a grown tree (age: game hours it has already been lying there).
-    void DropSeed(ForestTree tree, System.Random rng = null, float age = 0f)
+    // A seed falls under or around the crown of a grown tree (age: game hours it has already been lying there;
+    // negative: a new game, it fell some time before, so the seeds come up on different days). Not when enough seeds
+    // lie under this crown already.
+    bool DropSeed(ForestTree tree, System.Random rng = null, float age = 0f)
     {
-        if (seedsOnGround.Count >= maxSeedsOnGround) return;
         System.Func<float, float, float> range = (a, b) => rng != null ? a + (float)rng.NextDouble() * (b - a) : RandomRange(a, b);
         var info = tree.Species;
         float crown = Mathf.Max(3f, tree.CrownRadius);
+        float reach = crown * 1.15f + 1.5f;
+        if (SeedsNear(tree.data.position, reach) >= seedsPerCrown) return false;
+        if (lying.Count >= maxSeedsOnGround && !MakeRoomForSeed()) return false;
         for (int attempt = 0; attempt < 4; attempt++)
         {
             float a = range(0f, Mathf.PI * 2f);
             // under the crown, some blown a bit farther by the wind
-            float d = range(Mathf.Max(2.5f, crown * 0.35f), crown * 1.15f + 1.5f);
+            float d = range(Mathf.Max(2.5f, crown * 0.35f), reach);
             Vector3 p = tree.data.position + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
             float ground = GroundHeight(p);
             if (Ocean.Instance != null && ground < Ocean.Instance.Level + 0.3f) continue;
+            if (River.IsWater(p, 0.5f)) continue; // (not into the river)
             p.y = ground + SeedLift(tree.data.species);
-            AddSeedOnGround(new SeedData { position = p, age = age, sproutAt = range(info.sproutAfterHours.x, info.sproutAfterHours.y), species = tree.data.species });
-            return;
+            float sproutAt = range(info.sproutAfterHours.x, info.sproutAfterHours.y);
+            float lain = age >= 0f ? age : range(0f, Mathf.Max(0f, sproutAt - 2f));
+            AddSeed(new SeedData { position = p, age = lain, sproutAt = sproutAt, species = tree.data.species });
+            SeedsDropped++;
+            return true;
         }
+        return false;
     }
 
-    // Far from the player nobody sees the seeds fall: there a young tree simply appears next to a grown one now and
-    // then (naturalSaplingsPerDay), so the forests slowly spread and fill their gaps.
+    // The island holds as many seeds as it may: one lying far from the player rots a bit early, so new seeds keep
+    // falling where the player is.
+    bool MakeRoomForSeed()
+    {
+        if (lying.Count == 0) return true;
+        Vector3 p = PlayerPosition;
+        for (int k = 0; k < 8; k++)
+        {
+            int i = random.Next(lying.Count);
+            if (FlatDistance(lying[i].position, p) < seedDropRadius) continue;
+            RemoveSeedAt(i);
+            SeedsRotted++;
+            return true;
+        }
+        return false;
+    }
+
+    // Far from the player nobody sees the seeds fall: there a young tree simply comes up next to a grown one now and
+    // then (naturalSaplingsPerDay tries a game day for the whole island; a try only succeeds where there is room:
+    // HasRoom), so the forests far away fill their gaps and spread at their edges too. Before, there were only 30
+    // tries a day for ~5600 trees and most were wasted (a young or a near parent, one spot inside the parent's own
+    // spacing): almost nothing grew. The last nearReserve trees of maxTrees are kept for what grows near the player.
     void SpreadFarAway(float hours)
     {
-        spreadBudget += naturalSaplingsPerDay * hours / 24f;
+        int maxTries = Mathf.Clamp(6 + Mathf.CeilToInt(hours * 6f), 6, 40);
+        spreadBudget = Mathf.Min(spreadBudget + naturalSaplingsPerDay * hours / 24f, maxTries);
+        if (trees.Count == 0 || trees.Count >= maxTrees - nearReserve) { spreadBudget = 0f; return; }
         Vector3 p = PlayerPosition;
         int tries = 0;
-        while (spreadBudget >= 1f && tries++ < 8)
+        while (spreadBudget >= 1f && tries++ < maxTries)
         {
             spreadBudget -= 1f;
-            if (trees.Count >= maxTrees || trees.Count == 0) { spreadBudget = 0f; break; }
-            var parent = trees[random.Next(trees.Count)];
-            if (parent == null || parent.Falling || parent.data.height < parent.Species.seedFromHeight) continue;
-            if (FlatDistance(parent.data.position, p) < seedDropRadius) continue; // near the player the seeds do it
+            // a grown tree far from the player (a few picks: most trees are grown)
+            ForestTree parent = null;
+            for (int k = 0; k < 8 && parent == null; k++)
+            {
+                var t = trees[random.Next(trees.Count)];
+                if (t == null || t.Falling || t.data.height < t.Species.seedFromHeight) continue;
+                if (FlatDistance(t.data.position, p) < seedDropRadius) continue; // near the player its seeds do it
+                parent = t;
+            }
+            if (parent == null) continue;
             float crown = Mathf.Max(3f, parent.CrownRadius);
-            float a = RandomRange(0f, Mathf.PI * 2f);
-            float d = RandomRange(crown * 0.6f, crown * 1.6f + 3f);
-            Vector3 spot = parent.data.position + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
-            if (IsGoodSpot(spot, parent.Species.spacing + 1f, -10f))
+            for (int k = 0; k < 5; k++)
+            {
+                float a = RandomRange(0f, Mathf.PI * 2f);
+                float d = RandomRange(crown * 0.7f, crown * 1.6f + 3f);
+                Vector3 spot = parent.data.position + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
+                if (!HasRoom(spot, parent.data.species)) continue;
                 AddTree(NewSapling(spot, parent.data.species, saplingHeight));
+                SaplingsFarAway++;
+                break;
+            }
         }
     }
 
@@ -1140,7 +1395,7 @@ public class Forest : MonoBehaviour
     {
         var data = new ForestData { version = 2 };
         foreach (var t in trees) if (t != null && !t.Falling) data.trees.Add(t.data);
-        foreach (var c in seedsOnGround) if (c != null) data.cones.Add(c.data);
+        foreach (var c in lying) data.cones.Add(c); // (all of them, near the player and far away)
         foreach (var s in stumps) if (s != null) data.stumps.Add(s.data);
         foreach (var s in planted) if (s != null) data.seeds.Add(s.data);
         return data;
@@ -1158,13 +1413,14 @@ public class Forest : MonoBehaviour
             if (data.version >= 2) Clear();
             else RemoveSpecies((int)TreeSpecies.Kind.Pine);
             foreach (var t in data.trees) if (!IslandPaths.KeepClear(t.position, 0.3f)) AddTree(t); // (a tree from an old save on a path: gone)
-            if (data.cones != null) foreach (var c in data.cones) AddSeedOnGround(c);
+            if (data.cones != null) foreach (var c in data.cones) if (c != null && !IslandPaths.KeepClear(c.position, 0f)) AddSeed(c);
             if (data.stumps != null) foreach (var s in data.stumps) AddStump(s);
             if (data.seeds != null) foreach (var s in data.seeds) AddPlanted(s);
         }
         TakeLoadedBirches();
         RebuildBillboards();
         UpdateModels();
+        UpdateSeedObjects(int.MaxValue);
     }
 
     // An old save brings back the old choppable birches (Tree_Parent) and their stumps: the birches become living
@@ -1212,8 +1468,8 @@ public class Forest : MonoBehaviour
     void RemoveSpecies(int species)
     {
         foreach (var t in trees.ToArray()) if (t != null && t.data.species == species) RemoveTree(t);
-        for (int i = seedsOnGround.Count - 1; i >= 0; i--)
-            if (seedsOnGround[i] != null && seedsOnGround[i].data.species == species) { Destroy(seedsOnGround[i].gameObject); seedsOnGround.RemoveAt(i); }
+        for (int i = lying.Count - 1; i >= 0; i--)
+            if (lying[i].species == species) RemoveSeedAt(i);
         for (int i = stumps.Count - 1; i >= 0; i--)
             if (stumps[i] != null && stumps[i].data.species == species) { Destroy(stumps[i].gameObject); stumps.RemoveAt(i); }
         for (int i = planted.Count - 1; i >= 0; i--)
@@ -1229,6 +1485,9 @@ public class Forest : MonoBehaviour
         trees.Clear();
         treeGrid.Clear();
         seedsOnGround.Clear();
+        seedObjects.Clear();
+        lying.Clear();
+        seedGrid.Clear();
         stumps.Clear();
         planted.Clear();
         shown.Clear();

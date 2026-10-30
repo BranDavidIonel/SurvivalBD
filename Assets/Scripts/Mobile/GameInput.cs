@@ -49,7 +49,11 @@ public static class GameInput
 
     // Left mouse click on PC, the "Loveste" button on the phone (hit, pick up, open, place).
     // On the phone every touch also counts as a mouse click, so the mouse is ignored there.
-    public static bool PrimaryDown => TouchControls ? TouchDown(TouchAction.Primary) : Input.GetMouseButtonDown(0);
+    public static bool PrimaryDown => TouchControls || TestDriven ? TouchDown(TouchAction.Primary) : Input.GetMouseButtonDown(0);
+
+    // Only for the automatic play tests (editor): on PC too the test presses through PressTouch and aims at the
+    // screen's centre (in the editor the mouse is not where a locked cursor would be). Always false in the game.
+    public static bool TestDriven;
 
     public static bool JumpDown => Input.GetButtonDown("Jump") || TouchDown(TouchAction.Jump);
     public static bool SwimUpHeld => Input.GetKey(KeyCode.Space) || held[(int)TouchAction.Jump];
@@ -65,7 +69,7 @@ public static class GameInput
     // Ray from the crosshair: the screen centre on the phone, the (locked) mouse on PC.
     public static Ray AimRay()
     {
-        Vector3 point = TouchControls
+        Vector3 point = TouchControls || TestDriven
             ? new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f)
             : Input.mousePosition;
         return Camera.main.ScreenPointToRay(point);

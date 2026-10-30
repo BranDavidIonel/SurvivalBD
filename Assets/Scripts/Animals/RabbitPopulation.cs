@@ -8,7 +8,8 @@ using UnityEngine;
 //  - a grown male and a grown female that are both ready walk to each other; when they meet the female expects
 //    babies, and after about a game day 2-5 little rabbits are born next to her; they grow up in about 1.5 days
 //  - not more than maxRabbits (phone speed); far from the player rabbits stand still and are not drawn
-//  - hunting works by distance (the axe reaches a rabbit within ~4 m) and the meat and hide fall on the ground
+//  - hunting works by distance (the axe reaches a rabbit within ~4 m); a dead rabbit shows "Dead rabbit" over it and
+//    one "Take" on it puts its meat and hide in the inventory (SelectionManager.Loot)
 // The save keeps every living rabbit (EnviromentData.rabbits).
 public class RabbitPopulation : MonoBehaviour
 {
@@ -47,6 +48,7 @@ public class RabbitPopulation : MonoBehaviour
 
     static readonly Color MaleColor = new Color(0.45f, 0.78f, 1f);
     static readonly Color FemaleColor = new Color(1f, 0.55f, 0.82f);
+    static readonly Color DeadColor = new Color(1f, 0.85f, 0.55f);
 
     public int Count { get { int n = 0; foreach (var r in rabbits) if (r != null && r.Alive) n++; return n; } }
     public Vector3 PlayerPosition => player != null ? player.position : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);
@@ -394,8 +396,10 @@ public class RabbitPopulation : MonoBehaviour
             Vector3 c = cam.transform.position;
             foreach (var r in rabbits)
             {
-                if (r == null || !r.Alive) continue;
-                Vector3 head = r.transform.position + Vector3.up * (0.9f + 1.0f * r.transform.localScale.y);
+                if (r == null || !r.gameObject.activeInHierarchy) continue;
+                // a dead one lies low in the grass: "Dead rabbit" over it, so a body hit from far away is easy to find
+                bool dead = !r.Alive;
+                Vector3 head = r.transform.position + Vector3.up * (dead ? 0.7f : 0.9f + 1.0f * r.transform.localScale.y);
                 Vector3 d = head - c;
                 if (d.sqrMagnitude > labelDistance * labelDistance) continue;
                 if (Vector3.Dot(d, cam.transform.forward) < 0f) continue; // behind the camera
@@ -404,9 +408,9 @@ public class RabbitPopulation : MonoBehaviour
                 label.transform.rotation = Quaternion.LookRotation(d, Vector3.up);
                 float scale = Mathf.Lerp(0.55f, 1.1f, Mathf.InverseLerp(3f, labelDistance, d.magnitude));
                 label.transform.localScale = Vector3.one * scale;
-                string text = r.LabelText;
+                string text = dead ? Lang.T("Dead rabbit", "Iepure mort") : r.LabelText;
                 if (label.text != text) label.text = text;
-                label.color = r.sex == RabbitInfo.Sex.Male ? MaleColor : FemaleColor;
+                label.color = dead ? DeadColor : r.sex == RabbitInfo.Sex.Male ? MaleColor : FemaleColor;
             }
         }
         for (int i = used; i < labels.Count; i++) if (labels[i].gameObject.activeSelf) labels[i].gameObject.SetActive(false);
