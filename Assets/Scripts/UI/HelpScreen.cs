@@ -163,7 +163,7 @@ public class HelpScreen : MonoBehaviour
     {
         if (Lang.Ro)
             return
-                "<b>Apa</b>: bara de apă plină ține o zi. Bea din râu, din lac sau din băltoacele de după ploaie (2-3 zile). Niciodată din mare!\n" +
+                "<b>Apa</b>: bara de apă plină ține o zi. Bea din râuri, din lac sau din băltoacele de după ploaie (2-3 zile). Niciodată din mare!\n" +
                 "<b>Hrana</b>: bara de hrană plină ține cam trei zile. Ciuperci, fructe de pădure, ierburi, carne gătită. Barele goale te omoară.\n" +
                 "<b>Focul</b>: un foc de tabără e din 6 pietre. Ca să-l aprinzi: lemne în foc și 1 fân (smulgi iarbă de pe pajiști, iarna și de sub zăpadă).\n" +
                 "<b>Toporul și torța</b> (Meșteșuguri > Unelte): fă-le devreme. Toporul taie lemne; torța arde doar în mână: păstreaz-o pentru noapte.\n" +
@@ -181,7 +181,7 @@ public class HelpScreen : MonoBehaviour
                 "<b>Pluta</b> (ultimul nivel): unde pârâul cel nou se varsă în mare. Adu-i ce îi trebuie în câte drumuri vrei.\n" +
                 "<b>Salvarea</b>: Meniu > Salvează. <b>Limba și dificultatea</b>: Meniu > Setări.";
         return
-            "<b>Water</b>: a full water bar lasts one day. Drink from the river, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
+            "<b>Water</b>: a full water bar lasts one day. Drink from the rivers, the lake or rain puddles (2-3 days after rain). Never the sea!\n" +
             "<b>Food</b>: a full food bar lasts about three days. Mushrooms, berries, herbs, cooked meat. Empty bars kill you.\n" +
             "<b>Fire</b>: a campfire is 6 stones. To light it: wood in the fire and 1 hay (pick grass on the meadows, in winter too, from under the snow).\n" +
             "<b>Axe and torch</b> (Crafting > Tools): make them early. The axe cuts firewood; the torch burns only in your hand: keep it for the night.\n" +

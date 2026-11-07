@@ -52,7 +52,7 @@ public static class IoanPathsTool
         var terrain = Terrain.activeTerrain;
         if (terrain == null) return "Ioan's paths: no terrain (open the GameScene)";
         var data = terrain.terrainData;
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var cave = Object.FindObjectOfType<Cave>();
         var ocean = Ocean.Instance != null ? Ocean.Instance : Object.FindObjectOfType<Ocean>();
         var start = Object.FindObjectOfType<StoryStart>();

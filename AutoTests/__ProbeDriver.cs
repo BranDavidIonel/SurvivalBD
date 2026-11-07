@@ -8,20 +8,23 @@ using UnityEngine;
 
 // TEMPORARY (Claude): runs the checks one after another, each in Play mode, then stops Play and puts the editor's
 // view back. Writes into Temp/<job>. Removed after the tests. A job name ending in "PC" (a number after it is fine:
-// "SystemsPC13") plays in the Game view at 1920 x 1080, "...4K" at 3840 x 2160, the others in the phone Simulator.
-//  1 SystemsPhone13:     every system (__SystemsTest), phone
-//  2 SystemsPC13:        the same on a PC 1920 x 1080
-//  3 NewFeaturesPhone13: the new things of 2026-11-07 (__NewFeaturesTest: winter, a load without extra axes, the
+// "SystemsPC15") plays in the Game view at 1920 x 1080, "...4K" at 3840 x 2160, the others in the phone Simulator.
+//  1 RiversPhone15:      the island's rivers (__RiversTest: the old one + the 5 new ones from the mountains to the sea:
+//                        their beds, no trees in them, drinking, crossing, the map, the paths, the rabbits), phone
+//  2 RiversPC15:         the same on a PC 1920 x 1080
+//  3 SystemsPhone15:     every system (__SystemsTest), phone
+//  4 SystemsPC15:        the same on a PC
+//  5 NewFeaturesPhone15: the new things of 2026-11-07 (__NewFeaturesTest: winter, a load without extra axes, the
 //                        backpack, the loading screen, the branches, the shy rabbits), phone
-//  4 NewFeaturesPC13:    the same on a PC (the backpack's window on a wide screen)
-//  5 LevelTest13:        the 10 levels from a new game (__LevelTest), phone
+//  6 NewFeaturesPC15:    the same on a PC (the backpack's window on a wide screen)
+//  7 LevelTest15:        the 10 levels from a new game (__LevelTest), phone
 //  then back to the phone simulator
 [InitializeOnLoad]
 static class __ProbeDriver
 {
-    static readonly string[] Jobs = { "SystemsPhone13", "SystemsPC13", "NewFeaturesPhone13", "NewFeaturesPC13", "LevelTest13" };
-    const string JobKey = "__ProbeDriver.job13", PhaseKey = "__ProbeDriver.jobphase13";
-    const string AllDone = "Temp/__ProbeJobs13_done.txt";
+    static readonly string[] Jobs = { "RiversPhone15", "RiversPC15", "SystemsPhone15", "SystemsPC15", "NewFeaturesPhone15", "NewFeaturesPC15", "LevelTest15" };
+    const string JobKey = "__ProbeDriver.job15", PhaseKey = "__ProbeDriver.jobphase15";
+    const string AllDone = "Temp/__ProbeJobs15_done.txt";
 
     // the job's name without the run number at its end ("SystemsPC13" -> "SystemsPC")
     static string Kind(string job) => job.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
@@ -56,10 +59,10 @@ static class __ProbeDriver
             video.GetField("Folder", Any)?.SetValue(null, job);
             new GameObject("__VideoDirector").AddComponent(video);
         }
-        else if (job.StartsWith("Systems") || job.StartsWith("NewFeatures"))
+        else if (job.StartsWith("Systems") || job.StartsWith("NewFeatures") || job.StartsWith("Rivers"))
         {
             // (found by name: the systems test is written by another agent; "NewFeatures..." runs the checks of
-            // __NewFeaturesTest.cs, the same class)
+            // __NewFeaturesTest.cs, "Rivers..." those of __RiversTest.cs, the same class)
             var type = Type.GetType("__SystemsTest, Assembly-CSharp");
             if (type == null) { File.WriteAllText(Dir + "/finished.txt", "no __SystemsTest"); Phase = 2; return; }
             type.GetField("Folder", Any)?.SetValue(null, job);
@@ -233,7 +236,7 @@ static class __ProbeDriver
         Vector3 tp = terrain.transform.position;
         float sx = data.size.x / (res - 1), sz = data.size.z / (res - 1);
         var heights = data.GetHeights(0, 0, res, res);
-        var river = UnityEngine.Object.FindObjectOfType<River>();
+        var river = River.Instance; // (the main river with the lake: there are several rivers now)
         var cave = UnityEngine.Object.FindObjectOfType<Cave>();
         Vector3 summit = MiracleStream.FindSummit(terrain, river, cave);
         var steep = new float[res * res];
@@ -306,7 +309,7 @@ static class __ProbeDriver
     {
         var sb = new System.Text.StringBuilder();
         var terrain = Terrain.activeTerrain;
-        var river = UnityEngine.Object.FindObjectOfType<River>();
+        var river = River.Instance; // (the main river with the lake: there are several rivers now)
         var cave = UnityEngine.Object.FindObjectOfType<Cave>();
         Vector3 summit = MiracleStream.FindSummit(terrain, river, cave);
         foreach (var c in UnityEngine.Object.FindObjectsOfType<Collider>())
@@ -335,7 +338,7 @@ static class __ProbeDriver
         var terrain = Terrain.activeTerrain;
         var data = terrain.terrainData;
         Vector3 tp = terrain.transform.position;
-        var river = UnityEngine.Object.FindObjectOfType<River>();
+        var river = River.Instance; // (the main river with the lake: there are several rivers now)
         var cave = UnityEngine.Object.FindObjectOfType<Cave>();
         Vector3 summit = MiracleStream.FindSummit(terrain, river, cave);
         float H(Vector3 p) => terrain.SampleHeight(p) + tp.y;

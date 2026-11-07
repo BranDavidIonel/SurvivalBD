@@ -44,7 +44,7 @@ public static class CaveTool
         Directory.CreateDirectory(Dir);
         MakeBookPrefabs();
         foreach (var old in Object.FindObjectsOfType<Cave>()) Undo.DestroyObjectImmediate(old.gameObject);
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         if (river != null) river.BuildCells();
         float level = ocean.Level;
         var rng = new System.Random(seed);

@@ -56,7 +56,7 @@ public static class IslandFillTool
         var manager = Object.FindObjectOfType<EnviromentManager>();
         if (terrain == null || ocean == null || manager == null) { Debug.LogWarning("Island: terrain / ocean / Enviroment missing"); return; }
         RemoveGenerated();
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         if (river != null) river.BuildCells();
         var cave = Object.FindObjectOfType<Cave>();
         Vector3 caveMouth = cave != null && cave.path.Count > 0 ? cave.path[0] : new Vector3(1e6f, 0f, 1e6f);
@@ -132,7 +132,7 @@ public static class IslandFillTool
         }
 
         bool InLake(Vector3 p) => lake.size.x > 0f && lake.Contains(new Vector3(p.x, lake.center.y, p.z));
-        bool InRiver(Vector3 p, float margin) => river != null && river.DistanceToWater(p) < margin;
+        bool InRiver(Vector3 p, float margin) => River.IsWater(p, margin); // (any river)
         bool NearCave(Vector3 p, float margin) => Flat(p - caveMouth) < margin;
 
         // ---- trees ----
@@ -511,7 +511,7 @@ public static class IslandFillTool
                 float r = Mathf.Lerp(minR, maxR, (float)rng.NextDouble());
                 Vector3 p = start + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * r + forward * forwardBias;
                 float g = terrain.SampleHeight(p) + terrain.transform.position.y;
-                if (g > ocean.Level + 0.25f && (river == null || river.DistanceToWater(p) > 2f)) return p;
+                if (g > ocean.Level + 0.25f && !River.IsWater(p, 2f)) return p;
             }
             return start + forward * (minR + forwardBias);
         }
@@ -553,7 +553,7 @@ public static class IslandFillTool
         var manager = Object.FindObjectOfType<EnviromentManager>();
         if (terrain == null || ocean == null || manager == null) return 0;
         foreach (var g in Object.FindObjectsOfType<NatureGroup>()) if (g.kind.StartsWith("More")) Undo.DestroyObjectImmediate(g.gameObject);
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         if (river != null) river.BuildCells();
         var cave = Object.FindObjectOfType<Cave>();
         Vector3 caveMouth = cave != null && cave.path.Count > 0 ? cave.path[0] : new Vector3(1e6f, 0f, 1e6f);
@@ -607,7 +607,7 @@ public static class IslandFillTool
                 float h = terrain.SampleHeight(c) + tp.y;
                 if (h < level + 0.6f || ocean.DistanceFromShore(c) > -6f) continue;
                 if (lake.size.x > 0f && lake.Contains(new Vector3(c.x, lake.center.y, c.z))) continue;
-                if (river != null && river.DistanceToWater(c) < 2.5f) continue;
+                if (River.IsWater(c, 2.5f)) continue;
                 if (Flat(c - caveMouth) < 25f || Flat(c - start) < 8f) continue;
                 float steep = data.GetSteepness((c.x - tp.x) / data.size.x, (c.z - tp.z) / data.size.z);
                 bool beach = ocean.DistanceFromShore(c) > -28f;
@@ -652,7 +652,7 @@ public static class IslandFillTool
                     if (rng.NextDouble() > density * cell * cell) continue;
                     Vector3 p = c + new Vector3(((float)rng.NextDouble() - 0.5f) * cell, 0f, ((float)rng.NextDouble() - 0.5f) * cell);
                     if (trees.Near(p, 1.6f) || taken.Near(p, 1.2f)) continue;
-                    if (river != null && river.DistanceToWater(p) < 2f) continue;
+                    if (River.IsWater(p, 2f)) continue;
                     if (name == "rock")
                     {
                         int kind = rng.Next(rockPrefabs.Count);
@@ -697,7 +697,7 @@ public static class IslandFillTool
         var prefab = Resources.Load<GameObject>("Vegetation/Hemp");
         if (terrain == null || ocean == null || manager == null || prefab == null) return 0;
         foreach (var g in Object.FindObjectsOfType<NatureGroup>()) if (g.kind == "Hemp") Undo.DestroyObjectImmediate(g.gameObject);
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var cave = Object.FindObjectOfType<Cave>();
         var data = terrain.terrainData;
         Vector3 tp = terrain.transform.position;
@@ -734,7 +734,7 @@ public static class IslandFillTool
             float h = terrain.SampleHeight(p) + tp.y;
             if (h < level + 1.2f || h > level + 18f) continue;
             if (data.GetSteepness((p.x - tp.x) / data.size.x, (p.z - tp.z) / data.size.z) > 22f) continue;
-            if (river != null && (river.DistanceToWater(p) < 4f || Flat(p - river.lakeCentre) < river.lakeRadius + 8f)) continue;
+            if (River.IsWater(p, 4f) || (river != null && Flat(p - river.lakeCentre) < river.lakeRadius + 8f)) continue;
             if (cave != null && cave.path.Count > 0 && Flat(p - cave.path[0]) < 15f) continue;
             if (!NearMountain(p)) continue;
             bool close = false;
@@ -767,7 +767,7 @@ public static class IslandFillTool
         var manager = Object.FindObjectOfType<EnviromentManager>();
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PREFABS/Animals/WhiteRabbitBig.prefab");
         if (terrain == null || ocean == null || manager == null || prefab == null) return 0;
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var cave = Object.FindObjectOfType<Cave>();
         var start = Object.FindObjectOfType<StoryStart>();
         Transform parent = manager.allAnimals.transform.Find("Rabbits");
@@ -791,7 +791,7 @@ public static class IslandFillTool
             p.y = terrain.SampleHeight(p) + tp.y;
             if (p.y < ocean.Level + 0.8f || ocean.DistanceFromShore(p) > -35f) continue;
             if (data.GetSteepness((p.x - tp.x) / data.size.x, (p.z - tp.z) / data.size.z) > 25f) continue;
-            if (river != null && (river.DistanceToWater(p) < 5f || Flat(p - river.lakeCentre) < river.lakeRadius + 6f)) continue;
+            if (River.IsWater(p, 5f) || (river != null && Flat(p - river.lakeCentre) < river.lakeRadius + 6f)) continue;
             if (cave != null && cave.path.Count > 0 && Flat(p - cave.path[0]) < 30f) continue;
             if (start != null && Flat(p - start.transform.position) < 50f) continue;
             bool close = false;
@@ -846,7 +846,7 @@ public static class IslandFillTool
             if (!land[i] || shore[i] > -35f) continue;
             Vector3 p = CellCentre(tp, x, z);
             if (Flat(p - start) < 60f) continue;
-            if (river != null && river.DistanceToWater(p) < 4f) continue;
+            if (River.IsWater(p, 4f)) continue;
             var cave = Object.FindObjectOfType<Cave>();
             if (cave != null && cave.path.Count > 0 && Flat(p - cave.path[0]) < 30f) continue;
             bool close = false;

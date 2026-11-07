@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Water the player can drink (made in code by EnvironmentBootstrap): the river, the lake it flows into, and the
-// puddles the rain leaves. Never the sea (it is salty).
+// Water the player can drink (made in code by EnvironmentBootstrap): every river of the island (River.All), the lake
+// the old river flows into, and the puddles the rain leaves. Never the sea (it is salty).
 //  - SelectionManager shows "Drink water" when the player stands at fresh water and looks down at it
 //  - rain puddles: while it rains, puddles fill up around the player (on flat ground); after the rain they dry up in
 //    2-3 game days (smaller and smaller); every drink takes a little of a puddle's water
@@ -62,16 +62,13 @@ public class FreshWater : MonoBehaviour
     // which fresh water is at p (none: the player can't drink here)
     public Source At(Vector3 p)
     {
-        var river = River.Instance;
-        if (river != null)
+        if (River.IsWater(p, drinkReach)) return Source.River; // (any of the island's rivers)
+        var river = River.Instance; // the lake belongs to the main river (the old one)
+        if (river != null && river.lakeRadius > 0f)
         {
-            if (river.DistanceToWater(p) < drinkReach) return Source.River;
-            if (river.lakeRadius > 0f)
-            {
-                Vector3 d = p - river.lakeCentre; d.y = 0f;
-                // standing at the water's edge (the ground there is about as low as the water) or in it
-                if (d.magnitude < river.lakeRadius + drinkReach && Forest.GroundY(p) < river.lakeCentre.y + 1.2f) return Source.Lake;
-            }
+            Vector3 d = p - river.lakeCentre; d.y = 0f;
+            // standing at the water's edge (the ground there is about as low as the water) or in it
+            if (d.magnitude < river.lakeRadius + drinkReach && Forest.GroundY(p) < river.lakeCentre.y + 1.2f) return Source.Lake;
         }
         // the stream of the miracle (level 9: the cross on the other mountain)
         var stream = MiracleStream.Instance;
@@ -129,15 +126,14 @@ public class FreshWater : MonoBehaviour
 
     void CheckFound()
     {
-        var river = River.Instance;
-        if (river == null) return;
         Vector3 p = PlayerPosition;
-        if (!riverFound && river.DistanceToWater(p) < 12f)
+        if (!riverFound && River.IsWater(p, 12f)) // (any river: the one nearest to the player counts too)
         {
             riverFound = true;
             if (Found != null) Found(Source.River);
         }
-        if (!lakeFound && river.lakeRadius > 0f)
+        var river = River.Instance; // the lake: the main river's
+        if (!lakeFound && river != null && river.lakeRadius > 0f)
         {
             Vector3 d = p - river.lakeCentre; d.y = 0f;
             if (d.magnitude < river.lakeRadius + 12f)

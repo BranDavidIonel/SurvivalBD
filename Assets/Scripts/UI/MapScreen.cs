@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 // The map of the island (made in code): Menu > Map, the "Map [N]" button at the top right (PC) or N.
 // Drawn from the island itself the first time it is opened: the sea, the beaches, the meadows, the forests, the
-// mountains with their shadows, the river, the lake and the new stream. On it: a red arrow where the player is and
+// mountains with their shadows, the rivers, the lake and the new stream. On it: a red arrow where the player is and
 // which way they look, and a pulsing gold mark on the place of the current goal (the cave, the top of the other
 // mountain, the raft...), plus the places already known. The game waits while it is open.
 public class MapScreen : MonoBehaviour
@@ -369,12 +369,12 @@ public class MapScreen : MonoBehaviour
                 pixels[y * MapPixels + x] = c;
             }
 
-        // the fresh water: the river, the lake and the new stream
+        // the fresh water: all the rivers, the lake and the new stream
         var waterColor = new Color(0.22f, 0.5f, 0.85f);
-        var river = River.Instance;
-        if (river != null)
+        foreach (var river in River.All)
         {
-            for (int i = 1; i < river.points.Count; i++) Line(pixels, river.points[i - 1], river.points[i], Mathf.Max(1.2f, river.halfWidths[i] / metres), waterColor, tp, data.size);
+            if (river == null) continue;
+            for (int i = 1; i < river.points.Count; i++) Line(pixels, river.points[i - 1], river.points[i], Mathf.Max(1.2f, river.HalfWidth(i) / metres), waterColor, tp, data.size);
             if (river.lakeRadius > 0f) Disc(pixels, river.lakeCentre, river.lakeRadius / metres, waterColor, tp, data.size);
         }
         var stream = MiracleStream.Instance;

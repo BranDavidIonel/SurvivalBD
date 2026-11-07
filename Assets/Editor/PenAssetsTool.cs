@@ -320,7 +320,7 @@ public static class PenAssetsTool
     public static int AddHempAroundLake(int count, int seed)
     {
         var terrain = Terrain.activeTerrain;
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var prefab = Resources.Load<GameObject>("Vegetation/Hemp");
         if (terrain == null || river == null || river.lakeRadius <= 0f || prefab == null) return 0;
         river.BuildCells();
@@ -361,7 +361,7 @@ public static class PenAssetsTool
     public static int AddHempAlongRiver(int count, int seed)
     {
         var terrain = Terrain.activeTerrain;
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var prefab = Resources.Load<GameObject>("Vegetation/Hemp");
         if (terrain == null || river == null || river.points.Count < 4 || prefab == null) return 0;
         var group = NewGroup("Hemp (along the river)");

@@ -16,7 +16,7 @@ public static class RiverTool
     [MenuItem("Tools/Nature/2. Make River (From The Mountain To The Lake)")]
     static void MakeFromMenu()
     {
-        if (Object.FindObjectOfType<River>() != null &&
+        if (River.Instance != null &&
             !EditorUtility.DisplayDialog("River", "There is a river already. Make another one (the terrain is dug again)?", "Yes", "No")) return;
         Make();
     }
@@ -141,7 +141,7 @@ public static class RiverTool
         AssetDatabase.CreateAsset(mesh, meshPath);
         var material = WaterMaterial();
 
-        var old = Object.FindObjectOfType<River>();
+        var old = River.Instance;
         if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
         var go = new GameObject("River");
         var manager = Object.FindObjectOfType<EnviromentManager>();
@@ -436,7 +436,7 @@ public static class RiverTool
     [MenuItem("Tools/Nature/2d. Dig The River Bed Again (deeper)")]
     static void RecarveFromMenu()
     {
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         if (river == null) { Debug.LogWarning("River: there is no river in the scene"); return; }
         Debug.Log("River: bed dug again, " + Recarve(river) + " plants and trees put back on the ground");
     }

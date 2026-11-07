@@ -906,13 +906,11 @@ public class StoryManager : MonoBehaviour
         switch (data.level)
         {
             case 2:
-                if (River.Instance != null && River.Instance.points.Count > 0)
-                {
-                    River.Instance.DistanceToWater(PlayerPosition(), out at);
-                    label = Lang.T("Fresh water: the river", "Apă dulce: râul");
-                    return true;
-                }
-                return false;
+                // the nearest point of the nearest river (from anywhere: the player may be far from all of them)
+                River.NearestWaterAnywhere(PlayerPosition(), out var river, out at);
+                if (river == null) return false;
+                label = Lang.T("Fresh water: the river", "Apă dulce: râul");
+                return true;
             case 5:
             case 6:
             case 8:

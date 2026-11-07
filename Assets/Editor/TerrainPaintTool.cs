@@ -135,14 +135,14 @@ public static class TerrainPaintTool
             trees.Add(r.transform.position);
             crowns.Add(Mathf.Clamp(Mathf.Max(r.bounds.extents.x, r.bounds.extents.z) * 0.85f, 2.5f, 12f));
         }
-        var river = Object.FindObjectOfType<River>();
+        var river = River.Instance;
         var cave = Object.FindObjectOfType<Cave>();
         Bounds lake = RiverTool.LakeBounds(false);
         lake.Expand(new Vector3(12f, 200f, 12f));
         Vector3 mouth = cave != null && cave.path.Count > 0 ? cave.path[0] : new Vector3(1e6f, 0f, 1e6f);
         Paint(terrain, trees, crowns, p =>
             (lake.size.x > 0f && lake.Contains(new Vector3(p.x, lake.center.y, p.z)))
-            || (river != null && river.DistanceToWater(p) < 1.5f)
+            || River.IsWater(p, 1.5f)
             || (new Vector2(p.x - mouth.x, p.z - mouth.z).magnitude < 10f), seed);
     }
 

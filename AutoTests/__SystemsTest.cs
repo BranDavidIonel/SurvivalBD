@@ -20,7 +20,8 @@ using UnityEngine.UI;
 // the level test). Added by the coordinator's editor driver when Play mode starts in GameScene. Removed after the tests.
 // The rabbits are shy (GameSettings.RabbitShyRadius): the hunt chases them (the player runs 12 m/s, they at most 8.8),
 // the spear is thrown from farther than they run from, and the snare is watched from far away.
-// A Folder starting with "NewFeatures" runs the checks of __NewFeaturesTest.cs instead (the same class, partial).
+// A Folder starting with "NewFeatures" runs the checks of __NewFeaturesTest.cs instead (the same class, partial), one
+// starting with "Rivers" those of __RiversTest.cs.
 public partial class __SystemsTest : MonoBehaviour
 {
     public static string Folder = "Systems";
@@ -31,6 +32,9 @@ public partial class __SystemsTest : MonoBehaviour
     // the checks of __NewFeaturesTest.cs (nothing when that file is not copied in)
     partial void AddNewFeatureChecks(List<(string name, Func<IEnumerator> body, float timeout)> checks);
     partial void RestoreNewFeatures();
+    // the checks of __RiversTest.cs (nothing when that file is not copied in)
+    partial void AddRiverChecks(List<(string name, Func<IEnumerator> body, float timeout)> checks);
+    partial void RestoreRivers(bool atEnd);
 
     static __SystemsTest running;
     string Dir => Application.dataPath + "/../Temp/" + Folder + "/";
@@ -93,6 +97,15 @@ public partial class __SystemsTest : MonoBehaviour
             checks.Add(("setup", Setup, 45f));
             AddNewFeatureChecks(checks);
             if (checks.Count == 1) Skip("new features", "__NewFeaturesTest.cs was not copied in");
+        }
+        else if (Folder.StartsWith("Rivers"))
+        {
+            // the island's rivers (__RiversTest.cs): the old one and the 5 new ones from the mountains to the sea
+            Line("(the rivers: __RiversTest)");
+            MaxRunSeconds = 330f;
+            checks.Add(("setup", Setup, 45f));
+            AddRiverChecks(checks);
+            if (checks.Count == 1) Skip("rivers", "__RiversTest.cs was not copied in");
         }
         else
         {
@@ -177,6 +190,7 @@ public partial class __SystemsTest : MonoBehaviour
         __WalkDriver.On = false;
         __WalkDriver.Move = Vector2.zero;
         try { RestoreNewFeatures(); } catch (Exception e) { Line("restore (new features): " + e.Message); }
+        try { RestoreRivers(true); } catch (Exception e) { Line("restore (rivers): " + e.Message); }
         if (setupDone && GameSettings.Difficulty != startDifficulty) GameSettings.Difficulty = startDifficulty;
         GameInput.TestDriven = false;
         GameInput.ResetTouch();
@@ -1713,6 +1727,7 @@ public partial class __SystemsTest : MonoBehaviour
         __WalkDriver.Move = Vector2.zero;
         GameInput.touchMove = Vector2.zero;
         RestoreNewFeatures();
+        RestoreRivers(false);
         if (setupDone && GameSettings.Difficulty != startDifficulty) { GameSettings.Difficulty = startDifficulty; Note("difficulty put back to " + startDifficulty); }
         var inventory = InventorySystem.Instance;
         if (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen) CampfireUIManager.Instance.CloseUI();

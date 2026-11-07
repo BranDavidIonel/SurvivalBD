@@ -451,6 +451,8 @@ public class Forest : MonoBehaviour
             var info = TreeSpecies.Get(variant.species);
             // (a tree left standing on one of Brother Ioan's paths or in the stream's bed: not in the game)
             if (IslandPaths.KeepClear(filter.transform.position, 0.3f)) { filter.gameObject.SetActive(false); continue; }
+            // (nor one left standing in a river's water or on its very edge: the margin of IsGoodGround)
+            if (River.IsWater(filter.transform.position, 2.5f)) { filter.gameObject.SetActive(false); continue; }
 
             // an old choppable birch (Tree_Parent: Animator -> model -> tree_base with ChoppableTree): all of it goes
             Transform root = filter.transform;
@@ -1420,10 +1422,11 @@ public class Forest : MonoBehaviour
             TakeSceneTrees(); // (they are in the save already)
             if (data.version >= 2) Clear();
             else RemoveSpecies((int)TreeSpecies.Kind.Pine);
-            foreach (var t in data.trees) if (!IslandPaths.KeepClear(t.position, 0.3f)) AddTree(t); // (a tree from an old save on a path: gone)
-            if (data.cones != null) foreach (var c in data.cones) if (c != null && !IslandPaths.KeepClear(c.position, 0f)) AddSeed(c);
-            if (data.stumps != null) foreach (var s in data.stumps) AddStump(s);
-            if (data.seeds != null) foreach (var s in data.seeds) AddPlanted(s);
+            // (a tree from an old save on a path or where a river runs now: gone)
+            foreach (var t in data.trees) if (t != null && !IslandPaths.KeepClear(t.position, 0.3f) && KeepFromSave(ref t.position, 2.5f)) AddTree(t);
+            if (data.cones != null) foreach (var c in data.cones) if (c != null && !IslandPaths.KeepClear(c.position, 0f) && KeepFromSave(ref c.position, 0.5f, SeedLift(c.species))) AddSeed(c);
+            if (data.stumps != null) foreach (var s in data.stumps) if (s != null && KeepFromSave(ref s.position, 2.5f)) AddStump(s);
+            if (data.seeds != null) foreach (var s in data.seeds) if (s != null && KeepFromSave(ref s.position, 2.5f)) AddPlanted(s);
         }
         TakeLoadedBirches();
         var branches = GetComponent<FallenBranches>();
@@ -1431,6 +1434,16 @@ public class Forest : MonoBehaviour
         RebuildBillboards();
         UpdateModels();
         UpdateSeedObjects(int.MaxValue);
+    }
+
+    // A save from before the new rivers: what lies in a river's water or on its very edge is gone (margin: like
+    // IsGoodGround for trees, like DropSeed for seeds). Near the rivers the rest is put back on the ground (lift:
+    // above it), because the river beds were dug into the terrain after the save was made.
+    static bool KeepFromSave(ref Vector3 p, float margin, float lift = 0f)
+    {
+        if (River.IsWater(p, margin)) return false;
+        if (River.IsWater(p, 12f)) p.y = GroundY(p) + lift;
+        return true;
     }
 
     // An old save brings back the old choppable birches (Tree_Parent) and their stumps: the birches become living
@@ -1461,7 +1474,7 @@ public class Forest : MonoBehaviour
             query.Clear();
             treeGrid.Query(p, 2f, query);
             foreach (var t in query) if (t != null && FlatDistance(t.data.position, p) < 1.5f) there = true;
-            if (!there)
+            if (!there && !River.IsWater(p, 2.5f)) // (not where a river runs now)
             {
                 var r = c.transform.parent != null ? c.transform.parent.GetComponent<Renderer>() : null;
                 float height = r != null ? Mathf.Clamp(r.bounds.size.y, 0.5f, TreeSpecies.Get(1).maxFull) : 14f;
