@@ -15,14 +15,15 @@ public class RabbitLife : MonoBehaviour
     public Animal animal;
     public RabbitLife mate;             // the partner it walks to
 
-    // how fast it goes (metres per second; the player walks 12). A bit faster than before (the owner: "a bit
-    // faster"), still easy to follow and corner: hit, it hops away about 6.5 m.
+    // how fast it goes (metres per second; the player walks 12), on Easy. Normal and Hard are faster
+    // (GameSettings.RabbitSpeed), and the rabbits run from a player who comes close (GameSettings.RabbitShy...).
     public const float FleeSpeed = 5.5f;       // hit, or let go from the hands (was 4 / 4.2)
     public const float FleeDistance = 6.5f;    // how far it hops away when hit (was 5)
     public const float MateSpeed = 2.9f;       // to its partner (was 2.4)
     public const float LureSpeed = 2.6f;       // to a snare (was 2.2)
     public static readonly Vector2 WanderSpeed = new Vector2(1.8f, 2.8f); // grown up, hopping around (was 1.4-2.2)
     public const float BabySpeed = 1.3f;       // babies (was 1.1)
+    static float Faster => GameSettings.RabbitSpeed;
     public RabbitSnare caughtIn;        // the snare that holds it
     public RabbitSnare lure;            // the snare it walks to
 
@@ -162,7 +163,7 @@ public class RabbitLife : MonoBehaviour
         Vector3 away = transform.position - player; away.y = 0f;
         if (away.sqrMagnitude < 0.01f) away = transform.forward;
         target = transform.position + away.normalized * distance;
-        speed = FleeSpeed;
+        speed = FleeSpeed * Faster;
         moving = true;
         fleeTimer = 1.6f;
     }
@@ -220,11 +221,22 @@ public class RabbitLife : MonoBehaviour
             Vector3 away = -toPlayer.normalized;
             if (away.sqrMagnitude < 0.01f) away = transform.forward;
             target = here + away * FleeDistance;
-            speed = FleeSpeed;
+            speed = FleeSpeed * Faster;
             moving = true;
             path = null;
+            shyRunning = false;
+            // after the hop it stops a moment (a second blow is possible), it does not run on at once
+            shyCooldown = fleeTimer + GameSettings.RabbitShyRest;
         }
         if (fleeTimer > 0f) fleeTimer -= Time.deltaTime;
+        else shyRunning = false;
+
+        // shy: the player comes close -> it runs away from them (a little on Easy, far and fast on Hard). Not in a
+        // closed pen (grown ones are taken there by hand) and not while it runs already.
+        if (shyCooldown > 0f) shyCooldown -= Time.deltaTime;
+        float shyRadius = GameSettings.RabbitShyRadius;
+        if (fleeTimer <= 0f && shyCooldown <= 0f && toPlayer.sqrMagnitude < shyRadius * shyRadius && !CalmInPen())
+            RunAway(here, toPlayer);
 
         if (fleeTimer <= 0f && IsLeaving)
         {
@@ -240,7 +252,7 @@ public class RabbitLife : MonoBehaviour
             if (toMate.sqrMagnitude > 1.1f * 1.1f)
             {
                 target = mate.transform.position;
-                speed = MateSpeed;
+                speed = MateSpeed * Faster;
                 moving = true;
             }
             else
@@ -252,7 +264,7 @@ public class RabbitLife : MonoBehaviour
         {
             // to the snare (the loop)
             target = lure.Loop;
-            speed = LureSpeed;
+            speed = LureSpeed * Faster;
             moving = true;
         }
         else if (!moving)
@@ -262,6 +274,58 @@ public class RabbitLife : MonoBehaviour
         }
 
         if (moving) Move(here);
+    }
+
+    // ---- running from the player ---- //
+
+    float shyCooldown;
+    float nextPenCheck;
+    bool calmInPen;
+    bool shyRunning;    // the run now is a run from the player
+
+    // how many times it ran from the player (for the automatic tests)
+    public int ShyRuns { get; private set; }
+
+    // inside a closed pen or fenced yard it stays calm (looked at once a second: the check casts rays)
+    bool CalmInPen()
+    {
+        if (PenDoor.All.Count == 0) return false;
+        if (Time.time >= nextPenCheck)
+        {
+            nextPenCheck = Time.time + 1f;
+            calmInPen = Buildings.IsClosedAll(transform.position, 65f, true);
+        }
+        return calmInPen;
+    }
+
+    // away from the player, a bit to one side; around water, the sea or a wall it tries other ways (none: it is
+    // cornered and stays, so it can be caught at the shore)
+    bool RunAway(Vector3 here, Vector3 toPlayer)
+    {
+        Vector3 away = -toPlayer; away.y = 0f;
+        if (away.sqrMagnitude < 0.01f) away = transform.forward;
+        away.Normalize();
+        float distance = GameSettings.RabbitShyRun * (IsAdult ? 1f : 0.6f);
+        float runSpeed = GameSettings.RabbitShySpeed * (IsAdult ? 1f : 0.6f);
+        float side = Random.value < 0.5f ? 1f : -1f;
+        float[] turns = { Random.Range(-35f, 35f), 60f * side, -60f * side, 100f * side, -100f * side };
+        foreach (float turn in turns)
+        {
+            Vector3 dir = Quaternion.Euler(0f, turn, 0f) * away;
+            Vector3 to = here + dir * distance;
+            if (!IsGoodGround(to) || !IsGoodGround(here + dir * distance * 0.5f) || Buildings.Blocks(here, to)) continue;
+            target = to;
+            speed = runSpeed;
+            moving = true;
+            path = null;
+            fleeTimer = distance / runSpeed + 0.2f;
+            shyCooldown = fleeTimer + GameSettings.RabbitShyRest;
+            shyRunning = true;
+            ShyRuns++;
+            return true;
+        }
+        shyCooldown = 0.5f; // (cornered: it looks again in a moment)
+        return false;
     }
 
     // in the snare: it tugs and twists, now and then
@@ -285,7 +349,7 @@ public class RabbitLife : MonoBehaviour
             Vector3 p = here + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
             if (!IsGoodGround(p) || Buildings.Blocks(here, p)) continue; // (in a pen: somewhere inside)
             target = p;
-            speed = IsAdult ? Random.Range(WanderSpeed.x, WanderSpeed.y) : BabySpeed;
+            speed = (IsAdult ? Random.Range(WanderSpeed.x, WanderSpeed.y) : BabySpeed) * Faster;
             moving = true;
             return;
         }
@@ -321,6 +385,8 @@ public class RabbitLife : MonoBehaviour
             waitTimer = Random.Range(0.5f, 2f);
             fleeTimer = 0f;
             path = null;
+            // (a run from the player stopped by water or a wall: it still goes to its snare or partner afterwards)
+            if (shyRunning) { shyRunning = false; return; }
             if (lure != null) { lure.lured = null; lure = null; }
             // a wall between it and its partner: they give up
             if (mate != null) { if (mate.mate == this) mate.mate = null; mate = null; }

@@ -316,6 +316,9 @@ public class DebugEnvironmentPanel : MonoBehaviour
         }
         difficultyInfo = NewLabel(row, "", 600f, 24f, InfoColor);
         difficultyInfo.enableWordWrapping = true;
+        difficultyInfo.enableAutoSizing = true; // (the Romanian lines are long: smaller rather than cut)
+        difficultyInfo.fontSizeMin = 15f;
+        difficultyInfo.fontSizeMax = 24f;
 
         // the admin: the TEST settings, only with the password
         row = NewRow(rows, "Admin", "Admin");

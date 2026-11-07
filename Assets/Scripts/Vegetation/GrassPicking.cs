@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Hay from the grass of the meadows: looking down at grassy ground (not the dark forest floor, the sand, rock or
-// snow) the player can "Pick grass (hay)" anywhere (SelectionManager). A spot that was picked needs a game day to
+// Hay from the grass of the meadows: looking down at grassy ground (not the dark forest floor, the sand or rock;
+// under the snow too, so winter stays playable) the player can "Pick grass (hay)" anywhere (SelectionManager). A spot that was picked needs a game day to
 // grow back. This way hay for the fire is easy to find, without thousands of grass objects in the scene.
 public static class GrassPicking
 {
@@ -26,6 +26,13 @@ public static class GrassPicking
 
     static float Clock => Vegetation.Instance != null ? Vegetation.Instance.Clock : Time.time / 15f;
 
+    // a new game or a loaded one (Vegetation): the spots picked before were timed on the old clock
+    public static void ClearPicked()
+    {
+        picked.Clear();
+        nextCheck = 0f;
+    }
+
     public static bool CanPick(Ray ray, out Vector3 spot)
     {
         if (Time.time >= nextCheck)
@@ -44,8 +51,7 @@ public static class GrassPicking
         if (!(hit.collider is TerrainCollider)) return false;
         var terrain = hit.collider.GetComponent<Terrain>();
         if (terrain == null) return false;
-        var weather = WeatherSystem.Instance;
-        if (weather != null && weather.SnowCover > 0.5f) return false;
+        // (in winter too: the grass is dug out from under the snow, so there is always hay for the fire)
         if (Ocean.Instance != null && hit.point.y < Ocean.Instance.Level + 0.5f) return false;
 
         var data = terrain.terrainData;

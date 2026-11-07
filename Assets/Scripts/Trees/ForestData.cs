@@ -13,6 +13,7 @@ public class ForestData
     public List<SeedData> cones = new List<SeedData>();      // seeds lying on the ground (cones, acorns...)
     public List<StumpData> stumps = new List<StumpData>();
     public List<SeedData> seeds = new List<SeedData>();      // seeds planted by the player, not sprouted yet
+    public List<TakenBranchData> branches = new List<TakenBranchData>(); // dry branches taken from under the trees (FallenBranches)
 }
 
 [System.Serializable]

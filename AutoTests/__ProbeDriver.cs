@@ -7,19 +7,25 @@ using UnityEditor;
 using UnityEngine;
 
 // TEMPORARY (Claude): runs the checks one after another, each in Play mode, then stops Play and puts the editor's
-// view back. Writes into Temp/<folder>. Removed after the tests.
-//  1 Probe2:   (edit mode) the fence items, Brother Ioan's paths and the stream bed, the map picture; then a look
-//              around in Play (phone)
-//  2 LevelTest: the 10 levels from a new game (phone)
-//  3 Probe3a:  the screens on a PC 1920 x 1080 (Game view)
-//  4 Probe3b:  the screens on a narrow PC 1280 x 1024
+// view back. Writes into Temp/<job>. Removed after the tests. A job name ending in "PC" (a number after it is fine:
+// "SystemsPC13") plays in the Game view at 1920 x 1080, "...4K" at 3840 x 2160, the others in the phone Simulator.
+//  1 SystemsPhone13:     every system (__SystemsTest), phone
+//  2 SystemsPC13:        the same on a PC 1920 x 1080
+//  3 NewFeaturesPhone13: the new things of 2026-11-07 (__NewFeaturesTest: winter, a load without extra axes, the
+//                        backpack, the loading screen, the branches, the shy rabbits), phone
+//  4 NewFeaturesPC13:    the same on a PC (the backpack's window on a wide screen)
+//  5 LevelTest13:        the 10 levels from a new game (__LevelTest), phone
 //  then back to the phone simulator
 [InitializeOnLoad]
 static class __ProbeDriver
 {
-    static readonly string[] Jobs = { "LevelTest12" };
-    const string JobKey = "__ProbeDriver.job12", PhaseKey = "__ProbeDriver.jobphase12";
-    const string AllDone = "Temp/__ProbeJobs12_done.txt";
+    static readonly string[] Jobs = { "SystemsPhone13", "SystemsPC13", "NewFeaturesPhone13", "NewFeaturesPC13", "LevelTest13" };
+    const string JobKey = "__ProbeDriver.job13", PhaseKey = "__ProbeDriver.jobphase13";
+    const string AllDone = "Temp/__ProbeJobs13_done.txt";
+
+    // the job's name without the run number at its end ("SystemsPC13" -> "SystemsPC")
+    static string Kind(string job) => job.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+    static bool IsPC(string job) => job == "Probe3a" || Kind(job).EndsWith("PC");
     static int quiet;
     const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -43,9 +49,17 @@ static class __ProbeDriver
             __LevelTest.Folder = job;
             new GameObject("__LevelTest").AddComponent<__LevelTest>();
         }
-        else if (job.StartsWith("Systems"))
+        else if (job.StartsWith("Video"))
         {
-            // (found by name: the systems test is written by another agent)
+            var video = Type.GetType("__VideoDirector, Assembly-CSharp");
+            if (video == null) { File.WriteAllText(Dir + "/finished.txt", "no __VideoDirector"); Phase = 2; return; }
+            video.GetField("Folder", Any)?.SetValue(null, job);
+            new GameObject("__VideoDirector").AddComponent(video);
+        }
+        else if (job.StartsWith("Systems") || job.StartsWith("NewFeatures"))
+        {
+            // (found by name: the systems test is written by another agent; "NewFeatures..." runs the checks of
+            // __NewFeaturesTest.cs, the same class)
             var type = Type.GetType("__SystemsTest, Assembly-CSharp");
             if (type == null) { File.WriteAllText(Dir + "/finished.txt", "no __SystemsTest"); Phase = 2; return; }
             type.GetField("Folder", Any)?.SetValue(null, job);
@@ -54,7 +68,7 @@ static class __ProbeDriver
         else
         {
             __Probe.Folder = job;
-            __Probe.Mode = job == "Probe7" ? "paths" : job.EndsWith("Phone") ? "phone" : "pc";
+            __Probe.Mode = job == "Probe7" ? "paths" : Kind(job).EndsWith("Phone") ? "phone" : "pc";
             new GameObject("__Probe").AddComponent<__Probe>();
         }
         Phase = 2;
@@ -117,7 +131,8 @@ static class __ProbeDriver
             }
             try
             {
-                if (job == "Probe3a" || job.EndsWith("PC")) { SwapView(GameViewType()); SetGameViewSize(1920, 1080); }
+                if (IsPC(job)) { SwapView(GameViewType()); SetGameViewSize(1920, 1080); }
+                else if (job.EndsWith("4K")) { SwapView(GameViewType()); SetGameViewSize(3840, 2160); } // (the video)
                 else if (job != "Probe3b") SwapView(SimulatorType()); // the phone
                 if (job == "Probe3b") { SwapView(GameViewType()); SetGameViewSize(1280, 1024); }
             }

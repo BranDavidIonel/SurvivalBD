@@ -118,11 +118,16 @@ public class PlayerMovement : MonoBehaviour
             moveRight = false;
         }
 
-        //right is the red Axis, foward is the blue axis
-        Vector3 move = transform.right * x + transform.forward * z;
-
         //in deep water we swim: slower, and no gravity (Space = up, Left Ctrl = down)
         bool isSwimming = playerWater != null && playerWater.IsSwimming;
+
+        //right is the red Axis, foward is the blue axis
+        // On land the forward is level: MouseMovement tilts this object to look up and down, and a tilted forward
+        // pushed part of the step into the ground (looking down, the player walked at 12 x cos(angle): slower than a
+        // fleeing rabbit). Swimming keeps the old way.
+        Vector3 forward = transform.forward;
+        if (!isSwimming) forward = Vector3.Cross(transform.right, Vector3.up).normalized; // (right stays level)
+        Vector3 move = transform.right * x + forward * z;
         float moveSpeed = isSwimming ? speed * playerWater.swimSpeedMultiplier : speed;
 
         controller.Move(move * moveSpeed * Time.deltaTime);

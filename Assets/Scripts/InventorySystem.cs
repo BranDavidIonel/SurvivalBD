@@ -54,6 +54,7 @@ public class InventorySystem : MonoBehaviour
 
     private void PopulateSlotList()
     {
+        if (slotList.Count > 0) return; // (found already: the backpack may come before Start)
         foreach (Transform child in inventoryScreenUI.transform)
         {
             if (child.CompareTag("Slot"))
@@ -72,6 +73,39 @@ public class InventorySystem : MonoBehaviour
             slotList.Add(copy);
         }
         numberOfSlots = slotList.Count;
+    }
+
+    // ---- the backpack (Crafting > Survival: 3 rabbit hides + 2 sticks): 16 more slots, for good (saved) ---- //
+
+    public const int BackpackSlots = 16;
+    public bool HasBackpack { get; private set; }
+    // the slots were added: GameWindowsLayout lays the bigger inventory out again
+    public static event Action BackpackAdded;
+
+    public bool AddBackpack(bool announce = true)
+    {
+        if (HasBackpack) return false;
+        if (slotList.Count == 0) PopulateSlotList();
+        if (slotList.Count == 0) return false;
+        HasBackpack = true;
+        // an empty slot is copied (the last one may hold an item now)
+        GameObject template = null;
+        for (int i = slotList.Count - 1; i >= 0 && template == null; i--)
+            if (slotList[i] != null && slotList[i].transform.childCount == 0) template = slotList[i];
+        if (template == null) template = slotList[slotList.Count - 1];
+        int target = slotList.Count + BackpackSlots;
+        while (slotList.Count < target)
+        {
+            var copy = Instantiate(template, template.transform.parent);
+            copy.name = "Slot (" + slotList.Count + ")";
+            for (int i = copy.transform.childCount - 1; i >= 0; i--) DestroyImmediate(copy.transform.GetChild(i).gameObject);
+            slotList.Add(copy);
+        }
+        numberOfSlots = slotList.Count;
+        if (BackpackAdded != null) BackpackAdded();
+        if (announce) ShowMessage(Lang.T("Backpack: " + BackpackSlots + " more slots in the inventory", "Rucsac: " + BackpackSlots + " sloturi în plus în inventar"));
+        if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
+        return true;
     }
 
 
@@ -315,6 +349,27 @@ public class InventorySystem : MonoBehaviour
         }
         return counter;
     }
+    // Empties the inventory, the quick bar and the hand. The scene keeps a stone axe in the first inventory slot and in
+    // the first quick slot (left from testing): a new game starts with nothing, and a loaded game must have only what
+    // was saved (before, a load put the saved items next to those axes, so every load + save gave one more axe).
+    public void ClearAllItems()
+    {
+        foreach (var slot in slotList)
+            if (slot != null) for (int i = slot.transform.childCount - 1; i >= 0; i--) DestroyImmediate(slot.transform.GetChild(i).gameObject);
+        var equip = EquipSystem.Instance;
+        if (equip != null)
+        {
+            if (equip.selectedItemModel != null) { DestroyImmediate(equip.selectedItemModel); equip.selectedItemModel = null; }
+            equip.selectedItem = null;
+            equip.selectedNumber = -1;
+            foreach (var slot in equip.quickSlotsList)
+                if (slot != null) for (int i = slot.transform.childCount - 1; i >= 0; i--) DestroyImmediate(slot.transform.GetChild(i).gameObject);
+        }
+        RecalculateList();
+        if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
+        QuickBarUI.Changed();
+    }
+
     public void RecalculateList()
     {
         itemList.Clear();

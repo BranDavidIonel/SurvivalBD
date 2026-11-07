@@ -10,6 +10,7 @@ using UnityEngine.UI;
 // TEMPORARY (Claude): plays the 10 levels from a new game, as a player would (the game's own buttons, aiming and
 // clicks where it can, the craft button's code, items given where a long walk would only take time). Logs every goal
 // into Temp/<folder>/levels.txt, with screenshots and the errors seen. Removed after the test.
+// The rabbits are shy (GameSettings.RabbitShyRadius): at level 9 the player waits for the snares far from them.
 public class __LevelTest : MonoBehaviour
 {
     public static string Folder = "LevelTest";
@@ -250,6 +251,91 @@ public class __LevelTest : MonoBehaviour
                 DestroyImmediate(slot.transform.GetChild(0).gameObject);
         InventorySystem.Instance.RecalculateList();
         CraftingSystem.Instance.RefreshNeededItems();
+    }
+
+    // nothing in the hand (a rabbit in a snare is taken alive only with empty hands)
+    void EmptyHand()
+    {
+        var equip = EquipSystem.Instance;
+        if (equip == null) return;
+        if (equip.selectedItem != null)
+        {
+            var info = equip.selectedItem.GetComponent<InventoryItem>();
+            if (info != null) info.isSelected = false;
+        }
+        if (equip.selectedItemModel != null) Destroy(equip.selectedItemModel);
+        equip.selectedItemModel = null;
+        equip.selectedItem = null;
+        equip.selectedNumber = -1;
+        QuickBarUI.Changed();
+    }
+
+    static bool HasPair() => InventorySystem.Instance.CountItem(RabbitPopulation.LiveMale) > 0 && InventorySystem.Instance.CountItem(RabbitPopulation.LiveFemale) > 0;
+
+    static bool OnLand(Vector3 p) =>
+        (Ocean.Instance == null || Ocean.Instance.DistanceFromShore(p) < -3f) && !River.IsWater(p, 2f);
+
+    // where a player waits for the snares without scaring the rabbits away: this far, on the other side from the
+    // rabbits around them, on land
+    Vector3 WaitSpot(Vector3 at, float distance)
+    {
+        Vector3 sum = Vector3.zero;
+        foreach (var r in RabbitPopulation.Instance.Rabbits)
+            if (r != null && r.Alive && r.IsAdult && r.caughtIn == null && Flat(r.transform.position - at) < RabbitSnare.LureDistance)
+                sum += Vector3.ProjectOnPlane(r.transform.position - at, Vector3.up).normalized;
+        Vector3 away = sum.sqrMagnitude > 0.01f ? -Vector3.ProjectOnPlane(sum, Vector3.up).normalized : Vector3.ProjectOnPlane(player.position - at, Vector3.up).normalized;
+        if (away.sqrMagnitude < 0.01f) away = Vector3.forward;
+        for (int i = 0; i < 12; i++)
+        {
+            float turn = (i % 2 == 0 ? 1f : -1f) * ((i + 1) / 2) * 30f;
+            Vector3 p = at + Quaternion.Euler(0f, turn, 0f) * away * distance;
+            if (OnLand(p)) return p;
+        }
+        return at + away * distance;
+    }
+
+    // a rabbit caught in a snare taken alive: empty hands, standing by it, the crosshair on it, the primary press
+    IEnumerator TakeCaught(RabbitSnare snare)
+    {
+        var r = snare != null ? snare.caught : null;
+        if (r == null) yield break;
+        var sex = r.sex;
+        string item = sex == RabbitInfo.Sex.Female ? RabbitPopulation.LiveFemale : RabbitPopulation.LiveMale;
+        int before = InventorySystem.Instance.CountItem(item);
+        EmptyHand();
+        Vector3 cp = r.transform.position;
+        Vector3 off = Vector3.ProjectOnPlane(player.position - cp, Vector3.up);
+        Vector3 from = cp + (off.sqrMagnitude > 0.01f ? off.normalized : Vector3.forward) * 2.4f;
+        Teleport(from, YawTo(from, cp), 35f);
+        yield return Real(0.5f);
+        if (r == null) yield break;
+        var box = r.GetComponent<Collider>();
+        AimAt(box != null && box.enabled ? box.bounds.center : cp + Vector3.up * 0.4f);
+        yield return Real(0.3f);
+        Press(GameInput.TouchAction.Primary);
+        yield return Real(0.6f);
+        bool ok = InventorySystem.Instance.CountItem(item) > before;
+        // not taken: what the game saw, then two more tries (a rabbit caught far away, while asleep, wakes up
+        // only on RabbitPopulation's next look, every 0.5 s)
+        for (int attempt = 2; attempt <= 3 && !ok && r != null && r.caughtIn == snare; attempt++)
+        {
+            var sel = SelectionManager.Instance;
+            var target = sel != null ? sel.selectedObject : null;
+            Log("    press " + (attempt - 1) + " did not take it: rabbit active " + r.Active + ", in range " + (r.animal != null && r.animal.playerInRange)
+                + ", crosshair on '" + (target != null ? target.name : "nothing") + "' (the rabbit: " + (target == r.gameObject) + "), holding a weapon "
+                + (EquipSystem.Instance != null && EquipSystem.Instance.IsHoldingWeapon()) + "; try " + attempt);
+            yield return Real(0.5f);
+            if (r == null) break;
+            var box2 = r.GetComponent<Collider>();
+            AimAt(box2 != null && box2.enabled ? box2.bounds.center : r.transform.position + Vector3.up * 0.4f);
+            yield return Real(0.3f);
+            Press(GameInput.TouchAction.Primary);
+            yield return Real(0.6f);
+            ok = InventorySystem.Instance.CountItem(item) > before;
+            if (ok) Log("    taken by the press on try " + attempt);
+        }
+        if (!ok && r != null && r.caughtIn == snare) { RabbitPopulation.Instance.TakeAlive(r); Log("  (taken by code: the press did not take it)"); }
+        Log("  the " + sex + " taken alive from the snare (empty hands, crosshair + press): " + (ok ? "ok" : "NOT by the press"));
     }
 
     // ---------------- the levels ---------------- //
@@ -516,43 +602,71 @@ public class __LevelTest : MonoBehaviour
         var start = FindObjectOfType<StoryStart>();
         Vector3 f = Vector3.ProjectOnPlane(start.transform.forward, Vector3.up).normalized;
         Vector3 r = Vector3.Cross(Vector3.up, f);
-        // a snare, set the player's way near rabbits
-        Give("stick", 1);
-        Give("hemp", 5);
+        // two snares, set the player's way near rabbits. The rabbits are shy (they run from a player closer than
+        // GameSettings.RabbitShyRadius), so the player waits farther away, then takes what the snares caught alive
+        // with empty hands (the crosshair on it + press), until there are a male and a female
+        EmptyHand();
+        Give("stick", 2);
+        Give("hemp", 10);
+        Craft(CraftingSystem.Instance.SnareBLP);
         Craft(CraftingSystem.Instance.SnareBLP);
         RabbitLife near = null;
-        foreach (var rb in population.Rabbits) if (rb != null && rb.Alive && rb.IsAdult && (near == null || Flat(rb.transform.position - player.position) < Flat(near.transform.position - player.position))) near = rb;
+        foreach (var rb in population.Rabbits)
+            if (rb != null && rb.Alive && rb.IsAdult && rb.caughtIn == null && !RabbitPopulation.InPen(rb)
+                && (near == null || Flat(rb.transform.position - player.position) < Flat(near.transform.position - player.position))) near = rb;
+        var snares = new List<RabbitSnare>();
         if (near != null)
         {
-            Vector3 by = near.transform.position + Vector3.right * 5f;
-            Teleport(by, YawTo(by, near.transform.position), 30f);
-            yield return Real(0.6f);
-            UseItem(FindItem("snare"));
-            yield return Real(0.6f);
-            AimAt(Vector3.Lerp(player.position, near.transform.position, 0.7f));
-            yield return Real(0.4f);
-            Press(GameInput.TouchAction.Primary);
-            yield return Real(0.8f);
-            Log("snare set: " + RabbitSnare.All.Count);
+            Vector3 rp = near.transform.position;
+            for (int k = 0; k < 2; k++)
+            {
+                Vector3 place = rp + Vector3.forward * (k * 6f);
+                Vector3 by = place + Vector3.right * 5f;
+                Teleport(by, YawTo(by, place), 30f);
+                yield return Real(0.6f);
+                var before = new HashSet<RabbitSnare>(RabbitSnare.All);
+                UseItem(FindItem("snare"));
+                yield return Real(0.6f);
+                AimAt(Vector3.Lerp(player.position, place, 0.7f));
+                yield return Real(0.4f);
+                Press(GameInput.TouchAction.Primary);
+                yield return Real(0.8f);
+                foreach (var s in RabbitSnare.All) if (s != null && !before.Contains(s)) snares.Add(s);
+                if (SnarePlacing.Active) SnarePlacing.Instance.Cancel();
+            }
+            Log("snares set: " + snares.Count + " (all snares " + RabbitSnare.All.Count + ")");
+            Vector3 mid = rp;
+            if (snares.Count > 0) { mid = Vector3.zero; foreach (var s in snares) mid += s.transform.position; mid /= snares.Count; }
+            float shy = GameSettings.RabbitShyRadius;
+            Vector3 waitAt = WaitSpot(mid, 2f * shy + 6f);
+            Teleport(waitAt, YawTo(waitAt, mid), 12f);
+            Log("waiting " + Flat(waitAt - mid).ToString("0") + " m from the snares (difficulty " + GameSettings.Difficulty + ": rabbits run from " + shy + " m)");
             DayNightSystem.Instance.timeSpeed = 20f;
             float t = 0f;
-            RabbitSnare caught = null;
-            while (t < 40f && caught == null) { foreach (var s in RabbitSnare.All) if (s != null && s.caught != null && s.caught.Alive) caught = s; t += 0.5f; yield return Real(0.5f); }
-            DayNightSystem.Instance.timeSpeed = 1f;
-            if (caught != null)
+            bool shot = false;
+            while (t < 50f && snares.Count > 0 && !HasPair())
             {
-                Log("a rabbit in the snare after " + t.ToString("0") + " s: " + caught.caught.sex);
-                yield return Shot("L9_snare");
-                population.TakeAlive(caught.caught); // (empty hands: Take)
+                foreach (var s in snares)
+                {
+                    if (s == null || s.caught == null || !s.caught.Alive || HasPair()) continue;
+                    Log("a rabbit in a snare after " + t.ToString("0") + " s: " + s.caught.sex + " (it ran from the player " + s.caught.ShyRuns + " times)");
+                    if (!shot) { shot = true; yield return Shot("L9_snare"); }
+                    yield return TakeCaught(s);
+                    Teleport(waitAt, YawTo(waitAt, mid), 12f);
+                }
+                t += 0.5f;
+                yield return Real(0.5f);
             }
-            else Log("  nothing in the snare after 40 s");
+            DayNightSystem.Instance.timeSpeed = 1f;
+            if (!HasPair()) Log("  the snares did not catch a male and a female in 50 s");
         }
-        // the other one(s) from the wild, as from a snare
+        else Log("  no grown rabbit found for the snares");
+        // what the snares did not catch, from the wild as from a snare
         foreach (var sex in new[] { RabbitInfo.Sex.Male, RabbitInfo.Sex.Female })
         {
             string item = sex == RabbitInfo.Sex.Male ? RabbitPopulation.LiveMale : RabbitPopulation.LiveFemale;
             if (InventorySystem.Instance.CountItem(item) > 0) continue;
-            foreach (var rb in population.Rabbits) if (rb != null && rb.Alive && rb.IsAdult && rb.sex == sex) { population.TakeAlive(rb); break; }
+            foreach (var rb in population.Rabbits) if (rb != null && rb.Alive && rb.IsAdult && rb.sex == sex) { population.TakeAlive(rb); Log("  (a " + sex + " given from the wild)"); break; }
         }
         yield return Real(1.2f);
         Log("male and female alive: " + Steps());

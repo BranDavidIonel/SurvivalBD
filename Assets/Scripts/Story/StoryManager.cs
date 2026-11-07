@@ -219,7 +219,7 @@ public class StoryManager : MonoBehaviour
                 "Make the cross (Crafting > Construction: 5 planks)",
                 "Last: raise the cross on the other mountain (Menu > Map)",
             },
-            hint = "Empty hands take a caught rabbit alive, the axe kills it. In the pen, use the live rabbit from the inventory to let it go; with the gate shut they stay and multiply. The cross goes up last: Brother Ioan's path climbs the other mountain.",
+            hint = "Rabbits run from you: set the snare and wait farther away. Empty hands take a caught rabbit alive, the axe kills it. In the pen, use the live rabbit from the inventory to let it go; with the gate shut they stay and multiply. The cross goes up last: Brother Ioan's path climbs the other mountain.",
             done = "Water springs from the rock under the cross and runs down to the sea! Now I understand where the other river came from: Brother Ioan raised a cross there too. He was a saint... and now I feel that I am protected as well.",
         },
         // the last level: keep it the last one (new levels go before it)
@@ -420,7 +420,7 @@ public class StoryManager : MonoBehaviour
                 "Fă crucea (Meșteșuguri > Construcții: 5 scânduri)",
                 "La sfârșit: înalță crucea pe celălalt munte (Meniu > Hartă)",
             },
-            hint = "Cu mâinile goale iei viu iepurele prins, cu toporul îl omori. În țarc, folosește iepurele viu din inventar ca să-i dai drumul; cu poarta închisă rămân acolo și se înmulțesc. Crucea se pune ultima: poteca fratelui Ioan urcă pe celălalt munte.",
+            hint = "Iepurii fug de tine: pune lațul și așteaptă mai departe. Cu mâinile goale iei viu iepurele prins, cu toporul îl omori. În țarc, folosește iepurele viu din inventar ca să-i dai drumul; cu poarta închisă rămân acolo și se înmulțesc. Crucea se pune ultima: poteca fratelui Ioan urcă pe celălalt munte.",
             done = "Din stâncă, de sub cruce, izvorăște apă și curge până în mare! Acum înțeleg de unde a apărut celălalt râu: și acolo fratele Ioan a înălțat o cruce. A fost un sfânt... și acum simt că și eu voi fi ocrotit.",
         },
         new Level
@@ -1107,21 +1107,7 @@ public class StoryManager : MonoBehaviour
     {
         yield return null; // after the inventory and the quick bar have found their slots
         var inventory = InventorySystem.Instance;
-        if (inventory != null)
-            foreach (var slot in inventory.slotList)
-                if (slot != null) for (int i = slot.transform.childCount - 1; i >= 0; i--) DestroyImmediate(slot.transform.GetChild(i).gameObject);
-        var equip = EquipSystem.Instance;
-        if (equip != null)
-        {
-            if (equip.selectedItemModel != null) { DestroyImmediate(equip.selectedItemModel); equip.selectedItemModel = null; }
-            equip.selectedItem = null;
-            equip.selectedNumber = -1;
-            foreach (var slot in equip.quickSlotsList)
-                if (slot != null) for (int i = slot.transform.childCount - 1; i >= 0; i--) DestroyImmediate(slot.transform.GetChild(i).gameObject);
-        }
-        if (inventory != null) inventory.RecalculateList();
-        if (CraftingSystem.Instance != null) CraftingSystem.Instance.RefreshNeededItems();
-        QuickBarUI.Changed();
+        if (inventory != null) inventory.ClearAllItems();
         // the goals were checked once already, with the scene's own test items still in the inventory (the first two
         // goals of level 1 showed as done in a new game): checked again from nothing
         if (data != null && data.level == 1)
@@ -1361,6 +1347,7 @@ public class StoryManager : MonoBehaviour
             UISkin.Place(panelTitle.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y), new Vector2(width - 40f, 34f));
             UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 40f), new Vector2(width - 40f, 50f));
             panel.sizeDelta = new Vector2(width, 110f);
+            panel.localScale = Vector3.one;
             return;
         }
         var level = Levels[data.level - 1];
@@ -1397,14 +1384,53 @@ public class StoryManager : MonoBehaviour
             UISkin.Place(stepText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(52f, tall > line ? y - 4f : y), new Vector2(width - 70f, tall));
             y -= tall;
         }
+        // On the phone the panel must end above the Jump button: a level with many goals (the canon has 6) leaves its
+        // hint to Help > Levels and, if still too tall, gets a little smaller (it ran under the Jump button)
+        float room = phone ? PanelRoomOnPhone() : float.MaxValue;
         panelHint.text = level.hint;
-        panelHint.verticalOverflow = VerticalWrapMode.Overflow;
-        UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, 54f));
-        float hintTall = Mathf.Max(54f, panelHint.preferredHeight + 4f);
-        UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, hintTall));
+        float hintTall = PlaceHint(width, y);
+        if (-y + hintTall + 12f > room)
+        {
+            panelHint.text = Lang.T("Hint: Help > Levels", "Indiciu: Ajutor > Niveluri");
+            hintTall = PlaceHint(width, y);
+        }
         y -= hintTall + 12f;
         panel.sizeDelta = new Vector2(width, -y);
+        float scale = phone ? Mathf.Clamp(room / Mathf.Max(1f, -y), 0.72f, 1f) : 1f;
+        if (panel.localScale.x != scale) panel.localScale = Vector3.one * scale; // (the pivot is its top right corner)
     }
+
+    float PlaceHint(float width, float y)
+    {
+        panelHint.verticalOverflow = VerticalWrapMode.Overflow;
+        UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, 54f));
+        float hintTall = Mathf.Max(panelHint.text.Length > 40 ? 54f : 28f, panelHint.preferredHeight + 4f);
+        UISkin.Place(panelHint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, y - 8f), new Vector2(width - 40f, hintTall));
+        return hintTall;
+    }
+
+    // the height the goals panel has on the phone, from its top down to the Jump button (canvas units)
+    RectTransform jumpButton;
+    float PanelRoomOnPhone()
+    {
+        float panelTop = 136f;              // (BuildUI: under the phone's menu buttons)
+        float jumpTop = 1080f - 640f;       // MobileControls: the Jump button's top, 640 above the bottom
+        if (jumpButton == null)
+        {
+            var found = GameObject.Find("JumpButton");
+            if (found != null) jumpButton = found.transform as RectTransform;
+        }
+        var hudScale = hudCanvas != null ? hudCanvas.scaleFactor : 0f;
+        if (jumpButton != null && jumpButton.gameObject.activeInHierarchy && hudScale > 0f)
+        {
+            var corners = new Vector3[4];
+            jumpButton.GetWorldCorners(corners); // (screen pixels: the controls are on an overlay canvas)
+            jumpTop = (Screen.height - corners[1].y) / hudScale;
+        }
+        return Mathf.Max(200f, jumpTop - panelTop - 12f);
+    }
+
+    public static string LevelHint(int level) => Levels[Mathf.Clamp(level, 1, Levels.Length) - 1].hint;
 
     // hidden while a window or the menu is open, and before the story has started
     void UpdatePanelVisibility()

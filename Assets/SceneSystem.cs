@@ -33,7 +33,7 @@ public class SceneSystem : MonoBehaviour
                 //SaveManager.Instance.LoadGame();
                 ActivateLoadingScreen();
                 StartCoroutine(DelayedLoading(slotNumber)); // first: the save must load even if the picture fails
-                try { LoadingScreen.Show(slotNumber); } // the saved game's picture and a prayer over everything
+                try { LoadingScreen.Show(slotNumber); } // the saved game's picture over everything
                 catch (System.Exception e) { Debug.LogException(e); }
             }
         }
@@ -46,7 +46,7 @@ public class SceneSystem : MonoBehaviour
         SaveManager.Instance.LoadGame(slotNumber);
         PendingLoadSlot = -1;
         DisableLoadingScreen();
-        try { LoadingScreen.HideWhenRead(); } // a few seconds more, to read the prayer
+        try { LoadingScreen.HideWhenRead(); } // (it fades away a moment later)
         catch (System.Exception e) { Debug.LogException(e); }
 
     }

@@ -214,6 +214,9 @@ public class Forest : MonoBehaviour
     public int SaplingsFarAway { get; private set; }  // young trees that came up by themselves far from the player
 
     // young trees (not yet tall enough to drop seeds), seeds on the ground and all trees within radius of centre
+    // the trees around a spot (some may be a bit further than the radius: check the distance); FallenBranches
+    public void TreesNear(Vector3 centre, float radius, List<ForestTree> result) => treeGrid.Query(centre, radius, result);
+
     public void CountNear(Vector3 centre, float radius, out int young, out int seeds, out int allTrees)
     {
         young = 0; seeds = 0; allTrees = 0;
@@ -261,6 +264,7 @@ public class Forest : MonoBehaviour
         poolRoot = NewRoot("Unused tree models");
         poolRoot.gameObject.SetActive(false);
         SnowCover.Exclude(transform); // the trees get their snow from their own shaders
+        if (GetComponent<FallenBranches>() == null) gameObject.AddComponent<FallenBranches>(); // dry branches under the trees
 
         leafShader = Resources.Load<Shader>("Environment/SB_TreeLeaves");
         barkShader = Resources.Load<Shader>("Environment/SB_TreeBark");
@@ -885,10 +889,12 @@ public class Forest : MonoBehaviour
             p.y = ground + thickness * 0.5f + 0.3f;
             SpawnLog(p, away, thickness, tree.data.species);
         }
-        // branches broken off the crown (sticks): few from a pine, more from the leafy trees
+        // branches broken off the crown (sticks): fewer from a pine, more from the leafy trees (the owner: a felled
+        // tree must give more sticks; was pine 1-2, others 2-6)
         int branches = tree.data.species == (int)TreeSpecies.Kind.Pine
-            ? (h > 15f ? 2 : 1)
-            : Mathf.Clamp(2 + Mathf.RoundToInt(h / 6f), 2, 6);
+            ? Mathf.Clamp(2 + Mathf.RoundToInt(h / 8f), 2, 5)
+            : Mathf.Clamp(3 + Mathf.RoundToInt(h / 4f), 3, 9);
+        if (h < 6f) branches = Mathf.Min(branches, 2);
         if (h < 3f) branches = 1;
         Vector3 side = Vector3.Cross(Vector3.up, away);
         for (int i = 0; i < branches; i++)
@@ -1398,6 +1404,8 @@ public class Forest : MonoBehaviour
         foreach (var c in lying) data.cones.Add(c); // (all of them, near the player and far away)
         foreach (var s in stumps) if (s != null) data.stumps.Add(s.data);
         foreach (var s in planted) if (s != null) data.seeds.Add(s.data);
+        var branches = GetComponent<FallenBranches>();
+        if (branches != null) data.branches = branches.GetData();
         return data;
     }
 
@@ -1418,6 +1426,8 @@ public class Forest : MonoBehaviour
             if (data.seeds != null) foreach (var s in data.seeds) AddPlanted(s);
         }
         TakeLoadedBirches();
+        var branches = GetComponent<FallenBranches>();
+        if (branches != null) branches.SetData(data != null ? data.branches : null);
         RebuildBillboards();
         UpdateModels();
         UpdateSeedObjects(int.MaxValue);

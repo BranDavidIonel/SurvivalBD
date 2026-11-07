@@ -18,11 +18,19 @@ using UnityEngine.UI;
 // Writes Temp/<Folder>/systems.txt (one line per check: PASS / FAIL / SKIP + what was seen), PNG screenshots, and
 // Temp/<Folder>/finished.txt at the end. The story is held still while it runs (its goals are not checked: that is
 // the level test). Added by the coordinator's editor driver when Play mode starts in GameScene. Removed after the tests.
-public class __SystemsTest : MonoBehaviour
+// The rabbits are shy (GameSettings.RabbitShyRadius): the hunt chases them (the player runs 12 m/s, they at most 8.8),
+// the spear is thrown from farther than they run from, and the snare is watched from far away.
+// A Folder starting with "NewFeatures" runs the checks of __NewFeaturesTest.cs instead (the same class, partial).
+public partial class __SystemsTest : MonoBehaviour
 {
     public static string Folder = "Systems";
     const int TestSlot = 47;           // a save slot the game's screens never show (the owner's saves are 1-10)
-    const float MaxRunSeconds = 330f;  // after this the checks left are skipped (the whole test is about 4 minutes)
+    float MaxRunSeconds = 330f;        // after this the checks left are skipped (the whole test is about 4 minutes)
+    GameSettings.Level startDifficulty; // the player's difficulty (PlayerPrefs): put back at the end
+
+    // the checks of __NewFeaturesTest.cs (nothing when that file is not copied in)
+    partial void AddNewFeatureChecks(List<(string name, Func<IEnumerator> body, float timeout)> checks);
+    partial void RestoreNewFeatures();
 
     static __SystemsTest running;
     string Dir => Application.dataPath + "/../Temp/" + Folder + "/";
@@ -36,6 +44,7 @@ public class __SystemsTest : MonoBehaviour
     float runStart;
     bool runImmortal;   // the player is Immortal for the run (after check 13)
     bool frozen;        // the story is held still
+    bool setupDone;     // the player and the difficulty were found
 
     Transform player;
     MouseMovement look;
@@ -74,23 +83,37 @@ public class __SystemsTest : MonoBehaviour
         GameInput.TestDriven = true;
         Line("SurvivalBD systems test, " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
 
-        var checks = new List<(string name, Func<IEnumerator> body, float timeout)>
+        var checks = new List<(string name, Func<IEnumerator> body, float timeout)>();
+        if (Folder.StartsWith("NewFeatures"))
         {
-            ("setup", Setup, 45f),
-            ("13 admin safety", AdminCheck, 10f),
-            ("11 windows", WindowsCheck, 35f),
-            ("1 campfire", CampfireCheck, 45f),
-            ("2 axes and planks", AxeCheck, 70f),
-            ("3 torch", TorchCheck, 40f),
-            ("4 snare", SnareCheck, 75f),
-            ("5 storage box", StorageCheck, 35f),
-            ("6 building", BuildingCheck, 45f),
-            ("7 seeds", SeedsCheck, 40f),
-            ("8 water and food", WaterFoodCheck, 25f),
-            ("9 hunting", HuntingCheck, 40f),
-            ("10 spear", SpearCheck, 50f),
-            ("12 save and load", SaveLoadCheck, 70f),
-        };
+            // today's new things (__NewFeaturesTest.cs): winter, a load without extra axes, the backpack, the loading
+            // screen, the branches, the shy rabbits
+            Line("(the new features: __NewFeaturesTest)");
+            MaxRunSeconds = 360f;
+            checks.Add(("setup", Setup, 45f));
+            AddNewFeatureChecks(checks);
+            if (checks.Count == 1) Skip("new features", "__NewFeaturesTest.cs was not copied in");
+        }
+        else
+        {
+            checks.AddRange(new List<(string name, Func<IEnumerator> body, float timeout)>
+            {
+                ("setup", Setup, 45f),
+                ("13 admin safety", AdminCheck, 10f),
+                ("11 windows", WindowsCheck, 35f),
+                ("1 campfire", CampfireCheck, 45f),
+                ("2 axes and planks", AxeCheck, 70f),
+                ("3 torch", TorchCheck, 40f),
+                ("4 snare", SnareCheck, 80f),
+                ("5 storage box", StorageCheck, 35f),
+                ("6 building", BuildingCheck, 45f),
+                ("7 seeds", SeedsCheck, 40f),
+                ("8 water and food", WaterFoodCheck, 25f),
+                ("9 hunting", HuntingCheck, 45f),
+                ("10 spear", SpearCheck, 50f),
+                ("12 save and load", SaveLoadCheck, 70f),
+            });
+        }
         bool ready = false;
         foreach (var c in checks)
         {
@@ -151,6 +174,10 @@ public class __SystemsTest : MonoBehaviour
     // back to a normal game: the admin locked, the clock normal, the story going on, the player's own controls
     void RestoreGame()
     {
+        __WalkDriver.On = false;
+        __WalkDriver.Move = Vector2.zero;
+        try { RestoreNewFeatures(); } catch (Exception e) { Line("restore (new features): " + e.Message); }
+        if (setupDone && GameSettings.Difficulty != startDifficulty) GameSettings.Difficulty = startDifficulty;
         GameInput.TestDriven = false;
         GameInput.ResetTouch();
         GameSettings.Immortal = false;
@@ -161,7 +188,8 @@ public class __SystemsTest : MonoBehaviour
         frozen = false;
         if (look != null) look.enabled = true;
         if (Time.timeScale <= 0f && !HelpScreen.IsOpen) Time.timeScale = 1f;
-        Line("restored: admin locked " + !DebugEnvironmentPanel.AdminUnlocked + ", Immortal " + GameSettings.Immortal + ", TestDriven " + GameInput.TestDriven);
+        Line("restored: admin locked " + !DebugEnvironmentPanel.AdminUnlocked + ", Immortal " + GameSettings.Immortal + ", TestDriven " + GameInput.TestDriven
+            + ", difficulty " + GameSettings.Difficulty + " (was " + startDifficulty + ")");
     }
 
     // ---------------- the log ---------------- //
@@ -316,6 +344,26 @@ public class __SystemsTest : MonoBehaviour
         foreach (var slot in EquipSystem.Instance.quickSlotsList)
             if (slot != null && slot.transform.childCount > 0 && InventorySystem.CleanName(slot.transform.GetChild(0).name) == name) return slot.transform.GetChild(0).gameObject;
         return null;
+    }
+
+    // what the inventory and the quick bar hold, sorted ("Axe x1, hay x2"): a save compared with its load
+    static string ItemsText()
+    {
+        var counts = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        void AddFrom(List<GameObject> slots)
+        {
+            foreach (var s in slots)
+            {
+                if (s == null || s.transform.childCount == 0) continue;
+                string n = InventorySystem.CleanName(s.transform.GetChild(0).name);
+                counts[n] = (counts.TryGetValue(n, out int c) ? c : 0) + 1;
+            }
+        }
+        AddFrom(InventorySystem.Instance.slotList);
+        if (EquipSystem.Instance != null) AddFrom(EquipSystem.Instance.quickSlotsList);
+        var parts = new List<string>();
+        foreach (var pair in counts) parts.Add(pair.Key + " x" + pair.Value);
+        return string.Join(", ", parts);
     }
 
     static GameObject EmptyInventorySlot()
@@ -576,6 +624,109 @@ public class __SystemsTest : MonoBehaviour
         }
     }
 
+    // ---------------- the shy rabbits: chasing one, keeping away while a snare works ---------------- //
+
+    // A rabbit run down the player's way: the joystick forward (__WalkDriver), the view on it (looking ahead while it is
+    // far), the swing when it is in reach with the crosshair on it. It runs from the player (GameSettings.RabbitShy...):
+    // the player runs 12 m/s, a rabbit at most 8.8, so the player catches up while it rests between its runs.
+    bool chaseKilled;
+    int chaseSwings, chaseBlows, chaseStuck, chaseRuns;
+    float chaseSeconds, chaseMetres, chaseClosest;
+
+    IEnumerator Chase(RabbitLife rabbit, float maxSeconds)
+    {
+        chaseKilled = false;
+        chaseSwings = chaseBlows = chaseStuck = chaseRuns = 0;
+        chaseSeconds = chaseMetres = 0f;
+        chaseClosest = float.MaxValue;
+        if (rabbit == null || rabbit.animal == null) yield break;
+        var animal = rabbit.animal;
+        var selection = SelectionManager.Instance;
+        int runs0 = rabbit.ShyRuns;
+        int health = GetField<int>(animal, "currentHealth");
+        float start = Time.realtimeSinceStartup, nextSwing = 0f, stuckCheck = start + 0.5f;
+        Vector3 lastPos = player.position, stuckFrom = player.position;
+        __WalkDriver.On = true;
+        while (rabbit != null && !animal.isDead && Time.realtimeSinceStartup - start < maxSeconds)
+        {
+            float now = Time.realtimeSinceStartup;
+            Vector3 rp = rabbit.transform.position;
+            float gap = Flat(rp - player.position);
+            chaseClosest = Mathf.Min(chaseClosest, gap);
+            if (gap > 4.6f)
+            {
+                look.SetLook(YawTo(player.position, rp), 8f); // running: looking ahead at it
+                __WalkDriver.Move = new Vector2(0f, 1f);
+            }
+            else
+            {
+                AimAt(RabbitCentre(rabbit)); // close: the crosshair on it
+                __WalkDriver.Move = new Vector2(0f, gap > 2.6f ? 1f : 0f);
+            }
+            // the swing: in reach (Animal.playerInRange, 4.5 m), the crosshair on it, the axe ready
+            bool aimed = GetField<Animal>(selection, "aimedAnimal") == animal;
+            if (aimed && animal.playerInRange && now >= nextSwing && !EquipSystem.Instance.IsThereASwingLock())
+            {
+                GameInput.PressTouch(GameInput.TouchAction.Primary);
+                GameInput.ReleaseTouch(GameInput.TouchAction.Primary);
+                chaseSwings++;
+                nextSwing = now + 1.05f;
+            }
+            // held up by a tree or a rock (a player steps around it): a step to the side
+            if (now >= stuckCheck)
+            {
+                if (__WalkDriver.Move.y > 0.5f && Flat(player.position - stuckFrom) < 1.5f && gap > 3f)
+                {
+                    Vector3 to = FlatDir(rp - player.position, F);
+                    Vector3 side = Vector3.Cross(Vector3.up, to) * (chaseStuck % 2 == 0 ? 1f : -1f);
+                    Vector3 step = player.position + side * 2f + to * 1.5f;
+                    if (IsLand(step)) Teleport(step, YawTo(step, rp), 8f);
+                    chaseStuck++;
+                }
+                stuckFrom = player.position;
+                stuckCheck = now + 0.5f;
+            }
+            int left = GetField<int>(animal, "currentHealth");
+            if (left < health) { chaseBlows++; health = left; }
+            chaseMetres += Flat(player.position - lastPos);
+            lastPos = player.position;
+            yield return null;
+        }
+        __WalkDriver.Move = Vector2.zero;
+        __WalkDriver.On = false;
+        GameInput.touchMove = Vector2.zero;
+        // (a blow lands 0.3 s after its swing)
+        for (float t = 0f; t < 0.5f && rabbit != null && !animal.isDead; t += Time.unscaledDeltaTime) yield return null;
+        if (animal != null && GetField<int>(animal, "currentHealth") < health) chaseBlows++;
+        chaseSeconds = Time.realtimeSinceStartup - start;
+        chaseKilled = animal != null && animal.isDead;
+        chaseRuns = rabbit != null ? rabbit.ShyRuns - runs0 : 0;
+    }
+
+    string ChaseInfo() => "chased " + chaseSeconds.ToString("0.0") + " s over " + chaseMetres.ToString("0") + " m (closest " + chaseClosest.ToString("0.0")
+        + " m), it ran from the player " + chaseRuns + " times, swings " + chaseSwings + ", blows that landed " + chaseBlows
+        + (chaseStuck > 0 ? ", stepped around something " + chaseStuck + " times" : "");
+
+    // where a player waits for a snare without scaring the rabbits away: this far from it, on the other side from the
+    // rabbits around it, on land
+    Vector3 WaitSpotFor(Vector3 snare, float distance)
+    {
+        Vector3 sum = Vector3.zero;
+        var population = RabbitPopulation.Instance;
+        if (population != null)
+            foreach (var r in population.Rabbits)
+                if (r != null && r.Alive && r.IsAdult && r.caughtIn == null && Flat(r.transform.position - snare) < RabbitSnare.LureDistance)
+                    sum += FlatDir(r.transform.position - snare, Vector3.zero);
+        Vector3 away = sum.sqrMagnitude > 0.01f ? -FlatDir(sum, F) : FlatDir(player.position - snare, -F);
+        for (int i = 0; i < 12; i++)
+        {
+            float turn = (i % 2 == 0 ? 1f : -1f) * ((i + 1) / 2) * 30f;
+            Vector3 p = snare + Quaternion.Euler(0f, turn, 0f) * away * distance;
+            if (IsLand(p)) return p;
+        }
+        return snare + away * distance;
+    }
+
     // ---------------- setup ---------------- //
 
     IEnumerator Setup()
@@ -592,6 +743,8 @@ public class __SystemsTest : MonoBehaviour
         if (story == null || movement == null) { Fail("setup: the game scene", "no StoryManager or player after 30 s"); yield break; }
         player = movement.transform;
         look = player.GetComponent<MouseMovement>();
+        startDifficulty = GameSettings.Difficulty;
+        setupDone = true;
         Note("scene " + SceneManager.GetActiveScene().name + ", screen " + Screen.width + "x" + Screen.height + ", phone controls " + GameInput.TouchControls
             + ", TestDriven " + GameInput.TestDriven + ", difficulty " + GameSettings.Difficulty + ", language " + Lang.Current);
 
@@ -965,14 +1118,32 @@ public class __SystemsTest : MonoBehaviour
         Check("4.2 snare set where the crosshair is (primary press)", snare != null, "placing shown " + active + ", outline green " + valid + ", snares " + before.Count + " -> " + RabbitSnare.All.Count);
         if (snare == null) yield break;
 
+        // the player goes away and waits farther than the rabbits run from (they are shy: a rabbit coming to the snare
+        // runs off when the player is closer than GameSettings.RabbitShyRadius), looking at the snare
+        float shy = GameSettings.RabbitShyRadius;
+        Vector3 waitAt = WaitSpotFor(snare.transform.position, 2f * shy + 4f);
+        Teleport(waitAt, YawTo(waitAt, snare.transform.position), 12f);
+        Note("waiting " + Flat(waitAt - snare.transform.position).ToString("0") + " m from the snare (difficulty " + GameSettings.Difficulty + ": rabbits run from " + shy + " m)");
+
         // the clock 20x faster until a grown rabbit walks into it
         var clock = DayNightSystem.Instance;
         clock.timeSpeed = 20f;
         float t = 0f;
-        while (t < 45f && (snare == null || snare.caught == null || !snare.caught.Alive)) { t += 0.5f; yield return Wait(0.5f); }
+        bool shotLured = false;
+        while (t < 45f && (snare == null || snare.caught == null || !snare.caught.Alive))
+        {
+            t += 0.5f;
+            yield return Wait(0.5f);
+            if (!shotLured && snare != null && snare.lured != null && Flat(snare.lured.transform.position - snare.transform.position) < 6f)
+            {
+                shotLured = true;
+                if (!IsDark()) yield return Shot("04_snare_rabbit_coming");
+            }
+        }
         clock.timeSpeed = 1f;
         var caught = snare != null ? snare.caught : null;
-        Check("4.3 a rabbit walks into the snare (clock x20)", caught != null && caught.Alive, "after " + t.ToString("0") + " s" + (caught != null ? ", a " + caught.sex : ""));
+        Check("4.3 a rabbit walks into the snare (clock x20, the player waiting " + (2f * shy + 4f).ToString("0") + " m away)", caught != null && caught.Alive,
+            "after " + t.ToString("0") + " s" + (caught != null ? ", a " + caught.sex + " (it ran from the player " + caught.ShyRuns + " times)" : ""));
         if (caught == null) { clock.TimeOfDay = 10f / 24f; yield break; }
 
         // empty hands, the crosshair on it, the primary press: taken alive
@@ -1078,46 +1249,10 @@ public class __SystemsTest : MonoBehaviour
         EmptyHands();
         // a small fenced yard (2 x 2 panels a side), the gate second, put up panel after panel the player's way
         int fences0 = Buildings.Count(BuildingKind.Fence), gates0 = Buildings.Count(BuildingKind.FenceGate);
-        Give(Fences.FenceItem, 7);
-        Give(Fences.GateItem, 1);
         Vector3 c = S + F * 70f;
-        var corners = new[] { c - R * 4f - F * 4f, c + R * 4f - F * 4f, c + R * 4f + F * 4f, c - R * 4f + F * 4f };
-        var panels = new List<(Vector3 a, Vector3 b, Vector3 outward)>();
-        for (int k = 0; k < 4; k++)
-        {
-            Vector3 a = corners[k], b = corners[(k + 1) % 4];
-            Vector3 outward = FlatDir((a + b) * 0.5f - c, F);
-            int n = Mathf.Max(1, Mathf.RoundToInt(Flat(b - a) / Fences.Length));
-            for (int i = 0; i < n; i++) panels.Add((Vector3.Lerp(a, b, (float)i / n), Vector3.Lerp(a, b, (float)(i + 1) / n), outward));
-        }
-        int placed = 0;
-        for (int i = 0; i < panels.Count; i++)
-        {
-            var pn = panels[i];
-            string item = i == 1 ? Fences.GateItem : Fences.FenceItem;
-            Vector3 target = i == 0 ? (pn.a + pn.b) * 0.5f : pn.b;
-            Vector3 stand = target + pn.outward * 8f;
-            Teleport(stand, YawTo(stand, target), 20f);
-            yield return Wait(0.3f);
-            if (!FencePlacing.Active || i == 1 || i == 2)
-            {
-                if (FencePlacing.Active) FencePlacing.Instance.Cancel();
-                var it = FindItem(item);
-                if (it == null) { Note("no " + item + " left for panel " + i); break; }
-                UseItem(it);
-            }
-            AimAt(new Vector3(target.x, Forest.GroundY(target), target.z));
-            yield return Wait(0.3f);
-            int before = Buildings.Count(BuildingKind.Fence) + Buildings.Count(BuildingKind.FenceGate);
-            yield return Tap(GameInput.TouchAction.Primary);
-            yield return Wait(0.2f);
-            if (Buildings.Count(BuildingKind.Fence) + Buildings.Count(BuildingKind.FenceGate) > before) placed++;
-            else Note("panel " + i + " (" + item + ") not placed: '" + GetField<string>(FencePlacing.Instance, "why") + "'");
-        }
-        if (FencePlacing.Active) FencePlacing.Instance.Cancel();
-        yield return Wait(0.6f);
+        yield return BuildYard(c, 4f);
         Check("6.1 a fenced yard with a gate closes (Fences.YardBuilt)", Fences.YardBuilt() && Buildings.Count(BuildingKind.FenceGate) > gates0,
-            placed + " of " + panels.Count + " panels placed, fences " + fences0 + " -> " + Buildings.Count(BuildingKind.Fence) + ", gates " + gates0 + " -> " + Buildings.Count(BuildingKind.FenceGate)
+            yardPlaced + " of " + yardPanels + " panels placed, fences " + fences0 + " -> " + Buildings.Count(BuildingKind.Fence) + ", gates " + gates0 + " -> " + Buildings.Count(BuildingKind.FenceGate)
             + ", free ends " + Fences.FreeEnds().Count + ", closed " + Fences.YardBuilt());
         Vector3 view = c - F * 14f - R * 9f;
         Teleport(view, YawTo(view, c), 14f);
@@ -1181,6 +1316,52 @@ public class __SystemsTest : MonoBehaviour
         Teleport(v, YawTo(v, foundation.transform.position), 15f);
         yield return Wait(0.6f);
         yield return Shot("06_foundation_wall");
+    }
+
+    // A square fenced yard around c (half: half its side), the gate second, panel after panel the player's way (the
+    // fence items given): stand outside, the crosshair where the panel ends, the primary press.
+    int yardPlaced, yardPanels;
+
+    IEnumerator BuildYard(Vector3 c, float half)
+    {
+        yardPlaced = 0;
+        var corners = new[] { c - R * half - F * half, c + R * half - F * half, c + R * half + F * half, c - R * half + F * half };
+        var panels = new List<(Vector3 a, Vector3 b, Vector3 outward)>();
+        for (int k = 0; k < 4; k++)
+        {
+            Vector3 a = corners[k], b = corners[(k + 1) % 4];
+            Vector3 outward = FlatDir((a + b) * 0.5f - c, F);
+            int n = Mathf.Max(1, Mathf.RoundToInt(Flat(b - a) / Fences.Length));
+            for (int i = 0; i < n; i++) panels.Add((Vector3.Lerp(a, b, (float)i / n), Vector3.Lerp(a, b, (float)(i + 1) / n), outward));
+        }
+        yardPanels = panels.Count;
+        Give(Fences.FenceItem, panels.Count - 1);
+        Give(Fences.GateItem, 1);
+        for (int i = 0; i < panels.Count; i++)
+        {
+            var pn = panels[i];
+            string item = i == 1 ? Fences.GateItem : Fences.FenceItem;
+            Vector3 target = i == 0 ? (pn.a + pn.b) * 0.5f : pn.b;
+            Vector3 stand = target + pn.outward * 8f;
+            Teleport(stand, YawTo(stand, target), 20f);
+            yield return Wait(0.3f);
+            if (!FencePlacing.Active || i == 1 || i == 2)
+            {
+                if (FencePlacing.Active) FencePlacing.Instance.Cancel();
+                var it = FindItem(item);
+                if (it == null) { Note("no " + item + " left for panel " + i); break; }
+                UseItem(it);
+            }
+            AimAt(new Vector3(target.x, Forest.GroundY(target), target.z));
+            yield return Wait(0.3f);
+            int before = Buildings.Count(BuildingKind.Fence) + Buildings.Count(BuildingKind.FenceGate);
+            yield return Tap(GameInput.TouchAction.Primary);
+            yield return Wait(0.2f);
+            if (Buildings.Count(BuildingKind.Fence) + Buildings.Count(BuildingKind.FenceGate) > before) yardPlaced++;
+            else Note("panel " + i + " (" + item + ") not placed: '" + GetField<string>(FencePlacing.Instance, "why") + "'");
+        }
+        if (FencePlacing.Active) FencePlacing.Instance.Cancel();
+        yield return Wait(0.6f);
     }
 
     // ---------------- 7 seeds ---------------- //
@@ -1308,24 +1489,16 @@ public class __SystemsTest : MonoBehaviour
         if (rabbit == null) rabbit = FindRabbit(S, 800f);
         if (rabbit == null) { Fail("9.1 a rabbit killed with the stone axe", "no grown rabbit found"); yield break; }
         var animal = rabbit.animal;
-        int swings = 0;
-        float t0 = Time.realtimeSinceStartup;
-        while (!animal.isDead && swings < 8 && Time.realtimeSinceStartup - t0 < 22f)
-        {
-            Vector3 rp = rabbit.transform.position;
-            Vector3 from = rp + FlatDir(player.position - rp, R) * 2.3f;
-            if (!IsLand(from)) from = rp - FlatDir(player.position - rp, R) * 2.3f;
-            Teleport(from, YawTo(from, rp), 35f);
-            yield return Wait(0.35f);
-            AimAt(RabbitCentre(rabbit));
-            yield return null;
-            AimAt(RabbitCentre(rabbit));
-            yield return Tap(GameInput.TouchAction.Primary);
-            swings++;
-            for (float t = 0f; t < 1.05f; t += Time.unscaledDeltaTime) { if (rabbit != null && !animal.isDead) AimAt(RabbitCentre(rabbit)); yield return null; }
-        }
-        Check("9.1 a rabbit killed with the stone axe (two blows)", animal != null && animal.isDead, "swings " + swings + ", held '" + HeldName() + "'");
-        if (animal == null || !animal.isDead) yield break;
+        // the player walks up from farther than it runs from, then runs after it (it is shy: it runs, rests, runs)
+        float shy = GameSettings.RabbitShyRadius;
+        Vector3 rp0 = rabbit.transform.position;
+        Vector3 approach = StandBy(rp0, shy + 6f, col => col.GetComponentInParent<RabbitLife>() == rabbit, 0.45f);
+        Teleport(approach, YawTo(approach, rp0), 8f);
+        yield return Wait(0.3f);
+        yield return Chase(rabbit, 26f);
+        Check("9.1 a rabbit killed with the stone axe: chased, two blows (crosshair on it + press)", chaseKilled,
+            "difficulty " + GameSettings.Difficulty + " (it runs from " + shy + " m), " + ChaseInfo() + ", held '" + HeldName() + "'");
+        if (!chaseKilled || rabbit == null || animal == null) yield break;
         yield return Shot("09_rabbit_killed");
 
         // one press on the body: the meat and the hide go into the inventory
@@ -1369,16 +1542,18 @@ public class __SystemsTest : MonoBehaviour
         Check("10.4 the \"+\" aiming cross shows instead of the dot", cross != null && cross.activeInHierarchy, "aim cross " + (cross == null ? "not made" : "active " + cross.activeInHierarchy));
         yield return Shot("10_spear_aim");
 
-        // a rabbit about 12 m away, the "+" on it (a little ahead of a moving one), the primary press
+        // a rabbit about 12 m away (farther than it runs from: the shy rabbits), the "+" on it (a little ahead of a
+        // moving one), the primary press
         bool hit = false, pressed = false;
         RabbitLife target = null;
+        float throwFrom = Mathf.Max(12f, GameSettings.RabbitShyRadius + 2.5f);
         for (int attempt = 0; attempt < 3 && !hit; attempt++)
         {
             yield return FindStillRabbit(player.position, 250f);
             target = stillRabbit != null ? stillRabbit : FindRabbit(S, 800f);
             if (target == null) { Fail("10.5 a thrown spear kills a rabbit about 12 m away", "no grown rabbit found"); yield break; }
             Vector3 rp = target.transform.position;
-            Vector3 stand = StandBy(rp, 12f, col => col.GetComponentInParent<RabbitLife>() == target, 0.45f);
+            Vector3 stand = StandBy(rp, throwFrom, col => col.GetComponentInParent<RabbitLife>() == target, 0.45f);
             Teleport(stand, YawTo(stand, rp), 5f);
             if (!Spear.IsHeld) yield return Hold(Spear.Item);
             yield return Wait(0.45f); // (the spear comes up into the hand)
@@ -1408,15 +1583,15 @@ public class __SystemsTest : MonoBehaviour
             var thrown = ThrownSpear.Last;
             for (float t = 0f; t < 3f && thrown != null && thrown.Flying; t += Time.unscaledDeltaTime) yield return null;
             hit = target != null && target.animal != null && target.animal.isDead;
-            Note("throw " + (attempt + 1) + " from " + Flat(stand - rp).ToString("0.0") + " m (rabbit moving " + velocity.magnitude.ToString("0.0") + " m/s): "
-                + (hit ? "the rabbit is dead" : "missed" + (thrown != null && thrown.HitAnimal != null ? " (hit another animal)" : "")));
+            Note("throw " + (attempt + 1) + " from " + Flat(stand - rp).ToString("0.0") + " m (rabbit moving " + velocity.magnitude.ToString("0.0") + " m/s, ran from the player "
+                + (target != null ? target.ShyRuns : 0) + " times): " + (hit ? "the rabbit is dead" : "missed" + (thrown != null && thrown.HitAnimal != null ? " (hit another animal)" : "")));
             if (!hit && thrown != null)
             {
                 yield return Take(thrown.transform, Spear.Item); // back into the inventory for the next throw
                 if (!lastTakeOk && ThrownSpear.Last != null) ThrownSpear.Last.TakeBack();
             }
         }
-        Check("10.5 a thrown spear kills a rabbit about 12 m away (primary press)", hit && pressed,
+        Check("10.5 a thrown spear kills a rabbit about " + throwFrom.ToString("0") + " m away (primary press)", hit && pressed,
             "killed " + hit + ", thrown by the press " + pressed + ", last hit " + (ThrownSpear.LastHitAnimal != null ? ThrownSpear.LastHitAnimal.name : "none"));
         yield return Shot("10_spear_hit");
 
@@ -1449,9 +1624,19 @@ public class __SystemsTest : MonoBehaviour
         int level = data != null ? data.level : -1;
         int ore = Count("ironore");
         Vector3 at = player.position;
+        string savedItems = ItemsText();
         save.SaveGame(TestSlot);
         yield return Wait(0.5f);
         Check("12.1 saved to slot " + TestSlot + " (SaveManager.SaveGame)", save.DoesFileExist(TestSlot), "save file " + save.DoesFileExist(TestSlot) + ", level " + level + ", iron ore " + ore);
+
+        // the level written in the save file (read back the way the Load screen reads it)
+        int fileLevel = -1;
+        try
+        {
+            var fileData = save.GetDataSwitch(TestSlot);
+            if (fileData != null && fileData.enviromentData != null && fileData.enviromentData.story != null) fileLevel = fileData.enviromentData.story.level;
+        }
+        catch (Exception e) { Note("could not read the save file back: " + e.Message); }
 
         // something changes: the ore is used, the story moves on
         InventorySystem.Instance.RemoveItem("ironore", 3);
@@ -1468,6 +1653,10 @@ public class __SystemsTest : MonoBehaviour
             t += Time.unscaledDeltaTime;
             yield return null;
         }
+        // (the level right after the load: a moment later the loaded story may already finish that level by itself,
+        // e.g. a fire lit earlier in this test ends level 1 - "LEVEL 1 COMPLETE" - which is right, not a lost save)
+        var justLoaded = StoryManager.Instance != null ? GetField<StoryData>(StoryManager.Instance, "data") : null;
+        int loadedLevel = justLoaded != null ? justLoaded.level : -1;
         yield return Wait(1.5f);
         story = StoryManager.Instance;
         frozen = false; // (the loaded game's story goes on by itself)
@@ -1475,10 +1664,17 @@ public class __SystemsTest : MonoBehaviour
         if (movement != null) { player = movement.transform; look = player.GetComponent<MouseMovement>(); }
         var loaded = Data;
         Check("12.2 the save loads (the game scene again)", loaded != null && story != oldStory, "after " + t.ToString("0.0") + " s");
-        Check("12.3 the story level is back", loaded != null && loaded.level == level, "level " + (loaded != null ? loaded.level : -1) + " (saved " + level + ")");
+        // (the save file must hold the level of the moment, and the loaded game must not be behind it; it may be one
+        // level on: the loaded story finishes at once a level whose goals were done before - "LEVEL 1 COMPLETE")
+        Check("12.3 the story level is back", fileLevel == level && loadedLevel >= level && loadedLevel <= level + 1,
+            "level in the save file " + fileLevel + " (saved " + level + "), " + loadedLevel + " right after the load, "
+            + (loaded != null ? loaded.level : -1) + " 1.5 s later");
         Check("12.4 the inventory is back", Count("ironore") >= ore, "iron ore " + Count("ironore") + " (saved " + ore + ")");
+        string loadedItems = ItemsText();
+        Check("12.6 exactly what was saved, nothing more (no extra stone axe from the scene)", loadedItems == savedItems,
+            "saved [" + savedItems + "], loaded [" + loadedItems + "]");
         Check("12.5 the player is back where the game was saved", player != null && Flat(player.position - at) < 3f, "distance " + (player != null ? Flat(player.position - at).ToString("0.0") : "-") + " m");
-        // (the loading picture with its prayer stays a few seconds, to be read)
+        // (the loading picture fades away a moment after the load)
         for (float w = 0f; w < 12f && LoadingScreen.Instance != null; w += 0.25f) yield return Wait(0.25f);
         yield return Wait(1f);
         yield return Shot("12_after_load");
@@ -1511,6 +1707,13 @@ public class __SystemsTest : MonoBehaviour
 
     void TidyNow()
     {
+        // (a chase or a walk stopped by a timeout: the joystick let go; the winter, the test rabbits and the
+        // difficulty of the new checks put back)
+        __WalkDriver.On = false;
+        __WalkDriver.Move = Vector2.zero;
+        GameInput.touchMove = Vector2.zero;
+        RestoreNewFeatures();
+        if (setupDone && GameSettings.Difficulty != startDifficulty) { GameSettings.Difficulty = startDifficulty; Note("difficulty put back to " + startDifficulty); }
         var inventory = InventorySystem.Instance;
         if (CampfireUIManager.Instance != null && CampfireUIManager.Instance.isUiOpen) CampfireUIManager.Instance.CloseUI();
         if (StorageManager.Instance != null && StorageManager.Instance.storageUIOpen) StorageManager.Instance.CloseBox();

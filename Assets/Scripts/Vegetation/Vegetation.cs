@@ -8,7 +8,8 @@ using UnityEngine.Rendering;
 //  - a plant that can be picked gets its "hand" (a collider and an InteractableObject) only when the player is
 //    next to it, so thousands of plants cost nothing every frame
 //  - a picked plant disappears (a berry bush only loses its berries) and grows back after its regrowHours
-//  - under deep snow the small plants are hidden (and can't be picked: winter is hard)
+//  - in winter everything can still be picked and grows back (the owner: winter must stay easy enough to play);
+//    the plants stand above the snow (snowHideAt > 1: never hidden)
 // The save keeps the plants that were picked and are growing back (EnviromentData.vegetation).
 public class Vegetation : MonoBehaviour
 {
@@ -20,8 +21,8 @@ public class Vegetation : MonoBehaviour
     public float largeDistance = 85f;
     [Header("Picking")]
     public float pickDistance = 3.4f;
-    [Tooltip("Snow cover (0..1) above which the small plants are hidden")]
-    public float snowHideAt = 0.55f;
+    [Tooltip("Snow cover (0..1) above which the small plants are hidden (above 1: never, they can be picked in winter)")]
+    public float snowHideAt = 2f;
 
     // a plant was picked (its inventory item): the story's goals listen to this
     public static event System.Action<string> Picked;
@@ -75,6 +76,7 @@ public class Vegetation : MonoBehaviour
         if (movement != null) { player = movement.transform; playerCollider = movement.GetComponent<CharacterController>(); }
         Register();
         started = true;
+        GrassPicking.ClearPicked(); // (a new scene: a new clock)
         // the terrain's grass and forest undergrowth: not so far on a phone
         var terrain = Terrain.activeTerrain;
         if (terrain != null && GameInput.TouchControls) terrain.detailObjectDistance = Mathf.Min(terrain.detailObjectDistance, 55f);
@@ -326,10 +328,9 @@ public class Vegetation : MonoBehaviour
         pickedPlants.Add(p);
     }
 
-    // picked plants grow back when their time has come (not under the snow)
+    // picked plants grow back when their time has come (in winter too)
     void GrowBack()
     {
-        if (snowHidden) return;
         for (int i = pickedPlants.Count - 1; i >= 0; i--)
         {
             var p = pickedPlants[i];
@@ -354,6 +355,7 @@ public class Vegetation : MonoBehaviour
         if (!started) Start();
         if (data == null || data.version < 1) return;
         clock = data.clock;
+        GrassPicking.ClearPicked();
         foreach (var p in pickedPlants)
         {
             p.picked = false;

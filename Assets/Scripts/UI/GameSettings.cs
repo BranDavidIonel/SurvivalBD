@@ -58,13 +58,26 @@ public static class GameSettings
     // the time the shadow gives (at night without a fire, and in the dark of the cave) is this many times as long
     public static float ShadowTime => Pick(1.6f, 1f, 0.7f);
 
+    // Rabbits (the owner: on Easy as slow as before but a little shy, faster on Normal, faster still on Hard, and
+    // they run from the player who comes close, so they are harder to catch; the player runs 12 m/s, so always
+    // faster than them)
+    // how fast they move (hopping around, to a partner, to a snare, running away)
+    public static float RabbitSpeed => Pick(1f, 1.3f, 1.6f);
+    // the player closer than this (metres): it runs away
+    public static float RabbitShyRadius => Pick(4f, 7f, 10f);
+    // how far it runs (metres) and how fast (metres per second)
+    public static float RabbitShyRun => Pick(4f, 8f, 11f);
+    public static float RabbitShySpeed => Pick(4f, 7f, 8.8f);
+    // seconds it stays calm after a run before it can run again (time to catch up with it)
+    public static float RabbitShyRest => Pick(2.5f, 1.2f, 0.6f);
+
     public static string Describe(Level level)
     {
         switch (level)
         {
-            case Level.Easy: return Lang.T("Food and water last longer, torches burn longer, the shadow is slower.", "Hrana și apa țin mai mult, torțele ard mai mult, umbra e mai înceată.");
-            case Level.Hard: return Lang.T("Hunger and thirst come faster, torches burn out sooner, the shadow is quick.", "Foamea și setea vin mai repede, torțele se sting mai repede, umbra e iute.");
-            default: return Lang.T("The game as it is meant to be played.", "Jocul așa cum a fost gândit.");
+            case Level.Easy: return Lang.T("Food and water last longer, torches burn longer, the shadow is slower, rabbits are slow.", "Hrana și apa țin mai mult, torțele ard mai mult, umbra e mai înceată, iepurii sunt lenți.");
+            case Level.Hard: return Lang.T("Hunger and thirst come faster, torches burn out sooner, the shadow is quick, rabbits are fast and shy.", "Foamea și setea vin mai repede, torțele se sting mai repede, umbra e iute, iepurii sunt iuți și fug de departe.");
+            default: return Lang.T("The game as it is meant to be played. Rabbits run when you come close.", "Jocul așa cum a fost gândit. Iepurii fug când te apropii.");
         }
     }
 

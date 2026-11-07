@@ -79,6 +79,9 @@ public static class Translations
         { "Covers a house", "Acoperă o casă" }, { "The canon's cross, raised last", "Crucea canonului, înălțată la sfârșit" },
         // the spear (its card's title and what it is for)
         { "Spear", "Suliță" }, { "Thrown at rabbits from 10-15 m", "Se aruncă după iepuri de la 10-15 m" },
+        // the backpack (Survival): more room in the inventory
+        { "Backpack", "Rucsac" }, { "16 more slots in the inventory", "16 sloturi în plus în inventar" },
+        { "You have it", "Îl ai deja" }, { "Inventory + Backpack", "Inventar + Rucsac" },
     };
 
     // the words are looked up as one line with single spaces (the scene writes some of them on two lines)
@@ -194,6 +197,12 @@ public class SceneTexts : MonoBehaviour
 
     void OnEnable() => Lang.Changed += Apply;
     void OnDisable() => Lang.Changed -= Apply;
+
+    // a text was just changed in code (an English word): in Romanian now, not up to 2 s later
+    public static void ApplyNow()
+    {
+        foreach (var s in FindObjectsOfType<SceneTexts>()) s.Apply();
+    }
 
     void Update()
     {

@@ -4,21 +4,19 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The screen shown while a saved game loads (SceneSystem): the picture taken when the game was saved fills the
-// screen, and over it an Orthodox prayer chosen at random (Prayers.cs, in the language of the Settings), in red so
-// it stands out, on a dark band. It stays a few seconds so the prayer can be read, then fades away.
+// screen, with the game's name, "Loading..." and the credit. (It used to show a prayer in red over the picture; the
+// owner took it out, so it now stays only as long as the game needs to load, then fades away.)
 public class LoadingScreen : MonoBehaviour
 {
     public static LoadingScreen Instance { get; private set; }
 
-    [Tooltip("Seconds it stays at least, to read the prayer")]
-    public float minimumSeconds = 6f;
+    [Tooltip("Seconds it stays at least (from when it appears)")]
+    public float minimumSeconds = 2.5f;
 
     CanvasGroup group;
     Text dots;
     float shownAt;
     Texture2D picture;
-
-    static readonly Color PrayerRed = new Color(0.95f, 0.16f, 0.12f);
 
     public static void Show(int slot)
     {
@@ -26,7 +24,7 @@ public class LoadingScreen : MonoBehaviour
         Instance.Build(slot);
     }
 
-    // hides it when it has been shown long enough (the game is loaded by then)
+    // hides it once it has been there long enough (the game is loaded by then)
     public static void HideWhenRead()
     {
         if (Instance != null) Instance.StartCoroutine(Instance.FadeOut());
@@ -81,31 +79,8 @@ public class LoadingScreen : MonoBehaviour
             fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent; // fills the screen, cut at the edges
             fitter.aspectRatio = picture.width / (float)Mathf.Max(1, picture.height);
         }
-        var dim = UISkin.NewImage("Dim", transform, UISkin.White, new Color(0f, 0f, 0f, 0.35f), false);
+        var dim = UISkin.NewImage("Dim", transform, UISkin.White, new Color(0f, 0f, 0f, 0.25f), false);
         UISkin.Fill(dim.rectTransform);
-
-        // the prayer, on a dark band across the middle
-        var prayer = Prayers.RandomShort(420);
-        var band = UISkin.NewImage("Band", transform, UISkin.White, new Color(0f, 0f, 0f, 0.62f), false);
-        var bandRect = band.rectTransform;
-        bandRect.anchorMin = new Vector2(0f, 0.5f);
-        bandRect.anchorMax = new Vector2(1f, 0.5f);
-        bandRect.pivot = new Vector2(0.5f, 0.5f);
-        bandRect.sizeDelta = new Vector2(0f, 560f);
-        bandRect.anchoredPosition = new Vector2(0f, 20f);
-        var title = UISkin.NewText("Prayer title", transform, prayer.Title, 40, UISkin.Gold, TextAnchor.MiddleCenter);
-        UISkin.Centered(title.rectTransform, new Vector2(0f, 240f), new Vector2(1600f, 70f));
-        title.fontStyle = FontStyle.BoldAndItalic;
-        var text = UISkin.NewText("Prayer", transform, prayer.Text, 40, PrayerRed, TextAnchor.MiddleCenter, false);
-        UISkin.Centered(text.rectTransform, new Vector2(0f, 0f), new Vector2(1560f, 400f));
-        text.fontStyle = FontStyle.Bold;
-        text.lineSpacing = 1.1f;
-        text.resizeTextForBestFit = true;
-        text.resizeTextMinSize = 24;
-        text.resizeTextMaxSize = 44;
-        var outline = text.gameObject.AddComponent<UnityEngine.UI.Outline>();
-        outline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-        outline.effectDistance = new Vector2(2f, -2f);
 
         // the game's name and "Loading"
         var name = UISkin.NewText("Game", transform, "SurvivalBD", 46, UISkin.Gold, TextAnchor.UpperLeft);
@@ -140,7 +115,7 @@ public class LoadingScreen : MonoBehaviour
     IEnumerator FadeOut()
     {
         while (Time.unscaledTime - shownAt < minimumSeconds) yield return null;
-        for (float t = 1f; t > 0f; t -= Time.unscaledDeltaTime / 0.7f)
+        for (float t = 1f; t > 0f; t -= Time.unscaledDeltaTime / 0.5f)
         {
             if (group != null) group.alpha = t;
             yield return null;

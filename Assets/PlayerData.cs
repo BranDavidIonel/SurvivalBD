@@ -13,6 +13,8 @@ public class PlayerData
 
     public string[] quickSlotsContent;
 
+    public bool backpack; // the player made the backpack: more inventory slots (an older save: false)
+
     public PlayerData(float[] _playerStats, float[] _playerPosAndRot, string[] _inventoryContent, string[] _quickSlotsContent)
     {
         playerStats = _playerStats;

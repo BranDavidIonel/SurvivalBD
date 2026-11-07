@@ -316,7 +316,9 @@ public class SaveManager : MonoBehaviour
         string[] inventory = InventorySystem.Instance.itemList.ToArray();
         string[] quickSlots = GetQuickSlotsContent();
 
-        return new PlayerData(playerStats, playerPosAndRot, inventory, quickSlots);
+        var data = new PlayerData(playerStats, playerPosAndRot, inventory, quickSlots);
+        data.backpack = InventorySystem.Instance.HasBackpack;
+        return data;
 
     }
     private string[] GetQuickSlotsContent()
@@ -508,6 +510,11 @@ public class SaveManager : MonoBehaviour
         PlayerState.Instance.playerBody.transform.rotation = Quaternion.Euler(getRotation);
         //print("set data player");
         
+        // only what was saved: first away with what the scene put in the inventory and the quick bar (test axes)
+        InventorySystem.Instance.ClearAllItems();
+        // the backpack's slots first, so all the saved items fit
+        if (playerData.backpack) InventorySystem.Instance.AddBackpack(false);
+
         //Setting the inventory content
         foreach(string item in playerData.inventoryContent)
         {
@@ -517,8 +524,10 @@ public class SaveManager : MonoBehaviour
         {
             //Find nest free quick slot
             GameObject availableSlot = EquipSystem.Instance.FindNextEmptySlot();
+            var quickPrefab = Resources.Load<GameObject>(item);
+            if (availableSlot == null || quickPrefab == null) continue;
 
-            var itemToAdd = Instantiate(Resources.Load<GameObject>(item));
+            var itemToAdd = Instantiate(quickPrefab);
 
             itemToAdd.transform.SetParent(availableSlot.transform, false);
             // so a tap on it (phone) takes it in the hand, like before saving

@@ -134,32 +134,108 @@ public class GameWindowsLayout : MonoBehaviour
 
     // ---------------- inventory ---------------- //
 
-    void BuildInventory()
-    {
-        var inventory = InventorySystem.Instance;
-        inventoryWindow = (RectTransform)inventory.inventoryScreenUI.transform;
+    // 32 slots: 4 rows of 8; with the backpack (48): 4 rows of 12, as high as before (it fits beside the crafting
+    // window on the phone at the same size)
+    static int InventoryColumns(int count) => count > 40 ? 12 : count > 24 ? 8 : 6;
 
-        int columns = inventory.slotList.Count > 24 ? 8 : 6; // 32 slots: 4 rows of 8
-        int count = inventory.slotList.Count;
+    void SizeInventory()
+    {
+        int count = InventorySystem.Instance.slotList.Count;
+        int columns = InventoryColumns(count);
         int rows = Mathf.Max(1, Mathf.CeilToInt(count / (float)columns));
         float gridWidth = columns * slot + (columns - 1) * gap;
         float gridHeight = rows * slot + (rows - 1) * gap;
         inventorySize = new Vector2(gridWidth + 2f * pad, titleHeight + gridHeight + gap + 4f + infoHeight + pad);
+    }
 
-        SetupWindow(inventoryWindow, inventorySize, 1f);
-        AddTitle(inventoryWindow, null, "Inventory", inventorySize);
-        AddClose(inventoryWindow, () => { if (InventorySystem.Instance.isOpen) InventorySystem.Instance.CloseUI(); });
-
+    void PlaceSlots()
+    {
+        var inventory = InventorySystem.Instance;
+        int count = inventory.slotList.Count;
+        int columns = InventoryColumns(count);
         float left = -inventorySize.x * 0.5f + pad;
         float top = inventorySize.y * 0.5f - titleHeight;
         for (int i = 0; i < count; i++)
         {
+            if (inventory.slotList[i] == null) continue;
             int row = i / columns, column = i % columns;
             var rect = (RectTransform)inventory.slotList[i].transform;
             UISkin.Centered(rect, new Vector2(left + slot * 0.5f + column * (slot + gap), top - slot * 0.5f - row * (slot + gap)),
                 new Vector2(slot, slot));
             StyleSlot(rect);
         }
+    }
+
+    // the backpack was made (or loaded): the bigger inventory, laid out again
+    void OnBackpackAdded()
+    {
+        if (inventoryWindow == null || InventorySystem.Instance == null) return;
+        try
+        {
+            SizeInventory();
+            UISkin.Centered(inventoryWindow, inventoryWindow.anchoredPosition, inventorySize);
+            PlaceSlots();
+            var title = inventoryWindow.Find("WindowTitle") as RectTransform;
+            if (title != null)
+            {
+                UISkin.Place(title, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -2f),
+                    new Vector2(inventorySize.x - 2f * (closeSize + 16f), titleHeight - 6f));
+                var text = title.GetComponent<Text>();
+                if (text != null) { text.text = "Inventory + Backpack"; SceneTexts.ApplyNow(); } // (in Romanian at once)
+            }
+            var line = inventoryWindow.Find("TitleLine") as RectTransform;
+            if (line != null)
+                UISkin.Place(line, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -titleHeight + 6f),
+                    new Vector2(inventorySize.x - 2f * pad - 24f, 2f));
+            PlaceInventoryBottom();
+            var close = inventoryWindow.Find("CloseButton");
+            if (close != null) close.SetAsLastSibling();
+            LateUpdate();
+        }
+        catch (System.Exception e) { Debug.LogWarning("GameWindowsLayout: could not lay out the backpack's slots: " + e); }
+    }
+
+    void OnDestroy()
+    {
+        InventorySystem.BackpackAdded -= OnBackpackAdded;
+    }
+
+    // bottom line: what the item is (left) and the trash can (right)
+    void PlaceInventoryBottom()
+    {
+        float left = -inventorySize.x * 0.5f + pad;
+        float bottomY = -inventorySize.y * 0.5f + pad + infoHeight * 0.5f;
+        float infoWidth = inventorySize.x - 2f * pad - gap - infoHeight;
+        Vector2 infoPos = new Vector2(left + infoWidth * 0.5f, bottomY);
+        if (infoHint != null) UISkin.Centered((RectTransform)infoHint.transform, infoPos, new Vector2(infoWidth, infoHeight));
+        if (itemInfo != null)
+        {
+            var info = (RectTransform)itemInfo.transform;
+            UISkin.Centered(info, infoPos, new Vector2(infoWidth, infoHeight));
+            float line = (infoHeight - 12f) / 3f;
+            InfoLine(info, "itemName", 0, line, infoWidth, textFont, UISkin.Gold, true);
+            InfoLine(info, "itemDescription", 1, line, infoWidth, smallFont, UISkin.TextColor, false);
+            InfoLine(info, "itemFunctionality", 2, line, infoWidth, smallFont - 1, UISkin.TextDim, false);
+        }
+        var trash = inventoryWindow.Find("trash") as RectTransform;
+        if (trash != null)
+            UISkin.Centered(trash, new Vector2(inventorySize.x * 0.5f - pad - infoHeight * 0.5f, bottomY), new Vector2(infoHeight, infoHeight));
+    }
+
+    void BuildInventory()
+    {
+        var inventory = InventorySystem.Instance;
+        inventoryWindow = (RectTransform)inventory.inventoryScreenUI.transform;
+
+        SizeInventory();
+        SetupWindow(inventoryWindow, inventorySize, 1f);
+        AddTitle(inventoryWindow, null, inventory.HasBackpack ? "Inventory + Backpack" : "Inventory", inventorySize);
+        AddClose(inventoryWindow, () => { if (InventorySystem.Instance.isOpen) InventorySystem.Instance.CloseUI(); });
+        InventorySystem.BackpackAdded -= OnBackpackAdded;
+        InventorySystem.BackpackAdded += OnBackpackAdded;
+
+        float left = -inventorySize.x * 0.5f + pad;
+        PlaceSlots();
 
         // bottom line: what the item is (left) and the trash can (right)
         float bottomY = -inventorySize.y * 0.5f + pad + infoHeight * 0.5f;
@@ -288,7 +364,7 @@ public class GameWindowsLayout : MonoBehaviour
         for (int i = 0; i < craftingScreens.Length; i++)
         {
             var screen = craftingScreens[i];
-            var size = i == 4 ? constructionSize : i == 1 ? toolsSize : craftingSize;
+            var size = i == 4 ? constructionSize : (i == 1 || i == 2) ? toolsSize : craftingSize; // (Tools and Survival: 4 cards)
             SetupWindow(screen, size, 1f);
             var oldTitle = screen.Find("Text (Legacy)");
             AddTitle(screen, oldTitle != null ? oldTitle.GetComponent<Text>() : null, titles[i], size);
@@ -340,8 +416,8 @@ public class GameWindowsLayout : MonoBehaviour
 
         LayoutCards(craftingScreens[1], new[] { "Axe", "Torch", "IronAxe", "Spear" }, new[] { "Stone Axe", "Torch", "Iron Axe", "Spear" },
             new[] { "Chops trees, hunts rabbits", "Light in the dark and the cave", "Any tree in 3 blows", "Thrown at rabbits from 10-15 m" }, toolsSize);
-        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare" }, new[] { "Campfire", "Storage Box", "Snare" },
-            new[] { "Warmth, light, cooking; the shadow fears it", "Keeps your things", "Catches a rabbit alive" }, craftingSize);
+        LayoutCards(craftingScreens[2], new[] { "Campfire", "StorageBox", "Snare", "Backpack" }, new[] { "Campfire", "Storage Box", "Snare", "Backpack" },
+            new[] { "Warmth, light, cooking; the shadow fears it", "Keeps your things", "Catches a rabbit alive", "16 more slots in the inventory" }, toolsSize);
         LayoutCards(craftingScreens[3], new[] { "Plank", "Rope" }, new[] { "Planks x2", "Rope" },
             new[] { "For buildings, the cross and the raft", "For the raft and the gate" }, craftingSize);
         LayoutCards(craftingScreens[4], new[] { "Fence", "FenceGate", "Foundation", "Wall", "DoorWall", "WindowWall", "Roof", "Cross" },
@@ -658,7 +734,7 @@ public class GameWindowsLayout : MonoBehaviour
                 if (screen != null && screen.gameObject.activeSelf)
                 {
                     right = screen;
-                    rightSize = screen == craftingScreens[4] ? constructionSize : screen == craftingScreens[1] ? toolsSize : craftingSize;
+                    rightSize = screen == craftingScreens[4] ? constructionSize : (screen == craftingScreens[1] || screen == craftingScreens[2]) ? toolsSize : craftingSize;
                     break;
                 }
             }
